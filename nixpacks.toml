@@ -1,0 +1,14 @@
+[providers]
+node = true
+
+[phases.setup]
+nixPkgs = ["nodejs", "npm"]
+
+[phases.install]
+cmds = ["cd Web && npm install"]
+
+[phases.build]
+cmds = ["cd Web && npx prisma generate && npm run build"]
+
+[start]
+cmd = "cd Web && npm start"
