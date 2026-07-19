@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   basePath: process.env.BASEPATH,
 
   // These three entry points are served via rewrite (not redirect) so the browser's address
