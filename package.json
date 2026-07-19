@@ -1,0 +1,11 @@
+{
+  "name": "mandirsetu-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root package.json to help Nixpacks detect Node.js environment",
+  "scripts": {
+    "install": "cd Web && npm install",
+    "build": "cd Web && npx prisma generate && npm run build",
+    "start": "cd Web && npm start"
+  }
+}
