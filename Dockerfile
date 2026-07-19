@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY Web/package.json Web/package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -17,7 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY Web/ .
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN npx prisma generate && npm run build:icons
 
 # Next.js build
 RUN npm run build
