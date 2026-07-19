@@ -1,0 +1,723 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-1.1.x", "rhel-openssl-3.0.x"]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  name                    String?
+  email                   String?   @unique
+  emailVerified           DateTime?
+  image                   String?
+  password                String? // Hashed with bcrypt. Null for OAuth-only users.
+  phone                   String?
+  role                    String    @default("USER") // USER, ADMIN, ASTROLOGER
+  verificationOtp         String?
+  verificationOtpExpires  DateTime?
+  resetPasswordOtp        String?
+  resetPasswordOtpExpires DateTime?
+  createdAt               DateTime  @default(now())
+  accounts                Account[]
+  sessions                Session[]
+  
+  // Relations
+  chadhavaOrders     ChadhavaOrder[]
+  pujaOrders         PujaOrder[]
+  consultationBookings ConsultationBooking[]
+  kundliOrders       KundliOrder[]
+  productOrders      ProductOrder[]
+  yatraBookings      YatraBooking[]
+  geoTagPhotos       GeoTagPhoto[]
+  invoices           Invoice[]
+  orderTrailActions  OrderTrail[]
+  videoUploadBatches VideoUploadBatch[]
+  reviews            Review[]
+  offerOrders        OfferOrder[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Platform Specific Models
+
+model ChadhavaListing {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  location      String? // e.g. "Varanasi, UP" — shown as a badge on the landing page card
+  image         String
+  price         Float // Sale price — shown struck through when offerPrice is set and lower
+  offerPrice    Float? // Discounted price shown & charged to the customer when set
+  gstPercentage Float?   @default(0) // e.g. 5, 12, 18
+  gstInclusive  Boolean  @default(true) // true = price/offerPrice already include GST
+  createdAt     DateTime @default(now())
+  orders        ChadhavaOrder[]
+
+  // Extra detail-page content for the tabbed detail-page layout (see DetailPageTabs) — all
+  // optional, same shape as PujaListing's equivalent fields. `title` + `location` already cover
+  // "temple name/location" for Chadhava, so only significance/benefits/tab-label are needed here.
+  significance      String? // Why this temple/offering matters — longer devotional/historical text
+  benefits          String? // One benefit per line, rendered as a bullet list
+  secondaryTabLabel String? // Defaults to "Temple Details" when unset
+  // Ordered image/video gallery shown as an auto-scrolling carousel on the detail page, in
+  // addition to the single primary `image` above. [{ url: string, type: 'image' | 'video' }] —
+  // array position is display order. Same shape reused on PujaListing/Product.
+  media             Json?
+}
+
+model ChadhavaOrder {
+  id                String          @id @default(cuid())
+  userId            String
+  chadhavaListingId String
+  name              String
+  gender            String
+  dob               DateTime
+  birthPlace        String
+  comment           String?
+  // Chadhava pricing is per-person — personCount devotees, each with a name+gotra pair, are
+  // offered under a single order. persons is [{ name, gotra }, ...], length === personCount.
+  personCount       Int             @default(1)
+  persons           Json?
+  paymentStatus     String          @default("PENDING") // PENDING, PAID, FAILED
+  status            String          @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  videoUrl          String?
+  imageUrl          String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  // Google-Drive-link video association (Operation > Video Upload). The link is shown for 48
+  // hours after upload, then lazily cleared (videoUrl set back to null, videoExpired flagged)
+  // the next time this order is read — see expireStaleVideos() in src/libs/videoUpload.ts.
+  videoUploadedAt   DateTime?
+  videoExpired      Boolean         @default(false)
+  // Snapshot of what was actually charged at order time (listing price/GST can change later).
+  amountPaid        Float?
+  gstPercentage     Float?          @default(0)
+  gstInclusive      Boolean?        @default(true)
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime        @default(now())
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chadhavaListing ChadhavaListing @relation(fields: [chadhavaListingId], references: [id], onDelete: Cascade)
+}
+
+model PujaListing {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String
+  price       Float
+  category    String   // eg. Ganesha, Mahadev, Lakshmi
+  createdAt   DateTime @default(now())
+  packages    PujaPackage[]
+  orders      PujaOrder[]
+
+  // Extra detail-page content (all optional — the detail page only renders a section when its
+  // field is set, so existing listings keep working unchanged until an admin fills these in).
+  templeName     String? // e.g. "Kashi Vishwanath Temple"
+  templeLocation String? // e.g. "Varanasi, Uttar Pradesh"
+  significance   String? // Why this Puja/temple matters — longer devotional/historical text
+  benefits       String? // One benefit per line, rendered as a bullet list
+  // Admin-editable label for the "Temple Details" tab on the detail page — defaults to "Temple
+  // Details" when unset. Same field name/shape is reused on ChadhavaListing and Product so all
+  // three modules share one DetailPageTabs component; only the display label differs per module.
+  secondaryTabLabel String?
+  // Ordered image/video gallery — see ChadhavaListing.media for shape/notes.
+  media             Json?
+}
+
+model PujaPackage {
+  id            String      @id @default(cuid())
+  pujaListingId String
+  type          String      // SINGLE, COUPLE, FAMILY
+  price         Float // Sale price — shown struck through when offerPrice is set and lower
+  offerPrice    Float? // Discounted price shown & charged to the customer when set
+  gstPercentage Float?      @default(0)
+  gstInclusive  Boolean     @default(true)
+
+  pujaListing   PujaListing @relation(fields: [pujaListingId], references: [id], onDelete: Cascade)
+  orders        PujaOrder[]
+}
+
+model PujaOrder {
+  id            String      @id @default(cuid())
+  userId        String
+  pujaListingId String
+  pujaPackageId String
+  name          String
+  gender        String
+  dob           DateTime
+  birthPlace    String
+  comment       String?
+  // Additional family members included in the sankalp/chanting beyond the primary devotee
+  // above — count is driven by the selected package on the frontend (Single = none, Couple =
+  // 1, Family = 2+, expandable). Package price itself is unaffected by this count (E-Puja
+  // packages are priced as a bundle per type, unlike Chadhava's per-person pricing).
+  devotees      Json?       // [{ name: string, gotra: string }]
+  paymentStatus String      @default("PENDING")
+  status        String      @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  videoUrl      String?
+  imageUrl      String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  videoUploadedAt DateTime?
+  videoExpired    Boolean   @default(false)
+  amountPaid    Float?
+  gstPercentage Float?      @default(0)
+  gstInclusive  Boolean?    @default(true)
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pujaListing PujaListing @relation(fields: [pujaListingId], references: [id], onDelete: Cascade)
+  pujaPackage PujaPackage @relation(fields: [pujaPackageId], references: [id], onDelete: Cascade)
+}
+
+model Astrologer {
+  id          String   @id @default(cuid())
+  name        String
+  bio         String
+  image       String
+  rating      Float    @default(5.0)
+  specialties String   // Comma separated e.g. Love, Marriage, Career
+  // Duration-based consultation pricing. offerPriceNN, when set and lower, is what's charged;
+  // priceNN is shown struck-through — same sale/offer pattern used elsewhere in the app.
+  price30       Float    @default(0)
+  offerPrice30  Float?
+  price60       Float    @default(0)
+  offerPrice60  Float?
+  gstPercentage Float?   @default(0)
+  gstInclusive  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  bookings    ConsultationBooking[]
+}
+
+model ConsultationBooking {
+  id           String      @id @default(cuid())
+  userId       String
+  astrologerId String? // Assigned by admin after reviewing the request; null while unassigned
+  // Consultation-form fields (added when the Jyotish page switched from an astrologer-browsing
+  // list to a single booking form, gemsmantra.com/pages/consultation-style). Nullable so older
+  // rows created before this field existed still read back fine.
+  name         String?
+  email        String?
+  phone        String?
+  dob          DateTime?
+  timeOfBirth  String?
+  placeOfBirth String?
+  category     String      // Love, Education, Career, Marriage, Health, Wealth, Legal, Finance, Remedies, Parents
+  durationMins Int         // 30, 60
+  slotTime     DateTime
+  paymentStatus String     @default("PENDING")
+  status       String      @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  comment      String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  // Snapshot of what was actually charged at booking time (astrologer's price can change later).
+  amountPaid    Float?
+  gstPercentage Float?     @default(0)
+  gstInclusive  Boolean?   @default(true)
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime    @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  astrologer Astrologer? @relation(fields: [astrologerId], references: [id], onDelete: SetNull)
+}
+
+// Admin-configured consultation time slots shown on the Jyotish booking form (e.g. "9:00 AM -
+// 10:00 AM"). `startTime` is 24-hour "HH:mm" — combined with the customer's chosen date on the
+// frontend to build the actual ConsultationBooking.slotTime. Deliberately NOT exclusive: many
+// bookings can share the same slot/day (astrologer availability is managed manually by admins,
+// not enforced here), so no uniqueness constraint against ConsultationBooking is needed.
+model ConsultationTimeSlot {
+  id        String   @id @default(cuid())
+  label     String   // e.g. "9:00 AM - 10:00 AM"
+  startTime String   // 24-hour "HH:mm", e.g. "09:00"
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Operation > Video Upload: admin associates a Google Drive link with an order (by order type +
+// id) in batches. Each batch persists a per-row success/failure report.
+model VideoUploadBatch {
+  id           String   @id @default(cuid())
+  createdById  String?
+  totalCount   Int      @default(0)
+  successCount Int      @default(0)
+  failedCount  Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  items     VideoUploadItem[]
+}
+
+model VideoUploadItem {
+  id          String   @id @default(cuid())
+  batchId     String
+  orderType   String   // CHADHAVA, EPUJA
+  orderId     String
+  driveLink   String
+  status      String   // SUCCESS, FAILED
+  errorReason String?
+  createdAt   DateTime @default(now())
+
+  batch VideoUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([orderType, orderId])
+}
+
+// Handcrafted Kundli catalog — admin-managed types shown on the Kundli booking page
+// (e.g. Premium Janam Kundli, Lagna Patrika & Kundli, Varshphal Kundli).
+model KundliListing {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  delivery      String // e.g. "Physical Hardcopy + PDF Scans"
+  image         String
+  price         Float // Sale price — shown struck through when offerPrice is set and lower
+  offerPrice    Float? // Discounted price shown & charged to the customer when set
+  gstPercentage Float?   @default(0)
+  gstInclusive  Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  orders        KundliOrder[]
+}
+
+model KundliOrder {
+  id                    String   @id @default(cuid())
+  userId                String
+  kundliListingId       String?
+  name                  String
+  gender                String
+  dob                   DateTime
+  timeOfBirth           String?
+  birthPlace            String
+  comment               String?
+  kundliType            String   // Snapshot of the listing title at order time (kept even if the listing is later edited/deleted)
+  paymentStatus         String   @default("PENDING")
+  status                String   @default("PENDING") // PENDING, SHARED_WITH_PANDIT, DISPATCHED, COMPLETED, CANCELLED
+  scanCopyUrl           String?
+  courierTrackingNumber String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amountPaid            Float?
+  gstPercentage         Float?   @default(0)
+  gstInclusive          Boolean? @default(true)
+  ipAddress             String?
+  userAgent             String?
+  createdAt             DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kundliListing KundliListing? @relation(fields: [kundliListingId], references: [id], onDelete: SetNull)
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  category      String   // Bracelets, Rudraksha, Gemstones, etc.
+  price         Float // Sale price — shown struck through when offerPrice is set and lower
+  offerPrice    Float? // Discounted price shown & charged to the customer when set
+  gstPercentage Float?   @default(0) // e.g. 3, 5, 12, 18
+  gstInclusive  Boolean  @default(true) // true = price/offerPrice already include GST
+  image         String
+  description   String
+  isBestSeller  Boolean  @default(false)
+  planet        String?  // Associated planet e.g. Rahu, Ketu
+  purpose       String?  // Shop by purpose e.g. Wealth, Health
+  rating        Float?   @default(5.0)
+  reviewsCount  Int?     @default(0)
+  createdAt     DateTime @default(now())
+  orders        ProductOrder[]
+
+  // Extra detail-page content for the tabbed detail-page layout (see DetailPageTabs) — all
+  // optional. sourceName/sourceLocation are the Product equivalent of PujaListing's
+  // templeName/templeLocation (e.g. certifying lab + origin), just relabeled for this module.
+  sourceName        String? // e.g. "Gemological Institute Certified"
+  sourceLocation    String? // e.g. "Sourced from Nepal Himalayas"
+  significance      String? // Certification / origin / authenticity details
+  benefits          String? // One benefit per line, rendered as a bullet list
+  secondaryTabLabel String? // Defaults to "Source & Certification" when unset
+  // Ordered image/video gallery — see ChadhavaListing.media for shape/notes.
+  media             Json?
+}
+
+// Curated "Shop by Purpose" tiles on the homepage and ecommerce page.
+// `label` should match the `purpose` value used on Product so the tile's link
+// (/front-pages/ecommerce?purpose=<label>) filters correctly.
+model ShopPurpose {
+  id        String   @id @default(cuid())
+  label     String
+  image     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Reusable banner/slide content for the homepage hero and per-module page headers.
+model Banner {
+  id         String   @id @default(cuid())
+  page       String   // home, chadhava, epuja, jyotish, kundli, ecommerce, yatra, darshan, geotag
+  title      String
+  subtitle   String?
+  image      String
+  buttonText String?
+  buttonLink String?
+  // Second, optional button — e.g. the Home hero's secondary "Remedial Store" CTA. Kept fully
+  // optional so a banner with only one button (most pages) is unaffected.
+  buttonText2 String?
+  buttonLink2 String?
+  order      Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  // No @@unique on `page` — a page can have multiple active banner rows, ordered by `order`,
+  // which the Home hero renders as an auto-rotating slideshow (see HeroSection.tsx). Other pages'
+  // PageBanner component only reads the first one.
+}
+
+model ProductOrder {
+  id              String   @id @default(cuid())
+  userId          String
+  productId       String
+  carat           Float?   // Optional carat for gemstones
+  quantity        Int      @default(1)
+  totalAmount     Float
+  paymentStatus   String   @default("PENDING")
+  shippingAddress String
+  status          String   @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  gstPercentage   Float?   @default(0)
+  gstInclusive    Boolean? @default(true)
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model YatraBooking {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  contactNumber    String
+  cityOfDeparture  String
+  yatraDestination String
+  totalTravelers   Int
+  travelDate       DateTime
+  comment          String?
+  status           String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Every Contact Us form submission — persisted independently of whether the notification email
+// successfully sends, so admin never loses an inquiry to an SMTP hiccup. `handled` lets admin
+// track which inquiries still need a reply.
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DarshanTemple {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  description String?
+  image       String
+  qrCodeUrl   String
+  model3dUrl  String
+  createdAt   DateTime @default(now())
+}
+
+model GeoTagPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  imageUrl  String
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// GST invoice, auto-generated whenever an order's payment succeeds. `orderType`+`orderId`
+// point at the underlying order row (ChadhavaOrder, PujaOrder, KundliOrder or ProductOrder —
+// the only 4 order types that currently have a real captured price to invoice).
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  orderType     String    // CHADHAVA, EPUJA, KUNDLI, ECOMMERCE
+  orderId       String
+  userId        String
+  customerName  String
+  customerEmail String?
+  itemLabel     String
+  subtotal      Float // Amount actually charged (post-discount, pre or post GST per gstInclusive)
+  gstPercentage Float     @default(0)
+  gstAmount     Float     @default(0)
+  total         Float
+  status        String    @default("PAID") // PAID, CANCELLED
+  issuedAt      DateTime  @default(now())
+  cancelledAt   DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refund Refund?
+
+  @@index([orderType, orderId])
+}
+
+// Created automatically when a PAID invoice's underlying order is cancelled by an admin.
+// No payment gateway is integrated yet, so this is a tracked record for finance/ops to
+// action manually rather than an automatic money transfer.
+model Refund {
+  id          String    @id @default(cuid())
+  invoiceId   String    @unique
+  amount      Float
+  reason      String?
+  status      String    @default("INITIATED") // INITIATED, PROCESSED
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+// Admin-managed FAQ entries, scoped per frontend page (same `page` convention as Banner —
+// home, chadhava, epuja, jyotish, kundli, ecommerce, yatra, darshan, geotag). The ServiceFaq
+// component (and the homepage Faqs section) fetches these by page and falls back to a small
+// hardcoded default list only if none are configured yet for that page.
+model Faq {
+  id        String   @id @default(cuid())
+  page      String
+  question  String
+  answer    String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([page])
+}
+
+// Admin-editable "How It Works" steps, scoped per frontend page (same `page` convention as
+// Faq/Banner). Each row is one step, so an admin adds/removes steps just by adding/deleting
+// rows in Content Management — no special array UI needed. HowItWorksSection fetches active
+// steps for a page ordered by `order` and falls back to a small hardcoded default (the generic
+// Select -> Add details -> Pay -> Get video flow) only if none are configured yet.
+model HowItWorksStep {
+  id          String   @id @default(cuid())
+  page        String
+  title       String
+  description String
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([page])
+}
+
+// Admin-managed category catalog, scoped per module (e.g. 'epuja', 'ecommerce') so each listing
+// type keeps its own independent list — adding/renaming a category here is what replaces the
+// old free-text category field on PujaListing/Product. Listings still store the category as a
+// plain string (unchanged), so renaming a Category row does NOT retroactively rename it on
+// existing listings — this is deliberately just a curated list of values the admin form's
+// dropdown offers, not a foreign key relationship.
+model Category {
+  id        String   @id @default(cuid())
+  module    String   // 'epuja' | 'ecommerce'
+  name      String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([module, name])
+  @@index([module])
+}
+
+// A customer review + star rating for a specific listing/product/astrologer. Verified-purchase
+// only: orderType + orderId point at the exact PAID order that proves this user bought this
+// item, enforced server-side at submission time (never trust the client). targetId is the id of
+// the ChadhavaListing / PujaListing / KundliListing / Astrologer / Product being reviewed;
+// targetTitle is a display-name snapshot (mirrors the Invoice.itemLabel pattern) so admin/listing
+// pages don't need a per-orderType join just to show what a review is about. New reviews start
+// PENDING and only show publicly once an admin sets status to APPROVED.
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  customerName String
+  orderType    String   // CHADHAVA, EPUJA, KUNDLI, JYOTISH, ECOMMERCE
+  orderId      String   // the specific PAID order this review is tied to (verified purchase)
+  targetId     String   // ChadhavaListing/PujaListing/KundliListing/Astrologer/Product id
+  targetTitle  String
+  rating       Int      // 1-5
+  comment      String?
+  media        Json?    // [{ url: string, type: 'image' | 'video' }] — up to 5, uploaded via
+                         // /api/upload/review-media and validated server-side on submission
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orderType, orderId])
+  @@index([orderType, targetId, status])
+}
+
+// Generic encrypted key-value settings store for backend-configurable secrets (Razorpay keys,
+// SMTP credentials, SMS provider config) that admins manage via the password-protected Config
+// menu instead of editing .env directly. `value` is encrypted at rest (see
+// src/libs/settingsCrypto.ts) using SETTINGS_ENCRYPTION_KEY, so a DB leak alone never exposes
+// secrets in plaintext. category groups fields for a submenu (PG, EMAIL, SMS); key is the
+// setting name within that category (e.g. RAZORPAY_KEY_ID, SMTP_HOST).
+model AppSetting {
+  id          String   @id @default(cuid())
+  category    String
+  key         String
+  value       String
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@unique([category, key])
+}
+
+// Backs the secondary password gate for the Config menu — deliberately separate from the
+// admin's own NextAuth login. Effectively a singleton row (id is always "singleton"). The
+// password must be rotated every 15 days; rotation requires a one-time code emailed to the
+// configured recovery address, not just the old password.
+model SecureConfigAuth {
+  id            String    @id @default("singleton")
+  passwordHash  String
+  lastChangedAt DateTime  @default(now())
+  otpCodeHash   String?
+  otpExpiresAt  DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+// Uniform status-change / audit trail across every order type, since the 6 order tables
+// don't share a base type. `orderType` is one of CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE,
+// YATRA and `orderId` points at the row in that module's own order table. ip/userAgent capture
+// admin-only "telemetry" — where an order was placed from / who changed its status from where.
+model OrderTrail {
+  id        String   @id @default(cuid())
+  orderType String
+  orderId   String
+  status    String
+  note      String?
+  actorId   String?
+  actorRole String? // ADMIN, SYSTEM, USER
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orderType, orderId])
+}
+
+model Offer {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  title         String
+  subtitle      String?
+  headerImage   String
+  details       String       // HTML rich text content
+  pricingType   String       @default("FLAT") // FLAT, PER_PERSON, PACKAGE
+  salePrice     Float        // Struck through original price (or base price)
+  offerPrice    Float        // Actual checkout price (or base price)
+  packages      Json?        // List of packages: [{ name: string, salePrice: number, offerPrice: number }]
+  gstPercentage Float        @default(18)
+  gstInclusive  Boolean      @default(true)
+  active        Boolean      @default(true)
+  visitsCount   Int          @default(0)
+  createdAt     DateTime     @default(now())
+  orders        OfferOrder[]
+  visits        OfferVisit[]
+}
+
+model OfferOrder {
+  id                String   @id @default(cuid())
+  offerId           String
+  userId            String?
+  name              String
+  email             String
+  phone             String
+  comment           String?
+  packageName       String?  // Selected package name (for PACKAGE type)
+  personCount       Int      @default(1)
+  devotees          Json?    // List of devotees: [{ name: string, gotra: string }]
+  amountPaid        Float
+  paymentStatus     String   @default("PENDING") // PENDING, PAID, FAILED
+  status            String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  gstPercentage     Float    @default(18)
+  gstInclusive      Boolean  @default(true)
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model OfferVisit {
+  id        String   @id @default(cuid())
+  offerId   String
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+}
+

@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Mandir Setu",
+    "slug": "mandirsetu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mandirsetu.app"
+    },
+    "android": {
+      "package": "com.mandirsetu.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

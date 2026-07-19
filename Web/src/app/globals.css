@@ -1,0 +1,494 @@
+@import url('https://api.fontshare.com/v2/css?f[]=chillax@1&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=synonym@1&display=swap');
+
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme) important;
+@import 'tailwindcss/utilities.css' layer(utilities) important;
+@plugin 'tailwindcss-logical';
+
+@theme {
+  --radius-none: 0px;
+  --radius-xs: var(--mui-shape-customBorderRadius-xs);
+  --radius-sm: var(--mui-shape-customBorderRadius-sm);
+  --radius: var(--mui-shape-customBorderRadius-md);
+  --radius-md: var(--mui-shape-customBorderRadius-md);
+  --radius-lg: var(--mui-shape-customBorderRadius-lg);
+  --radius-xl: var(--mui-shape-customBorderRadius-xl);
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+  --radius-4xl: 1.5rem;
+  --radius-full: 9999px;
+
+  --color-primary: var(--primary-color);
+  --color-primaryLight: var(--mui-palette-primary-lightOpacity);
+  --color-primaryLighter: var(--mui-palette-primary-lighterOpacity);
+  --color-secondary: var(--mui-palette-secondary-main);
+  --color-error: var(--mui-palette-error-main);
+  --color-errorLight: var(--mui-palette-error-lightOpacity);
+  --color-errorLighter: var(--mui-palette-error-lighterOpacity);
+  --color-warning: var(--mui-palette-warning-main);
+  --color-info: var(--mui-palette-info-main);
+  --color-success: var(--mui-palette-success-main);
+  --color-textPrimary: var(--mui-palette-text-primary);
+  --color-textSecondary: var(--mui-palette-text-secondary);
+  --color-textDisabled: var(--mui-palette-text-disabled);
+  --color-actionActive: var(--mui-palette-action-active);
+  --color-actionHover: var(--mui-palette-action-hover);
+  --color-actionSelected: var(--mui-palette-action-selected);
+  --color-actionFocus: var(--mui-palette-action-focus);
+  --color-backgroundPaper: var(--mui-palette-background-paper);
+  --color-backgroundDefault: var(--mui-palette-background-default);
+  --color-backgroundChat: var(--mui-palette-customColors-chatBg);
+  --color-backdrop: var(--backdrop-color);
+  --color-facebook: #4267b2;
+  --color-twitter: #1da1f2;
+  --color-linkedin: #007bb6;
+
+  --shadow-xs: var(--mui-customShadows-xs);
+  --shadow-sm: var(--mui-customShadows-sm);
+  --shadow-DEFAULT: var(--mui-customShadows-md);
+  --shadow-md: var(--mui-customShadows-md);
+  --shadow-lg: var(--mui-customShadows-lg);
+  --shadow-xl: var(--mui-customShadows-xl);
+  --shadow-primarySm: var(--mui-customShadows-primary-sm);
+  --shadow-primaryMd: var(--mui-customShadows-primary-md);
+  --shadow-primaryLg: var(--mui-customShadows-primary-lg);
+  --shadow-secondarySm: var(--mui-customShadows-secondary-sm);
+  --shadow-secondaryMd: var(--mui-customShadows-secondary-md);
+  --shadow-secondaryLg: var(--mui-customShadows-secondary-lg);
+  --shadow-errorSm: var(--mui-customShadows-error-sm);
+  --shadow-errorMd: var(--mui-customShadows-error-md);
+  --shadow-errorLg: var(--mui-customShadows-error-lg);
+  --shadow-warningSm: var(--mui-customShadows-warning-sm);
+  --shadow-warningMd: var(--mui-customShadows-warning-md);
+  --shadow-warningLg: var(--mui-customShadows-warning-lg);
+  --shadow-infoSm: var(--mui-customShadows-info-sm);
+  --shadow-infoMd: var(--mui-customShadows-info-md);
+  --shadow-infoLg: var(--mui-customShadows-info-lg);
+  --shadow-successSm: var(--mui-customShadows-success-sm);
+  --shadow-successMd: var(--mui-customShadows-success-md);
+  --shadow-successLg: var(--mui-customShadows-success-lg);
+
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1200px;
+  --breakpoint-xl: 1536px;
+  --breakpoint-2xl: 1920px;
+
+  --z-header: var(--header-z-index);
+  --z-footer: var(--footer-z-index);
+  --z-customizer: var(--customizer-z-index);
+  --z-search: var(--search-z-index);
+  --z-drawer: var(--drawer-z-index);
+}
+
+:root {
+  --border-radius: var(--mui-shape-borderRadius);
+  --border-color: var(--mui-palette-divider);
+  --primary-color: var(--mui-palette-primary-main);
+  --background-color: var(--mui-palette-background-default);
+  --background-color-rgb: var(--mui-palette-background-paperChannel);
+  --header-height: 54px;
+  --header-z-index: var(--mui-zIndex-appBar);
+  --footer-z-index: 10;
+  --customizer-z-index: var(--mui-zIndex-drawer);
+  --search-z-index: var(--mui-zIndex-tooltip);
+  --drawer-z-index: var(--mui-zIndex-drawer);
+  --backdrop-color: rgb(var(--mui-mainColorChannels-light) / 0.5);
+  --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-lightShadow);
+}
+
+[data-dark] {
+  --backdrop-color: rgb(23 25 37 / 0.6);
+  --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-darkShadow);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    border: 0 solid;
+    border-color: var(--border-color, currentColor);
+  }
+}
+
+html {
+  display: flex;
+  inline-size: 100%;
+  min-block-size: 100%;
+  font-family: 'Synonym Variable', 'Synonym', 'Inter', sans-serif;
+}
+
+body {
+  font-family: 'Synonym Variable', 'Synonym', 'Inter', sans-serif !important;
+}
+
+/* Chillax for all headings */
+h1, h2, h3, h4, h5, h6,
+.MuiTypography-h1, .MuiTypography-h2, .MuiTypography-h3,
+.MuiTypography-h4, .MuiTypography-h5, .MuiTypography-h6 {
+  font-family: 'Chillax Variable', 'Chillax', Georgia, serif !important;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul:not([class]) {
+  margin-block: 1rem;
+  padding-inline-start: 40px;
+}
+
+/*! Do not remove the following styles */
+/*
+  Fix the popout / submenu closing issue when using hover trigger to open the menu and using
+  perfectscrollbar where the bridge create with safe polygon by floating ui was not working
+*/
+[data-floating-ui-safe-polygon] .scrollbar-container {
+  pointer-events: auto;
+}
+
+[data-floating-ui-safe-polygon] .scrollbar-container .ps__rail-y {
+  pointer-events: none;
+}
+
+.ps__rail-y {
+  inset-inline-end: 0 !important;
+  inset-inline-start: auto !important;
+
+  & .ps__thumb-y {
+    inset-inline-end: 3px !important;
+    inset-inline-start: auto !important;
+    background-color: var(--mui-palette-divider);
+    inline-size: 6px;
+
+    &:hover,
+    &:focus,
+    &.ps--clicking {
+      background-color: var(--mui-palette-action-disabled) !important;
+    }
+  }
+
+  &:hover,
+  &:focus,
+  &.ps--clicking {
+    background-color: var(--mui-palette-action-hover) !important;
+  }
+
+  &:hover,
+  &:focus,
+  &.ps--clicking {
+    .ps__thumb-y {
+      background-color: var(--mui-palette-action-disabled) !important;
+    }
+  }
+}
+
+.ts-vertical-nav-root {
+  .ps__thumb-y {
+    inline-size: 4px;
+
+    &:hover,
+    &:focus,
+    &.ps--clicking {
+      inline-size: 6px;
+    }
+  }
+
+  .ps__rail-y {
+    inline-size: 10px;
+
+    &:hover,
+    &:focus,
+    &.ps--clicking {
+      background-color: transparent !important;
+
+      .ps__thumb-y {
+        inline-size: 6px;
+      }
+    }
+  }
+}
+
+:where([class^='tabler-']) {
+  font-size: 1.5rem;
+}
+
+/* Fix width issue for the input-otp component */
+input[autocomplete='one-time-code'][data-input-otp='true'] {
+  inline-size: 100% !important;
+}
+
+code {
+  font-family: inherit;
+  padding-block: 2px;
+  padding-inline: 4px;
+  border-radius: 4px;
+  font-size: 90%;
+  color: var(--mui-palette-info-main);
+  background-color: rgb(var(--mui-palette-info-mainChannel) / 0.08);
+  border: 0;
+}
+
+/* Galaxy & Stars Background Styles: Light cosmic stardust theme with mint green tones */
+.galaxy-bg {
+  background-color: #f7fdfb !important; /* Soft mint-cream background */
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(167, 243, 208, 0.3) 0%, transparent 55%), /* Soft mint green nebula */
+    radial-gradient(circle at 85% 15%, rgba(254, 240, 138, 0.35) 0%, transparent 45%), /* Light warm gold halo dust */
+    radial-gradient(circle at 50% 75%, rgba(209, 250, 229, 0.4) 0%, transparent 60%), /* Pale mint emerald */
+    radial-gradient(circle at 70% 40%, rgba(186, 230, 253, 0.2) 0%, transparent 50%), /* Accent cool blue */
+    linear-gradient(135deg, #f7fdfb 0%, #f0fdf4 100%) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: #0f172a !important; /* Dark slate for clear readability */
+}
+
+.stars-overlay {
+  position: relative;
+}
+
+.stars-overlay::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #0284c7, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 40px 70px, #ca8a04, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 50px 160px, #0284c7, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 80px 120px, rgba(234,179,8,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 110px 210px, #ca8a04, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 400px 400px;
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.galaxy-card {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.12) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.07) !important;
+  color: #1e293b !important;
+}
+
+.galaxy-card:hover {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.12) !important;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Light Cosmic Text Overrides within cards */
+.galaxy-card .text-white,
+.galaxy-card h2,
+.galaxy-card h3,
+.galaxy-card h5,
+.galaxy-card h6,
+.galaxy-card span.font-bold,
+.galaxy-card div.text-white {
+  color: #0f172a !important;
+}
+
+.galaxy-card .text-slate-400,
+.galaxy-card .text-slate-300,
+.galaxy-card p {
+  color: #475569 !important;
+}
+
+.galaxy-card .text-cyan-400 {
+  color: #0369a1 !important; /* Sky blue instead of cyan for light background contrast */
+}
+
+/* Form input adjustments inside dialogs for light mode */
+.galaxy-card input,
+.galaxy-card label,
+.galaxy-card div.MuiOutlinedInput-root {
+  color: #0f172a !important;
+}
+
+.galaxy-glow-text {
+  color: #059669 !important; /* Mint green for section headings */
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.galaxy-glow-btn {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35) !important;
+  border-radius: 8px !important;
+}
+
+.galaxy-glow-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* Light Mode Force Overrides - headings in mint green, body text in dark slate */
+body .galaxy-bg .text-white,
+body .galaxy-bg p,
+body .galaxy-bg span,
+body .galaxy-bg .MuiTypography-root,
+body .galaxy-bg .text-slate-200,
+body .galaxy-bg .text-slate-300,
+body .galaxy-bg .text-slate-400 {
+  color: #1e293b !important; /* dark slate for body text */
+}
+
+/* Section headings in mint green */
+body .galaxy-bg .galaxy-glow-text,
+body .galaxy-bg h1,
+body .galaxy-bg h2,
+body .galaxy-bg h3 {
+  color: #059669 !important; /* Rich mint green */
+  text-shadow: 0 0 16px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Sub-headings slightly darker */
+body .galaxy-bg h4,
+body .galaxy-bg h5,
+body .galaxy-bg h6 {
+  color: #047857 !important;
+}
+
+/* Solid/filled buttons — white text. Scoped to buttons that actually paint a colored/gradient
+   background (contained variant, galaxy-glow-btn) — NOT every <button>/.MuiButton-root, since
+   that previously also caught text-variant buttons (e.g. "Back to..." links) and unselected
+   filter pills sitting on a near-white background, making their text invisible.
+   Specificity is boosted (class repeated) the same way as .hero-overlay-text above — this must
+   never lose to any other color rule (e.g. .MuiButton-outlined, .MuiTypography-root) regardless
+   of declaration order, since a mis-colored primary CTA button is easy to miss visually. */
+body .galaxy-bg .MuiButton-contained *,
+body .galaxy-bg .MuiButton-contained,
+body .galaxy-bg .galaxy-glow-btn.galaxy-glow-btn,
+body .galaxy-bg .galaxy-glow-btn.galaxy-glow-btn * {
+  color: white !important;
+}
+
+/* Outlined buttons — mint green text/border */
+body .galaxy-bg .MuiButton-outlined,
+body .galaxy-bg .MuiButton-outlined * {
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.55) !important;
+}
+
+/* Hero image overlay text (detail-page banner title/location/subtitle) — these sit on a dark
+   gradient painted over a photo, not a plain card, so they must stay white regardless of the
+   light-mode body-text override above. Without this, the generic ".MuiTypography-root" rule
+   (same specificity, but declared earlier) wins over the inline color:#fff on these elements and
+   renders them dark-on-dark, i.e. invisible against the photo. Apply the `hero-overlay-text`
+   class directly on any Typography placed inside a hero image overlay. */
+/* Specificity is deliberately boosted (class repeated) so this can never lose to the generic
+   ".MuiTypography-root"/"h1,h2,h3" overrides above regardless of their source order — relying on
+   "declared later wins" at equal specificity turned out to be too fragile in practice. */
+body .galaxy-bg .hero-overlay-text.hero-overlay-text,
+body .galaxy-bg .hero-overlay-text.hero-overlay-text * {
+  color: #fff !important;
+}
+
+/* Prominent price + CTA bar shown right below the hero image on detail pages (Chadhava, E-Puja,
+   Ecommerce) so Book Now/Buy Now/Add to Cart is visible immediately, not only inside the
+   "Pricing" tab further down the page. */
+.cta-highlight-bar {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(249, 115, 22, 0.06) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 14px !important;
+}
+
+@keyframes cta-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 22px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.cta-pulse-btn {
+  animation: cta-pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* Auto-scrolling image/video gallery carousel (MediaCarousel component) — used on Chadhava,
+   E-Puja and Ecommerce detail pages. Track is duplicated in the component so this animation
+   loops seamlessly; pauses on hover so a visitor can actually look at an item. */
+@keyframes media-carousel-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.media-carousel-track {
+  animation: media-carousel-scroll 28s linear infinite;
+}
+
+.media-carousel-track:hover {
+  animation-play-state: paused;
+}
+
+/* Text-variant buttons (e.g. "Back to..." links) — mint green by default so they stay readable
+   even without an inline color override. */
+body .galaxy-bg .MuiButton-text,
+body .galaxy-bg .MuiButton-text * {
+  color: #059669 !important;
+}
+
+/* Hover labels — mint green */
+body .galaxy-bg .group:hover span,
+body .galaxy-bg .group:hover .MuiTypography-root {
+  color: #10b981 !important;
+}
+
+/* Ensure navbar texts and links are forced to dark slate in light theme */
+.navbar a,
+.navbar span,
+.navbar button,
+.navbar i,
+.navbar .MuiTypography-root {
+  color: #0f172a !important;
+}
+
+/* Force all MUI Contained buttons on all pages to use the mint green theme */
+body .MuiButton-contained,
+body .MuiButton-containedPrimary {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25) !important;
+}
+
+body .MuiButton-contained:hover,
+body .MuiButton-containedPrimary:hover {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Force all MUI Outlined buttons on all pages to use the mint green theme */
+body .MuiButton-outlined,
+body .MuiButton-outlinedPrimary {
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+body .MuiButton-outlined:hover,
+body .MuiButton-outlinedPrimary:hover {
+  border-color: #059669 !important;
+  background-color: rgba(16, 185, 129, 0.05) !important;
+}
+
+/* Force standard buttons */
+body button[type="submit"] {
+  background-color: #10b981 !important;
+  color: white !important;
+}
+
