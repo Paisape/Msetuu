@@ -45,18 +45,20 @@ const HeroSection = () => {
       })
   }, [])
 
-  const activeSlide = slides[currentSlide] ?? slides[0]
-
-  if (!activeSlide) return null
-
   // Slide rotation logic
   useEffect(() => {
+    if (slides.length <= 1) return
+
     const timer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length)
     }, 5000) // Change slide every 5 seconds
 
     return () => clearInterval(timer)
   }, [slides.length])
+
+  const activeSlide = slides[currentSlide] ?? slides[0]
+
+  if (!activeSlide) return null
 
   return (
     <section id='home' className='relative overflow-hidden pbs-[40px] w-full min-h-[500px] flex items-center bg-[#faf7f2]/10 border-b border-sky-500/10'>
