@@ -6,6 +6,11 @@ async function main() {
   const adminEmail = 'admin@mandirsetuu.com'
   const adminPassword = 'Admin@12345'
 
+  // Delete the old admin user if it exists to prevent login using the old email
+  await prisma.user.deleteMany({
+    where: { email: 'admin@mandirsetu.com' }
+  })
+
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
