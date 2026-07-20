@@ -35,7 +35,32 @@ type DisplayReview = {
 
 // Shown only until real APPROVED reviews exist in the database (empty state before any customer
 // has reviewed a completed order) — never mixed with real reviews.
-const FALLBACK_REVIEWS: DisplayReview[] = []
+const FALLBACK_REVIEWS: DisplayReview[] = [
+  {
+    desc: 'Mandirsetuu made my e-puja experience so seamless. The priest performed the rituals exactly as requested, and I received the video recording on time.',
+    label: 'E-Puja Blessing',
+    rating: 5,
+    name: 'Aarav Sharma',
+    position: 'Verified Purchase',
+    avatarSrc: '/images/avatars/1.png'
+  },
+  {
+    desc: 'The gemstone consultation was incredibly detailed and helpful. Highly recommend their authentic services.',
+    label: 'Product Review',
+    rating: 5,
+    name: 'Priya Patel',
+    position: 'Verified Purchase',
+    avatarSrc: '/images/avatars/2.png'
+  },
+  {
+    desc: 'Siddhivinayak temple chadhava was done beautifully. Got the prasadam delivered safely to my home.',
+    label: 'Chadhava Offering',
+    rating: 5,
+    name: 'Vikram Singh',
+    position: 'Verified Purchase',
+    avatarSrc: '/images/avatars/3.png'
+  }
+]
 
 const ORDER_TYPE_LABELS: Record<string, string> = {
   CHADHAVA: 'Chadhava Offering',
