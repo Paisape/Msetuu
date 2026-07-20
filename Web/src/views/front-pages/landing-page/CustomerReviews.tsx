@@ -35,32 +35,7 @@ type DisplayReview = {
 
 // Shown only until real APPROVED reviews exist in the database (empty state before any customer
 // has reviewed a completed order) — never mixed with real reviews.
-const FALLBACK_REVIEWS: DisplayReview[] = [
-  {
-    desc: 'Mandirsetuu made my e-puja experience so seamless. The priest performed the rituals exactly as requested, and I received the video recording on time.',
-    label: 'E-Puja Blessing',
-    rating: 5,
-    name: 'Aarav Sharma',
-    position: 'Verified Purchase',
-    avatarSrc: '/images/avatars/1.png'
-  },
-  {
-    desc: 'The gemstone consultation was incredibly detailed and helpful. Highly recommend their authentic services.',
-    label: 'Product Review',
-    rating: 5,
-    name: 'Priya Patel',
-    position: 'Verified Purchase',
-    avatarSrc: '/images/avatars/2.png'
-  },
-  {
-    desc: 'Siddhivinayak temple chadhava was done beautifully. Got the prasadam delivered safely to my home.',
-    label: 'Chadhava Offering',
-    rating: 5,
-    name: 'Vikram Singh',
-    position: 'Verified Purchase',
-    avatarSrc: '/images/avatars/3.png'
-  }
-]
+const FALLBACK_REVIEWS: DisplayReview[] = []
 
 const ORDER_TYPE_LABELS: Record<string, string> = {
   CHADHAVA: 'Chadhava Offering',
@@ -174,39 +149,47 @@ const CustomerReviews = () => {
         </div>
 
         <div className='is-full md:is-[70%]'>
-          <AppKeenSlider>
-            <div ref={sliderRef} className='keen-slider mbe-6'>
-              {data.map((item, index) => (
-                <div key={index} className='keen-slider__slide flex p-4 sm:p-3'>
-                  <Card elevation={0} className='flex items-start border border-emerald-100 bg-white rounded-2xl shadow-sm w-full'>
-                    <CardContent className='p-8 items-center mlb-auto w-full'>
-                      <div className='flex flex-col gap-4 items-start'>
-                        <span
-                          className='text-sm font-bold px-3 py-1 rounded-full'
-                          style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
-                        >
-                          {item.label}
-                        </span>
-                        <Typography style={{ color: '#374151' }}>{item.desc}</Typography>
-                        <Rating value={item.rating} readOnly sx={{ '& .MuiRating-iconFilled': { color: '#f59e0b' } }} />
-                        <div className='flex items-center gap-x-3'>
-                          <CustomAvatar size={32} src={item.avatarSrc} alt={item.name} />
-                          <div className='flex flex-col items-start'>
-                            <Typography className='font-medium' style={{ color: '#0f172a' }}>
-                              {item.name}
-                            </Typography>
-                            <Typography variant='body2' style={{ color: '#6b7280' }}>
-                              {item.position}
-                            </Typography>
+          {data.length > 0 ? (
+            <AppKeenSlider>
+              <div ref={sliderRef} className='keen-slider mbe-6'>
+                {data.map((item, index) => (
+                  <div key={index} className='keen-slider__slide flex p-4 sm:p-3'>
+                    <Card elevation={0} className='flex items-start border border-emerald-100 bg-white rounded-2xl shadow-sm w-full'>
+                      <CardContent className='p-8 items-center mlb-auto w-full'>
+                        <div className='flex flex-col gap-4 items-start'>
+                          <span
+                            className='text-sm font-bold px-3 py-1 rounded-full'
+                            style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
+                          >
+                            {item.label}
+                          </span>
+                          <Typography style={{ color: '#374151' }}>{item.desc}</Typography>
+                          <Rating value={item.rating} readOnly sx={{ '& .MuiRating-iconFilled': { color: '#f59e0b' } }} />
+                          <div className='flex items-center gap-x-3'>
+                            <CustomAvatar size={32} src={item.avatarSrc} alt={item.name} />
+                            <div className='flex flex-col items-start'>
+                              <Typography className='font-medium' style={{ color: '#0f172a' }}>
+                                {item.name}
+                              </Typography>
+                              <Typography variant='body2' style={{ color: '#6b7280' }}>
+                                {item.position}
+                              </Typography>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+            </AppKeenSlider>
+          ) : (
+            <div className='flex flex-col items-center justify-center p-8 bg-white border border-emerald-100 rounded-2xl h-full w-full min-h-[200px]'>
+              <Typography style={{ color: '#6b7280', fontWeight: 500 }}>
+                No reviews yet. Share your experience after completing an order!
+              </Typography>
             </div>
-          </AppKeenSlider>
+          )}
         </div>
       </div>
       <Divider style={{ borderColor: 'rgba(16,185,129,0.15)' }} />

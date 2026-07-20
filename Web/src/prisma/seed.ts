@@ -392,6 +392,55 @@ async function main() {
     }
   })
 
+  // Seed some initial approved reviews
+  await prisma.review.upsert({
+    where: { userId_orderType_orderId: { userId: admin.id, orderType: 'EPUJA', orderId: 'seed-order-epuja-1' } },
+    update: {},
+    create: {
+      userId: admin.id,
+      customerName: 'Aarav Sharma',
+      orderType: 'EPUJA',
+      orderId: 'seed-order-epuja-1',
+      targetId: 'seed-epuja-kashi-mahapuja',
+      targetTitle: 'Kashi Vishwanath Temple Mahapuja',
+      rating: 5,
+      comment: 'Mandirsetuu made my e-puja experience so seamless. The priest performed the rituals exactly as requested, and I received the video recording on time.',
+      status: 'APPROVED'
+    }
+  })
+
+  await prisma.review.upsert({
+    where: { userId_orderType_orderId: { userId: admin.id, orderType: 'ECOMMERCE', orderId: 'seed-order-ecommerce-1' } },
+    update: {},
+    create: {
+      userId: admin.id,
+      customerName: 'Priya Patel',
+      orderType: 'ECOMMERCE',
+      orderId: 'seed-order-ecommerce-1',
+      targetId: 'seed-product-rudraksha',
+      targetTitle: '5 Mukhi Rudraksha Mala',
+      rating: 5,
+      comment: 'The gemstone consultation was incredibly detailed and helpful. Highly recommend their authentic services.',
+      status: 'APPROVED'
+    }
+  })
+
+  await prisma.review.upsert({
+    where: { userId_orderType_orderId: { userId: admin.id, orderType: 'CHADHAVA', orderId: 'seed-order-chadhava-1' } },
+    update: {},
+    create: {
+      userId: admin.id,
+      customerName: 'Vikram Singh',
+      orderType: 'CHADHAVA',
+      orderId: 'seed-order-chadhava-1',
+      targetId: 'seed-chadhava-siddhivinayak',
+      targetTitle: 'Siddhivinayak Temple Chadhava',
+      rating: 5,
+      comment: 'Siddhivinayak temple chadhava was done beautifully. Got the prasadam delivered safely to my home.',
+      status: 'APPROVED'
+    }
+  })
+
   console.log('Seed data ready.')
 }
 
