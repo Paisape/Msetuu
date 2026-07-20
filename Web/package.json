@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "prisma db push && next start",
+    "start": "prisma db push && prisma db seed && next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
@@ -91,7 +91,8 @@
     "resend": "6.17.2",
     "server-only": "0.0.1",
     "sharp": "0.35.3",
-    "valibot": "1.2.0"
+    "valibot": "1.2.0",
+    "tsx": "4.20.6"
   },
   "devDependencies": {
     "@iconify/json": "2.2.408",
@@ -127,7 +128,6 @@
     "stylis-plugin-rtl": "2.1.1",
     "tailwindcss": "4.1.17",
     "tailwindcss-logical": "4.1.0",
-    "tsx": "4.20.6",
     "typescript": "5.9.3"
   },
   "resolutions": {
