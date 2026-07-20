@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -53,6 +53,8 @@ const LoginIllustration = styled('img')(({ theme }) => ({
   blockSize: 'auto',
   maxBlockSize: 680,
   maxInlineSize: '100%',
+  objectFit: 'cover',
+  borderRadius: '16px',
   margin: theme.spacing(12),
   [theme.breakpoints.down(1536)]: {
     maxBlockSize: 550
@@ -123,7 +125,20 @@ const Login = ({ mode }: { mode: SystemMode }) => {
     }
   })
 
-  const characterIllustration = useImageVariant(
+  const [customBanner, setCustomBanner] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/banners?page=login')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCustomBanner(data[0].image)
+        }
+      })
+      .catch(err => console.error(err))
+  }, [])
+
+  const characterIllustration = customBanner || useImageVariant(
     mode,
     lightIllustration,
     darkIllustration,

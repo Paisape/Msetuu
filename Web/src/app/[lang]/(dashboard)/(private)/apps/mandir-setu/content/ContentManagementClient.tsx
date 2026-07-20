@@ -94,7 +94,9 @@ const PAGE_OPTIONS = [
   { value: 'ecommerce', label: 'E-commerce' },
   { value: 'yatra', label: 'Yatra Booking' },
   { value: 'darshan', label: 'Darshan' },
-  { value: 'geotag', label: 'Geo-Tagging' }
+  { value: 'geotag', label: 'Geo-Tagging' },
+  { value: 'login', label: 'Login Page' },
+  { value: 'register', label: 'Register Page' }
 ]
 
 // -- Banners --------------------------------------------------------------
