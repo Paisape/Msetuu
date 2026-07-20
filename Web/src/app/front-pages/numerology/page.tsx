@@ -85,7 +85,7 @@ const NumerologyPage = () => {
     <div className='galaxy-bg stars-overlay min-h-screen py-8 px-6'>
       <div className='max-w-4xl mx-auto'>
         <div className='text-center mb-8'>
-          <Typography variant='h2' className='font-bold galaxy-glow-text mb-2' style={{ color: '#059669' }}>
+          <Typography variant='h2' className='font-bold galaxy-glow-text mb-2' style={{ color: '#006241' }}>
             Numerology Calculator
           </Typography>
           <Typography style={{ color: '#374151' }}>
@@ -131,7 +131,7 @@ const NumerologyPage = () => {
                 <Card key={key} className='galaxy-card p-5 flex items-center gap-5' style={{ border: '1px solid rgba(16,185,129,0.2)' }}>
                   <div
                     className='flex items-center justify-center rounded-full font-bold shrink-0'
-                    style={{ width: 64, height: 64, fontSize: '28px', background: 'rgba(16,185,129,0.08)', color: '#059669', border: '2px solid rgba(16,185,129,0.25)' }}
+                    style={{ width: 64, height: 64, fontSize: '28px', background: 'rgba(16,185,129,0.08)', color: '#006241', border: '2px solid rgba(16,185,129,0.25)' }}
                   >
                     {value}
                   </div>

@@ -289,7 +289,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '20px', animation: isPlaying ? 'om-spin 6s linear infinite' : 'none', display: 'inline-block' }}>🕉️</span>
-              <Typography sx={{ fontSize: '12px', fontWeight: 800, color: '#059669', letterSpacing: '0.3px' }}>
+              <Typography sx={{ fontSize: '12px', fontWeight: 800, color: '#006241', letterSpacing: '0.3px' }}>
                 Devotional Chants
               </Typography>
             </Box>
@@ -335,7 +335,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
             <IconButton
               onClick={skipPrev}
               size='small'
-              sx={{ color: '#059669', bgcolor: 'rgba(16,185,129,0.08)', '&:hover': { bgcolor: 'rgba(16,185,129,0.16)' }, width: 32, height: 32 }}
+              sx={{ color: '#006241', bgcolor: 'rgba(16,185,129,0.08)', '&:hover': { bgcolor: 'rgba(16,185,129,0.16)' }, width: 32, height: 32 }}
             >
               <i className='tabler-player-skip-back text-xs' />
             </IconButton>
@@ -347,7 +347,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
                 color: 'white',
                 background: 'linear-gradient(135deg,#10b981,#34d399)',
                 boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
-                '&:hover': { background: 'linear-gradient(135deg,#059669,#10b981)', transform: 'scale(1.06)' },
+                '&:hover': { background: 'linear-gradient(135deg,#006241,#10b981)', transform: 'scale(1.06)' },
                 transition: 'all 0.2s ease'
               }}
             >
@@ -357,7 +357,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
             <IconButton
               onClick={skipNext}
               size='small'
-              sx={{ color: '#059669', bgcolor: 'rgba(16,185,129,0.08)', '&:hover': { bgcolor: 'rgba(16,185,129,0.16)' }, width: 32, height: 32 }}
+              sx={{ color: '#006241', bgcolor: 'rgba(16,185,129,0.08)', '&:hover': { bgcolor: 'rgba(16,185,129,0.16)' }, width: 32, height: 32 }}
             >
               <i className='tabler-player-skip-forward text-xs' />
             </IconButton>

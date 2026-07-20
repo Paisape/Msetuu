@@ -25,7 +25,7 @@ const MediaCarousel = ({ media, title = 'Gallery' }: Props) => {
 
   return (
     <Box className='mb-6'>
-      <Typography variant='subtitle2' className='font-bold mb-2' style={{ color: '#059669' }}>
+      <Typography variant='subtitle2' className='font-bold mb-2' style={{ color: '#006241' }}>
         {title}
       </Typography>
       <Box

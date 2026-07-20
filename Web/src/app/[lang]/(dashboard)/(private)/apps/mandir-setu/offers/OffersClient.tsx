@@ -100,7 +100,7 @@ export default function OffersClient() {
   if (loading) {
     return (
       <Box className='flex justify-center p-12'>
-        <CircularProgress style={{ color: '#059669' }} />
+        <CircularProgress style={{ color: '#006241' }} />
       </Box>
     )
   }
@@ -120,7 +120,7 @@ export default function OffersClient() {
           variant='contained'
           color='primary'
           className='font-bold'
-          style={{ backgroundColor: '#059669' }}
+          style={{ backgroundColor: '#006241' }}
           onClick={() => router.push(`/${locale}/apps/mandir-setu/offers/create`)}
           startIcon={<i className='tabler-plus' />}
         >
@@ -186,7 +186,7 @@ export default function OffersClient() {
                   </TableCell>
                   <TableCell>
                     <span className='line-through text-slate-400 mr-2'>₹{offer.salePrice}</span>
-                    <strong style={{ color: '#059669' }}>₹{offer.offerPrice}</strong>
+                    <strong style={{ color: '#006241' }}>₹{offer.offerPrice}</strong>
                   </TableCell>
                   <TableCell className='text-center font-bold text-slate-700'>
                     {offer.visitsCount}
@@ -207,7 +207,7 @@ export default function OffersClient() {
                       title='Copy Page URL'
                       size='small'
                       onClick={() => handleCopyLink(offer.slug)}
-                      style={{ color: '#059669', marginRight: 4 }}
+                      style={{ color: '#006241', marginRight: 4 }}
                     >
                       <i className='tabler-copy' />
                     </IconButton>

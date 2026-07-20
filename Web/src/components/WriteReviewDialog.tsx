@@ -134,7 +134,7 @@ const WriteReviewDialog = ({ orderType, orderId, itemLabel }: Props) => {
 
   return (
     <>
-      <Button size='small' variant='outlined' onClick={() => setOpen(true)} style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}>
+      <Button size='small' variant='outlined' onClick={() => setOpen(true)} style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}>
         Write a Review
       </Button>
 
@@ -146,7 +146,7 @@ const WriteReviewDialog = ({ orderType, orderId, itemLabel }: Props) => {
           style: { border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px' }
         }}
       >
-        <DialogTitle className='font-bold' style={{ color: '#059669' }}>
+        <DialogTitle className='font-bold' style={{ color: '#006241' }}>
           Review: {itemLabel}
         </DialogTitle>
         <DialogContent className='flex flex-col gap-4 pt-2'>
@@ -174,7 +174,7 @@ const WriteReviewDialog = ({ orderType, orderId, itemLabel }: Props) => {
             <Typography variant='body2' className='mb-1' style={{ color: '#374151' }}>
               Add photos or videos (optional, up to {MAX_MEDIA_ITEMS})
             </Typography>
-            <Button component='label' variant='outlined' size='small' disabled={uploadingMedia || media.length >= MAX_MEDIA_ITEMS} style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}>
+            <Button component='label' variant='outlined' size='small' disabled={uploadingMedia || media.length >= MAX_MEDIA_ITEMS} style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}>
               {uploadingMedia ? <CircularProgress size={16} /> : 'Upload photo/video'}
               <input
                 type='file'

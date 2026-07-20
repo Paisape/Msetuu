@@ -67,7 +67,7 @@ const RelatedListings = ({ fetchUrl, currentId, basePath, title = 'You May Also 
 
   return (
     <Box className='mt-16'>
-      <Typography variant='h5' className='font-bold mb-6' style={{ color: '#059669' }}>
+      <Typography variant='h5' className='font-bold mb-6' style={{ color: '#006241' }}>
         {title}
       </Typography>
       <Grid container spacing={6}>
@@ -82,7 +82,7 @@ const RelatedListings = ({ fetchUrl, currentId, basePath, title = 'You May Also 
                   {item.title}
                 </Typography>
                 <div className='mt-auto'>
-                  <Typography className='font-bold mb-1' style={{ color: '#059669' }}>
+                  <Typography className='font-bold mb-1' style={{ color: '#006241' }}>
                     {hasOfferDiscount(item) && (
                       <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
                         ₹{item.price}
@@ -102,7 +102,7 @@ const RelatedListings = ({ fetchUrl, currentId, basePath, title = 'You May Also 
                     fullWidth
                     size='small'
                     className='font-semibold mt-2'
-                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                   >
                     View Details
                   </Button>

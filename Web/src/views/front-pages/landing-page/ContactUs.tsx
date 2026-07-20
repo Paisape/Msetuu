@@ -92,11 +92,11 @@ const ContactUs = () => {
             size='small'
             variant='tonal'
             label='Contact Us'
-            style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#059669', fontWeight: 'bold' }}
+            style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#006241', fontWeight: 'bold' }}
           />
           <div className='flex flex-col items-center gap-y-1 justify-center flex-wrap'>
             <div className='flex items-center gap-x-2'>
-              <Typography variant='h4' style={{ color: '#059669', fontWeight: 800 }}>
+              <Typography variant='h4' style={{ color: '#006241', fontWeight: 800 }}>
                 <span className='relative z-[1] font-extrabold'>
                   Let&#39;s work
                   <img
@@ -128,7 +128,7 @@ const ContactUs = () => {
                 />
                 <div className='flex justify-between flex-wrap gap-4 pli-6 pbs-4 pbe-[10px]'>
                   <div className='flex gap-3'>
-                    <CustomAvatar variant='rounded' size={36} style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#059669' }}>
+                    <CustomAvatar variant='rounded' size={36} style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#006241' }}>
                       <i className='tabler-mail' />
                     </CustomAvatar>
                     <div>
@@ -139,7 +139,7 @@ const ContactUs = () => {
                     </div>
                   </div>
                   <div className='flex gap-3'>
-                    <CustomAvatar variant='rounded' size={36} style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#059669' }}>
+                    <CustomAvatar variant='rounded' size={36} style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#006241' }}>
                       <i className='tabler-phone' />
                     </CustomAvatar>
                     <div>
@@ -156,7 +156,7 @@ const ContactUs = () => {
               <Card className='galaxy-card h-full p-4'>
                 <CardContent>
                   <div className='flex flex-col gap-y-[6px] mbe-6'>
-                    <Typography variant='h4' style={{ color: '#059669', fontWeight: 800 }}>Send a message</Typography>
+                    <Typography variant='h4' style={{ color: '#006241', fontWeight: 800 }}>Send a message</Typography>
                     <Typography style={{ color: '#4b5563' }}>
                       If you would like to discuss anything related to payment, account, licensing, partnerships, or
                       have pre-sales questions, you&#39;re at the right place.

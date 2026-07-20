@@ -92,9 +92,9 @@ export async function POST(req: Request) {
             html: `
               <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
                 <div style="text-align: center; margin-bottom: 20px;">
-                  <span style="background-color: #ecfdf5; color: #059669; padding: 6px 12px; border-radius: 9999px; font-size: 13px; font-weight: bold; border: 1px solid #a7f3d0;">Exclusive Promotion</span>
+                  <span style="background-color: #ecfdf5; color: #006241; padding: 6px 12px; border-radius: 9999px; font-size: 13px; font-weight: bold; border: 1px solid #a7f3d0;">Exclusive Promotion</span>
                 </div>
-                <h2 style="color: #059669; margin-bottom: 8px; text-align: center;">Exclusive Offer for You!</h2>
+                <h2 style="color: #006241; margin-bottom: 8px; text-align: center;">Exclusive Offer for You!</h2>
                 <h3 style="color: #0f172a; margin-top: 0; text-align: center; font-size: 20px;">${offer.title}</h3>
                 ${offer.subtitle ? `<p style="color: #4b5563; font-style: italic; text-align: center; margin-bottom: 20px;">${offer.subtitle}</p>` : ''}
                 <div style="margin: 24px 0; text-align: center;">
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
                 </div>
                 <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; margin: 24px 0; text-align: center; border: 1px solid #f1f5f9;">
                   <span style="text-decoration: line-through; color: #94a3b8; font-size: 16px; margin-right: 12px;">${originalDisplay}</span>
-                  <span style="color: #059669; font-size: 24px; font-weight: bold;">${offerDisplay}</span>
+                  <span style="color: #006241; font-size: 24px; font-weight: bold;">${offerDisplay}</span>
                   <div style="font-size: 11px; color: #64748b; margin-top: 4px;">*${offer.gstInclusive ? 'GST Inclusive' : '+18% GST'}</div>
                 </div>
                 <p style="color: #374151; line-height: 1.6; font-size: 15px;">We have created a tailored promotional package for our devotees. Access this offer directly via the button below to reserve yours:</p>

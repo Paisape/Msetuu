@@ -210,7 +210,7 @@ return
   if (loading) {
     return (
       <Box className='flex justify-center p-12'>
-        <CircularProgress style={{ color: '#059669' }} />
+        <CircularProgress style={{ color: '#006241' }} />
       </Box>
     )
   }
@@ -314,7 +314,7 @@ return
                   <Button
                     size='small'
                     variant='outlined'
-                    style={{ color: '#059669', borderColor: '#059669' }}
+                    style={{ color: '#006241', borderColor: '#006241' }}
                     startIcon={<i className='tabler-plus' />}
                     onClick={handleAddPackage}
                   >
@@ -428,7 +428,7 @@ return
                 type='submit'
                 variant='contained'
                 disabled={submitting}
-                style={{ backgroundColor: '#059669' }}
+                style={{ backgroundColor: '#006241' }}
                 className='font-bold px-6 py-2.5'
               >
                 {submitting ? 'Saving Offer...' : mode === 'create' ? 'Publish Promotion' : 'Save Changes'}

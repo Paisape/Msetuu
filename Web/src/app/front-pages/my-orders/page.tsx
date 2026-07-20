@@ -107,7 +107,7 @@ const MyOrdersPage = () => {
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
       <div className='max-w-4xl mx-auto'>
         <div className='text-center mb-12'>
-          <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ color: '#059669' }}>
+          <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ color: '#006241' }}>
             My Orders
           </Typography>
           <Typography variant='body1' style={{ color: '#374151' }}>

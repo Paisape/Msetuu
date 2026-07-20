@@ -149,7 +149,7 @@ const HoroscopePanchang = () => {
   return (
     <section id='home-horoscope' className='py-8 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-6'>
-        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#059669' }}>
+        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#006241' }}>
           Daily Horoscope & Panchang
         </Typography>
         <Typography variant='body1' className='text-slate-500 max-w-2xl mx-auto'>

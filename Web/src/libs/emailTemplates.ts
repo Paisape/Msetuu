@@ -6,7 +6,7 @@
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 const LOGO_URL = `${APP_URL}/images/logo-mandirsetuu.png`
 
-const BRAND_GREEN = '#059669'
+const BRAND_GREEN = '#006241'
 const BRAND_ORANGE = '#f97316'
 
 // Wraps any block of body HTML in the branded header/footer shell. `bodyHtml` should be simple
@@ -218,7 +218,7 @@ export function welcomeVerificationEmail(opts: { customerName: string; otp: stri
     <p>Welcome to Mandirsetuu! Please verify your email address to complete your registration.</p>
     <p>Enter this one-time code on the verification page:</p>
     <div style="text-align:center;margin:24px 0;">
-      <span style="display:inline-block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#059669;">${opts.otp}</span>
+      <span style="display:inline-block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#006241;">${opts.otp}</span>
     </div>
     <p style="color:#ef4444;font-size:13px;">This code expires in 15 minutes.</p>
   `
@@ -234,7 +234,7 @@ export function passwordResetOtpEmail(opts: { customerName: string; otp: string 
     <p>We received a request to reset your Mandirsetuu account password.</p>
     <p>Enter this one-time code to set a new password:</p>
     <div style="text-align:center;margin:24px 0;">
-      <span style="display:inline-block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#059669;">${opts.otp}</span>
+      <span style="display:inline-block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#006241;">${opts.otp}</span>
     </div>
     <p style="color:#ef4444;font-size:13px;">This code expires in 15 minutes. If you did not request a password reset, please ignore this email.</p>
   `

@@ -74,7 +74,7 @@ const EPujaSection = () => {
         <Typography
           variant='h2'
           className='font-bold mb-4 galaxy-glow-text'
-          style={{ color: '#059669' }}
+          style={{ color: '#006241' }}
         >
           Interactive E-Puja Offerings
         </Typography>
@@ -95,7 +95,7 @@ const EPujaSection = () => {
                   </div>
                 </div>
                 <CardContent className='p-6'>
-                  <Typography variant='h5' className='font-bold mb-2' style={{ color: '#059669' }}>
+                  <Typography variant='h5' className='font-bold mb-2' style={{ color: '#006241' }}>
                     {p.name}
                   </Typography>
                   <Typography variant='body2' style={{ color: '#4b5563' }} className='mb-6 line-clamp-2'>
@@ -106,7 +106,7 @@ const EPujaSection = () => {
               <CardContent className='p-6 pt-0 flex justify-between items-center border-t border-emerald-100 mt-auto'>
                 <div>
                   <span className='text-xs block' style={{ color: '#6b7280' }}>Starting from</span>
-                  <span className='text-xl font-bold' style={{ color: '#059669' }}>
+                  <span className='text-xl font-bold' style={{ color: '#006241' }}>
                     {hasOfferDiscount(p) && (
                       <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.75em' }}>
                         ₹{p.price}
@@ -121,7 +121,7 @@ const EPujaSection = () => {
                     href={p.id ? `/front-pages/epuja/${p.id}` : '/front-pages/epuja'}
                     variant='outlined'
                     className='font-semibold'
-                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                   >
                     View Details
                   </Button>

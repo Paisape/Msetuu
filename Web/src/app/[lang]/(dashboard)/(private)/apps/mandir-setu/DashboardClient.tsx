@@ -63,7 +63,7 @@ const DashboardClient = () => {
                   <Typography variant='caption' className='text-textSecondary'>
                     Total Revenue (Paid Invoices)
                   </Typography>
-                  <Typography variant='h4' className='font-bold' style={{ color: '#059669' }}>
+                  <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
                     ₹{summary.totalRevenue}
                   </Typography>
                 </CardContent>
@@ -114,7 +114,7 @@ const DashboardClient = () => {
                       className='flex items-center justify-center rounded-full'
                       style={{ width: 48, height: 48, background: 'rgba(5,150,105,0.1)' }}
                     >
-                      <i className={MODULE_ICONS[m.key]} style={{ fontSize: 22, color: '#059669' }} />
+                      <i className={MODULE_ICONS[m.key]} style={{ fontSize: 22, color: '#006241' }} />
                     </div>
                     <div>
                       <Typography className='font-bold'>{m.label}</Typography>

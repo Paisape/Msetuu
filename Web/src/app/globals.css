@@ -316,7 +316,7 @@ code {
 }
 
 .galaxy-glow-text {
-  color: #059669 !important; /* Mint green for section headings */
+  color: #006241 !important; /* Mint green for section headings */
   text-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
 }
 
@@ -328,7 +328,7 @@ code {
 }
 
 .galaxy-glow-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #10b981 100%) !important;
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
   transform: translateY(-1px);
 }
@@ -349,7 +349,7 @@ body .galaxy-bg .galaxy-glow-text,
 body .galaxy-bg h1,
 body .galaxy-bg h2,
 body .galaxy-bg h3 {
-  color: #059669 !important; /* Rich mint green */
+  color: #006241 !important; /* Rich mint green */
   text-shadow: 0 0 16px rgba(16, 185, 129, 0.15) !important;
 }
 
@@ -441,7 +441,7 @@ body .galaxy-bg .hero-overlay-text.hero-overlay-text * {
    even without an inline color override. */
 body .galaxy-bg .MuiButton-text,
 body .galaxy-bg .MuiButton-text * {
-  color: #059669 !important;
+  color: #006241 !important;
 }
 
 /* Hover labels — mint green */
@@ -469,7 +469,7 @@ body .MuiButton-containedPrimary {
 
 body .MuiButton-contained:hover,
 body .MuiButton-containedPrimary:hover {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #10b981 100%) !important;
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
 }
 
@@ -482,7 +482,7 @@ body .MuiButton-outlinedPrimary {
 
 body .MuiButton-outlined:hover,
 body .MuiButton-outlinedPrimary:hover {
-  border-color: #059669 !important;
+  border-color: #006241 !important;
   background-color: rgba(16, 185, 129, 0.05) !important;
 }
 

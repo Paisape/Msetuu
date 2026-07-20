@@ -73,6 +73,7 @@ type FormData = InferInput<typeof schema>
 const schema = object({
   name: pipe(string(), nonEmpty('This field is required')),
   email: pipe(string(), minLength(1, 'This field is required'), email('Email is invalid')),
+  phone: pipe(string(), nonEmpty('This field is required'), minLength(10, 'Mobile number must be at least 10 digits')),
   password: pipe(
     string(),
     nonEmpty('This field is required'),
@@ -117,7 +118,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
     formState: { errors }
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
-    defaultValues: { name: '', email: '', password: '' }
+    defaultValues: { name: '', email: '', phone: '', password: '' }
   })
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
@@ -220,6 +221,19 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                   label='Email'
                   placeholder='Enter your email'
                   {...(errors.email && { error: true, helperText: errors.email.message })}
+                />
+              )}
+            />
+            <Controller
+              name='phone'
+              control={control}
+              render={({ field }) => (
+                <CustomTextField
+                  {...field}
+                  fullWidth
+                  label='Mobile Number'
+                  placeholder='Enter your 10-digit mobile number'
+                  {...(errors.phone && { error: true, helperText: errors.phone.message })}
                 />
               )}
             />

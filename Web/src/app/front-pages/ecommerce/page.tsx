@@ -33,7 +33,7 @@ const filterFieldSx = {
     color: '#0f172a',
     '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
     '&:hover fieldset': { borderColor: '#10b981' },
-    '&.Mui-focused fieldset': { borderColor: '#059669' }
+    '&.Mui-focused fieldset': { borderColor: '#006241' }
   }
 }
 
@@ -298,7 +298,7 @@ return basePrice * quantity
           <Grid size={{ xs: 12, md: 3 }}>
             <Card className='galaxy-card p-5' style={{ position: 'sticky', top: 96 }}>
               <div className='flex items-center gap-2 mb-5'>
-                <i className='tabler-adjustments text-lg' style={{ color: '#059669' }} />
+                <i className='tabler-adjustments text-lg' style={{ color: '#006241' }} />
                 <Typography variant='subtitle1' className='font-bold' style={{ color: '#047857' }}>
                   Filters
                 </Typography>
@@ -345,7 +345,7 @@ return basePrice * quantity
                   onClick={handleClearFilters}
                   startIcon={<i className='tabler-filter-x' />}
                   className='font-semibold'
-                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                 >
                   Clear Filters
                 </Button>
@@ -386,7 +386,7 @@ return basePrice * quantity
                 <Button
                   variant='outlined'
                   onClick={handleClearFilters}
-                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                 >
                   Clear Filters
                 </Button>
@@ -415,7 +415,7 @@ return basePrice * quantity
                     {p.description}
                   </Typography>
                   <div className='mt-auto mb-4'>
-                    <Typography variant='h6' className='font-bold' style={{ color: '#059669' }}>
+                    <Typography variant='h6' className='font-bold' style={{ color: '#006241' }}>
                       {hasOfferDiscount(p) && (
                         <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
                           ₹{p.price}
@@ -437,7 +437,7 @@ return basePrice * quantity
                       variant='outlined'
                       fullWidth
                       className='font-semibold'
-                      style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                      style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                     >
                       View Details
                     </Button>
@@ -478,7 +478,7 @@ return basePrice * quantity
             style: { border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '16px' }
           }}
         >
-          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4' style={{ color: '#059669', borderBottom: '1px solid rgba(16, 185, 129, 0.1)' }}>
+          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4' style={{ color: '#006241', borderBottom: '1px solid rgba(16, 185, 129, 0.1)' }}>
             Configure Purchase - {selectedProduct?.name}
           </DialogTitle>
 
@@ -549,7 +549,7 @@ return basePrice * quantity
 
                   <Box className='flex justify-between items-center p-4 rounded-lg mt-2' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
                     <Typography className='font-semibold' style={{ color: '#374151' }}>Total Payable Amount:</Typography>
-                    <Typography className='text-2xl font-bold' style={{ color: '#059669' }}>₹{getPrice()}</Typography>
+                    <Typography className='text-2xl font-bold' style={{ color: '#006241' }}>₹{getPrice()}</Typography>
                   </Box>
                 </>
               )}

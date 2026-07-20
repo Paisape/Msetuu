@@ -72,7 +72,7 @@ return res.json()
       <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
         <div className='max-w-3xl mx-auto'>
           <Alert severity='error'>This E-Puja could not be found.</Alert>
-          <Button component={Link} href='/front-pages/epuja' className='mt-4 font-bold' style={{ color: '#059669' }}>
+          <Button component={Link} href='/front-pages/epuja' className='mt-4 font-bold' style={{ color: '#006241' }}>
             &larr; Back to all E-Pujas
           </Button>
         </div>
@@ -98,7 +98,7 @@ return res.json()
   return (
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
       <div className='max-w-5xl mx-auto'>
-        <Button component={Link} href='/front-pages/epuja' className='mb-6 font-semibold' style={{ color: '#059669' }}>
+        <Button component={Link} href='/front-pages/epuja' className='mb-6 font-semibold' style={{ color: '#006241' }}>
           &larr; Back to all E-Pujas
         </Button>
 
@@ -130,7 +130,7 @@ return res.json()
             <Box className='cta-highlight-bar flex flex-wrap items-center justify-between gap-4 p-4 md:p-5 mx-4 md:mx-6 mt-4'>
               <div>
                 <Typography variant='caption' style={{ color: '#6b7280' }}>Starting from</Typography>
-                <Typography variant='h4' className='font-bold' style={{ color: '#059669' }}>
+                <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
                   {hasOfferDiscount(cheapestPackage) && (
                     <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
                       ₹{cheapestPackage.price}
@@ -200,7 +200,7 @@ return res.json()
                     <div className='flex flex-col gap-2'>
                       {benefitLines.map((benefit, idx) => (
                         <div key={idx} className='flex items-start gap-2'>
-                          <span style={{ color: '#059669', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
+                          <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
                           <Typography variant='body2' style={{ color: '#374151' }}>{benefit}</Typography>
                         </div>
                       ))}
@@ -224,7 +224,7 @@ return res.json()
                           return (
                             <div key={pkg.id} className='p-3 rounded-lg' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
                               {icon} {pkg.type}:{' '}
-                              <strong style={{ color: '#059669' }}>
+                              <strong style={{ color: '#006241' }}>
                                 {hasOfferDiscount(pkg) && (
                                   <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 4 }}>₹{pkg.price}</span>
                                 )}

@@ -146,10 +146,10 @@ const CustomerReviews = () => {
             variant='tonal'
             size='small'
             className='mbe-3'
-            style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#059669', fontWeight: 'bold' }}
+            style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#006241', fontWeight: 'bold' }}
           />
           <div className='flex flex-col gap-y-1 flex-wrap max-lg:text-center'>
-            <Typography variant='h4' style={{ color: '#059669', fontWeight: 800 }}>
+            <Typography variant='h4' style={{ color: '#006241', fontWeight: 800 }}>
               <span className='relative z-[1] font-extrabold'>
                 What people say
                 <img
@@ -167,14 +167,14 @@ const CustomerReviews = () => {
             <CustomIconButton
               variant='tonal'
               onClick={() => instanceRef.current?.prev()}
-              style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#059669' }}
+              style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
             >
               <i className='tabler-chevron-left' />
             </CustomIconButton>
             <CustomIconButton
               variant='tonal'
               onClick={() => instanceRef.current?.next()}
-              style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#059669' }}
+              style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
             >
               <i className='tabler-chevron-right' />
             </CustomIconButton>
@@ -191,7 +191,7 @@ const CustomerReviews = () => {
                       <div className='flex flex-col gap-4 items-start'>
                         <span
                           className='text-sm font-bold px-3 py-1 rounded-full'
-                          style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#059669' }}
+                          style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
                         >
                           {item.label}
                         </span>

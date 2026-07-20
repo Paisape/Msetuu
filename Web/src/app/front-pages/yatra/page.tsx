@@ -126,13 +126,13 @@ const YatraPage = () => {
                   </CardContent>
                 </div>
                 <CardContent className='p-6 pt-0 mt-auto border-t flex justify-between items-center' style={{ borderColor: 'rgba(16, 185, 129, 0.15)' }}>
-                  <Typography className='font-bold text-lg' style={{ color: '#059669' }}>
+                  <Typography className='font-bold text-lg' style={{ color: '#006241' }}>
                     {tour.price}
                   </Typography>
                   <Button
                     variant='outlined'
                     size='small'
-                    style={{ borderColor: '#10b981', color: '#059669' }}
+                    style={{ borderColor: '#10b981', color: '#006241' }}
                     onClick={() => {
                       setFormData(prev => ({ ...prev, destination: tour.formVal }))
                       document.getElementById('yatra-form-card')?.scrollIntoView({ behavior: 'smooth' })
@@ -174,7 +174,7 @@ const YatraPage = () => {
                   {/* SECTION 1: Contact Details */}
                   <Grid size={{ xs: 12 }} >
                     <Box className='p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
-                      <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#059669' }}>
+                      <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
                         <i className='tabler-user' /> 1. Contact Information
                       </Typography>
                       <Grid container spacing={4}>
@@ -238,7 +238,7 @@ const YatraPage = () => {
                   {/* SECTION 2: Yatra Preference */}
                   <Grid size={{ xs: 12 }} >
                     <Box className='p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
-                      <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#059669' }}>
+                      <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
                         <i className='tabler-map-2' /> 2. Pilgrimage Preferences
                       </Typography>
                       <Grid container spacing={4}>

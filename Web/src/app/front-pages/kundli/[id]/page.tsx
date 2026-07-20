@@ -56,7 +56,7 @@ return res.json()
       <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
         <div className='max-w-3xl mx-auto'>
           <Alert severity='error'>This Kundli type could not be found.</Alert>
-          <Button component={Link} href='/front-pages/kundli' className='mt-4 font-bold' style={{ color: '#059669' }}>
+          <Button component={Link} href='/front-pages/kundli' className='mt-4 font-bold' style={{ color: '#006241' }}>
             &larr; Back to all Kundli types
           </Button>
         </div>
@@ -67,7 +67,7 @@ return res.json()
   return (
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
       <div className='max-w-4xl mx-auto'>
-        <Button component={Link} href='/front-pages/kundli' className='mb-6 font-semibold' style={{ color: '#059669' }}>
+        <Button component={Link} href='/front-pages/kundli' className='mb-6 font-semibold' style={{ color: '#006241' }}>
           &larr; Back to all Kundli types
         </Button>
 
@@ -89,7 +89,7 @@ return res.json()
 
             <Box className='flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
               <div>
-                <Typography variant='h5' className='font-bold' style={{ color: '#059669' }}>
+                <Typography variant='h5' className='font-bold' style={{ color: '#006241' }}>
                   {hasOfferDiscount(listing) && (
                     <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
                       ₹{listing.price}

@@ -63,7 +63,7 @@ const ReviewsSection = ({ orderType, targetId }: Props) => {
   return (
     <Box sx={{ mt: 6 }}>
       <Box className='flex items-center gap-3 mb-4'>
-        <Typography variant='h5' className='font-bold' style={{ color: '#059669' }}>
+        <Typography variant='h5' className='font-bold' style={{ color: '#006241' }}>
           Customer Reviews
         </Typography>
         {count > 0 && (

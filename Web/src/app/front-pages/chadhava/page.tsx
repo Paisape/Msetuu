@@ -206,7 +206,7 @@ const ChadhavaPage = () => {
                     {item.description}
                   </Typography>
                   <div className='mt-auto mb-4'>
-                    <Typography variant='h6' className='font-bold' style={{ color: '#059669' }}>
+                    <Typography variant='h6' className='font-bold' style={{ color: '#006241' }}>
                       {hasOfferDiscount(item) && (
                         <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
                           ₹{item.price}
@@ -228,7 +228,7 @@ const ChadhavaPage = () => {
                       variant='outlined'
                       fullWidth
                       className='font-semibold'
-                      style={{ borderColor: 'rgba(249,115,22,0.5)', color: '#059669' }}
+                      style={{ borderColor: 'rgba(249,115,22,0.5)', color: '#006241' }}
                     >
                       View Details
                     </Button>
@@ -261,9 +261,9 @@ const ChadhavaPage = () => {
             style: { border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px' }
           }}
         >
-          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#059669', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
+          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#006241', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
             <span>Devotee Details - {selectedChadhava?.title}</span>
-            <IconButton onClick={handleClose} size='small' style={{ color: '#059669' }}>
+            <IconButton onClick={handleClose} size='small' style={{ color: '#006241' }}>
               <i className='tabler-x text-xl' />
             </IconButton>
           </DialogTitle>
@@ -297,7 +297,7 @@ const ChadhavaPage = () => {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
                         '&:hover fieldset': { borderColor: '#10b981' },
-                        '&.Mui-focused fieldset': { borderColor: '#059669' }
+                        '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -314,7 +314,7 @@ const ChadhavaPage = () => {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
                         '&:hover fieldset': { borderColor: '#10b981' },
-                        '&.Mui-focused fieldset': { borderColor: '#059669' }
+                        '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
                   >
@@ -423,7 +423,7 @@ const ChadhavaPage = () => {
                         </div>
                       ))}
                     </div>
-                    <Button size='small' onClick={addPersonRow} startIcon={<i className='tabler-plus' />} className='mt-2 font-semibold' style={{ color: '#059669' }}>
+                    <Button size='small' onClick={addPersonRow} startIcon={<i className='tabler-plus' />} className='mt-2 font-semibold' style={{ color: '#006241' }}>
                       Add Another Person
                     </Button>
                   </Box>
@@ -433,7 +433,7 @@ const ChadhavaPage = () => {
                       Price ({Math.max(persons.filter(p => p.name.trim() && p.gotra.trim()).length, 1)} person{Math.max(persons.filter(p => p.name.trim() && p.gotra.trim()).length, 1) > 1 ? 's' : ''}):
                     </Typography>
                     <div className='text-right'>
-                      <Typography className='text-2xl font-bold' style={{ color: '#059669' }}>
+                      <Typography className='text-2xl font-bold' style={{ color: '#006241' }}>
                         {selectedChadhava && hasOfferDiscount(selectedChadhava) && (
                           <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
                             ₹{selectedChadhava.price * Math.max(persons.filter(p => p.name.trim() && p.gotra.trim()).length, 1)}

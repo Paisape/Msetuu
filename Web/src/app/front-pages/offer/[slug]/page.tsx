@@ -326,7 +326,7 @@ return
           {/* Rich Text Details Left */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Card className='galaxy-card p-6 md:p-10 border border-emerald-500/10'>
-              <Typography variant='h5' className='font-bold mb-6 galaxy-glow-text pb-3' style={{ color: '#059669', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
+              <Typography variant='h5' className='font-bold mb-6 galaxy-glow-text pb-3' style={{ color: '#006241', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
                 Offer Description & Details
               </Typography>
               <div 
@@ -405,7 +405,7 @@ return (
                   <Typography variant='h4' className='line-through text-slate-400 font-semibold'>
                     ₹{activePrices.sale}
                   </Typography>
-                  <Typography variant='h2' className='font-bold' style={{ color: '#059669' }}>
+                  <Typography variant='h2' className='font-bold' style={{ color: '#006241' }}>
                     ₹{activePrices.offer}
                   </Typography>
                 </div>
@@ -442,9 +442,9 @@ return (
             style: { border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px' }
           }}
         >
-          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#059669', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
+          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#006241', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
             <span>Secure Your Booking</span>
-            <IconButton onClick={handleCloseBooking} size='small' disabled={bookingSubmitting} style={{ color: '#059669' }}>
+            <IconButton onClick={handleCloseBooking} size='small' disabled={bookingSubmitting} style={{ color: '#006241' }}>
               <i className='tabler-x text-xl' />
             </IconButton>
           </DialogTitle>
@@ -473,7 +473,7 @@ return (
                         <Button
                           size='small'
                           variant='outlined'
-                          style={{ color: '#059669', borderColor: '#059669' }}
+                          style={{ color: '#006241', borderColor: '#006241' }}
                           startIcon={<i className='tabler-plus' />}
                           onClick={handleAddDevotee}
                           disabled={bookingSubmitting}
@@ -601,7 +601,7 @@ return (
                     <Typography className='font-semibold text-slate-700'>
                       Total Amount Payable:
                     </Typography>
-                    <Typography variant='h5' className='font-bold' style={{ color: '#059669' }}>
+                    <Typography variant='h5' className='font-bold' style={{ color: '#006241' }}>
                       ₹{activePrices.offer}
                     </Typography>
                   </Box>

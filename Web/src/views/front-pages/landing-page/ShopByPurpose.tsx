@@ -35,7 +35,7 @@ const ShopByPurpose = () => {
         <Typography
           variant='h3'
           className='font-bold mb-2 galaxy-glow-text'
-          style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#059669' }}
+          style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#006241' }}
         >
           Shop by Purpose
         </Typography>

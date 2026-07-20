@@ -52,7 +52,7 @@ export default function HowItWorksSection({ title = 'How It Works', subtitle = '
   return (
     <Box sx={{ mt: 8, mb: 4, width: '100%' }}>
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Typography variant='h4' className='font-bold mb-2' style={{ color: '#059669' }}>
+        <Typography variant='h4' className='font-bold mb-2' style={{ color: '#006241' }}>
           {title}
         </Typography>
         <Typography variant='body2' style={{ color: '#4b5563' }}>
@@ -86,7 +86,7 @@ export default function HowItWorksSection({ title = 'How It Works', subtitle = '
                   fontWeight: 700,
                   fontSize: '18px',
                   color: '#fff',
-                  background: 'linear-gradient(135deg, #10b981, #059669)'
+                  background: 'linear-gradient(135deg, #10b981, #006241)'
                 }}
               >
                 {idx + 1}

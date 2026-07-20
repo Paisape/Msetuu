@@ -55,7 +55,7 @@ const fieldSx = {
     color: '#0f172a',
     '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
     '&:hover fieldset': { borderColor: '#10b981' },
-    '&.Mui-focused fieldset': { borderColor: '#059669' }
+    '&.Mui-focused fieldset': { borderColor: '#006241' }
   }
 }
 
@@ -275,7 +275,7 @@ const JyotishPage = () => {
             <span
               key={idx}
               className='px-4 py-2 rounded-full text-sm font-semibold border'
-              style={{ borderColor: 'rgba(16, 185, 129, 0.25)', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#059669' }}
+              style={{ borderColor: 'rgba(16, 185, 129, 0.25)', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#006241' }}
             >
               {cat}
             </span>
@@ -305,7 +305,7 @@ const JyotishPage = () => {
 
               {/* SECTION 1: Personal Details */}
               <Box className='mb-6 p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
-                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#059669' }}>
+                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
                   <i className='tabler-user' /> 1. Devotee Details
                 </Typography>
                 <Grid container spacing={4}>
@@ -346,7 +346,7 @@ const JyotishPage = () => {
 
               {/* SECTION 2: Birth Details */}
               <Box className='mb-6 p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
-                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#059669' }}>
+                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
                   <i className='tabler-moon-stars' /> 2. Horoscope & Birth Details
                 </Typography>
                 <Grid container spacing={4}>
@@ -390,7 +390,7 @@ const JyotishPage = () => {
 
               {/* SECTION 3: Consultation settings */}
               <Box className='mb-6 p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
-                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#059669' }}>
+                <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
                   <i className='tabler-calendar-event' /> 3. Consultation Slots
                 </Typography>
                 <Grid container spacing={4}>
@@ -485,7 +485,7 @@ const JyotishPage = () => {
                       Consultation Fee:
                     </Typography>
                     <div className='text-right'>
-                      <Typography className='text-2xl font-bold' style={{ color: '#059669' }}>
+                      <Typography className='text-2xl font-bold' style={{ color: '#006241' }}>
                         {hasOfferDiscount(priced) && (
                           <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
                             ₹{priced.price}

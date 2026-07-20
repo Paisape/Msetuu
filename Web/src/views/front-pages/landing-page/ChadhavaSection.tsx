@@ -74,7 +74,7 @@ const ChadhavaSection = () => {
         <Typography
           variant='h2'
           className='font-bold mb-4 galaxy-glow-text'
-          style={{ color: '#059669' }}
+          style={{ color: '#006241' }}
         >
           Sacred Chadhava Offerings
         </Typography>
@@ -95,7 +95,7 @@ const ChadhavaSection = () => {
                   </div>
                 </div>
                 <CardContent className='p-6'>
-                  <Typography variant='h5' className='font-bold mb-2' style={{ color: '#059669' }}>
+                  <Typography variant='h5' className='font-bold mb-2' style={{ color: '#006241' }}>
                     {t.name}
                   </Typography>
                   <Typography variant='body2' className='mb-4 font-semibold' style={{ color: '#f97316' }}>
@@ -109,7 +109,7 @@ const ChadhavaSection = () => {
               <CardContent className='p-6 pt-0 flex justify-between items-center border-t border-emerald-100 mt-auto'>
                 <div>
                   <span className='text-xs block' style={{ color: '#6b7280' }}>Starting from</span>
-                  <span className='text-xl font-bold' style={{ color: '#059669' }}>
+                  <span className='text-xl font-bold' style={{ color: '#006241' }}>
                     {hasOfferDiscount(t) && (
                       <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.75em' }}>
                         ₹{t.price}
@@ -124,7 +124,7 @@ const ChadhavaSection = () => {
                     href={t.id ? `/front-pages/chadhava/${t.id}` : '/front-pages/chadhava'}
                     variant='outlined'
                     className='font-semibold'
-                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                    style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                   >
                     View Details
                   </Button>

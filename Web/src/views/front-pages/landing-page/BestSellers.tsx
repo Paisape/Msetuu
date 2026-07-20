@@ -82,7 +82,7 @@ const BestSellers = () => {
   return (
     <section id='home-bestsellers' className='py-8 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-6'>
-        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#059669' }}>
+        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ fontFamily: 'Cinzel, Georgia, serif', color: '#006241' }}>
           Best Sellers
         </Typography>
       </div>
@@ -157,7 +157,7 @@ const BestSellers = () => {
                   fullWidth
                   size='small'
                   className='font-semibold'
-                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669', textTransform: 'none' }}
+                  style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241', textTransform: 'none' }}
                 >
                   View Details
                 </Button>

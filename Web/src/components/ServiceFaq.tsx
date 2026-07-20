@@ -51,7 +51,7 @@ export default function ServiceFaq({ title = 'Frequently Asked Questions', subti
   return (
     <Box sx={{ mt: 8, mb: 4, width: '100%' }}>
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Typography variant='h4' className='font-bold mb-2' style={{ color: '#059669' }}>
+        <Typography variant='h4' className='font-bold mb-2' style={{ color: '#006241' }}>
           {title}
         </Typography>
         <Typography variant='body2' style={{ color: '#4b5563' }}>
@@ -80,7 +80,7 @@ export default function ServiceFaq({ title = 'Frequently Asked Questions', subti
             }}
           >
             <AccordionSummary
-              expandIcon={<i className='tabler-chevron-down' style={{ color: '#059669' }} />}
+              expandIcon={<i className='tabler-chevron-down' style={{ color: '#006241' }} />}
               sx={{
                 px: 3,
                 py: 0.5,
@@ -93,7 +93,7 @@ export default function ServiceFaq({ title = 'Frequently Asked Questions', subti
                 sx={{
                   fontWeight: 700,
                   fontSize: '14px',
-                  color: expanded === idx ? '#059669' : '#1e293b',
+                  color: expanded === idx ? '#006241' : '#1e293b',
                   transition: 'color 0.2s ease'
                 }}
               >

@@ -14,7 +14,7 @@ type PageBannerProps = {
   defaultTitle: string
   defaultSubtitle: string
 
-  // 'emerald' = light background pages (color #059669 title / #374151 subtitle).
+  // 'emerald' = light background pages (color #006241 title / #374151 subtitle).
   // 'dark' = dark background pages like Darshan/Geo-tag (text-white / text-slate-400).
   variant?: 'emerald' | 'dark'
 }
@@ -51,7 +51,7 @@ const PageBanner = ({ page, defaultTitle, defaultSubtitle, variant = 'emerald' }
       <Typography
         variant='h2'
         className={variant === 'dark' ? 'font-bold text-white mb-4 galaxy-glow-text' : 'font-bold mb-4 galaxy-glow-text'}
-        style={variant === 'dark' ? undefined : { color: '#059669' }}
+        style={variant === 'dark' ? undefined : { color: '#006241' }}
       >
         {banner?.title || defaultTitle}
       </Typography>

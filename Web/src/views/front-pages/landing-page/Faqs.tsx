@@ -113,11 +113,11 @@ const Faqs = () => {
             size='small'
             variant='tonal'
             label='FAQ'
-            style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#059669', fontWeight: 'bold' }}
+            style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#006241', fontWeight: 'bold' }}
           />
           <div className='flex flex-col items-center gap-y-1 justify-center flex-wrap'>
             <div className='flex items-center gap-x-2'>
-              <Typography variant='h4' style={{ color: '#059669', fontWeight: 800 }}>
+              <Typography variant='h4' style={{ color: '#006241', fontWeight: 800 }}>
                 Frequently asked
                 <span className='relative z-[1] font-extrabold'>
                   <img

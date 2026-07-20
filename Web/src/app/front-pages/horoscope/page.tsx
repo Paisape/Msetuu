@@ -367,7 +367,7 @@ export default function HoroscopePage() {
 
         {/* Page Heading */}
         <div className='text-center mb-8'>
-          <Typography variant='h2' className='font-bold galaxy-glow-text mb-2' style={{ color: '#059669' }}>
+          <Typography variant='h2' className='font-bold galaxy-glow-text mb-2' style={{ color: '#006241' }}>
             Horoscope, Panchang & Muhurat
           </Typography>
           <Typography style={{ color: '#374151' }}>
@@ -375,7 +375,7 @@ export default function HoroscopePage() {
           </Typography>
           <Typography variant='body2' className='mt-2'>
             Looking for your numerology numbers? Visit the{' '}
-            <Link href='/front-pages/numerology' style={{ color: '#059669', fontWeight: 600 }}>
+            <Link href='/front-pages/numerology' style={{ color: '#006241', fontWeight: 600 }}>
               Numerology page
             </Link>
             .
@@ -407,7 +407,7 @@ export default function HoroscopePage() {
         {mainTab === 0 && (
           <>
             {/* ── Section 1: Daily Horoscope ── */}
-            <Typography variant='h4' className='font-bold mb-4' style={{ color: '#059669' }}>
+            <Typography variant='h4' className='font-bold mb-4' style={{ color: '#006241' }}>
               🔮 Daily Horoscope
             </Typography>
 
@@ -430,7 +430,7 @@ export default function HoroscopePage() {
                         }`}
                       >
                         <span className='text-2xl mb-1'>{r.symbol}</span>
-                        <span className='text-[10px] font-semibold text-center leading-tight' style={{ color: selectedRashi === r.name ? '#059669' : '#374151', whiteSpace: 'pre-line' }}>
+                        <span className='text-[10px] font-semibold text-center leading-tight' style={{ color: selectedRashi === r.name ? '#006241' : '#374151', whiteSpace: 'pre-line' }}>
                           {r.displayName}
                         </span>
                       </button>
@@ -441,8 +441,8 @@ export default function HoroscopePage() {
                     <Tabs value={selectedPeriod} onChange={(_, v) => setSelectedPeriod(v)}
                       sx={{
                         '& .MuiTab-root': { color: '#475569', fontSize: '13px' },
-                        '& .Mui-selected': { color: '#059669 !important', fontWeight: 'bold' },
-                        '& .MuiTabs-indicator': { backgroundColor: '#059669' }
+                        '& .Mui-selected': { color: '#006241 !important', fontWeight: 'bold' },
+                        '& .MuiTabs-indicator': { backgroundColor: '#006241' }
                       }}>
                       <Tab label='Today' />
                       <Tab label='Tomorrow' />
@@ -504,7 +504,7 @@ export default function HoroscopePage() {
             </Grid>
 
             {/* ── Section 2: Choghadiya ── */}
-            <Typography variant='h4' className='font-bold mb-4' style={{ color: '#059669' }}>
+            <Typography variant='h4' className='font-bold mb-4' style={{ color: '#006241' }}>
               ⏰ Shubh Choghadiya Muhurat
             </Typography>
 
@@ -513,8 +513,8 @@ export default function HoroscopePage() {
                 <Tabs value={choghadiyaTab} onChange={(_, v) => setChoghadiyaTab(v)}
                   sx={{
                     '& .MuiTab-root': { color: '#475569' },
-                    '& .Mui-selected': { color: '#059669 !important', fontWeight: 'bold' },
-                    '& .MuiTabs-indicator': { backgroundColor: '#059669' }
+                    '& .Mui-selected': { color: '#006241 !important', fontWeight: 'bold' },
+                    '& .MuiTabs-indicator': { backgroundColor: '#006241' }
                   }}>
                   <Tab label='☀️ Day Choghadiya' />
                   <Tab label='🌙 Night Choghadiya' />
@@ -526,7 +526,7 @@ export default function HoroscopePage() {
                   <TableHead>
                     <TableRow sx={{ borderBottom: '2px solid rgba(16,185,129,0.15)' }}>
                       {['Time Slot', 'Name', 'Nature', 'Impact & Guidance'].map(h => (
-                        <TableCell key={h} sx={{ color: '#059669', fontWeight: 'bold', fontFamily: 'Synonym Variable, sans-serif' }}>{h}</TableCell>
+                        <TableCell key={h} sx={{ color: '#006241', fontWeight: 'bold', fontFamily: 'Synonym Variable, sans-serif' }}>{h}</TableCell>
                       ))}
                     </TableRow>
                   </TableHead>
@@ -580,7 +580,7 @@ export default function HoroscopePage() {
 
         {mainTab === 1 && (
           <Card className='galaxy-card p-5'>
-            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#059669' }}>
+            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#006241' }}>
               🪐 Planet Positions
             </Typography>
             <Typography variant='body2' className='mb-4' style={{ color: '#6b7280' }}>
@@ -603,7 +603,7 @@ export default function HoroscopePage() {
                       <TableHead>
                         <TableRow>
                           {['Planet', 'Sign', 'Degree', 'Retrograde'].map(h => (
-                            <TableCell key={h} sx={{ color: '#059669', fontWeight: 'bold' }}>{h}</TableCell>
+                            <TableCell key={h} sx={{ color: '#006241', fontWeight: 'bold' }}>{h}</TableCell>
                           ))}
                         </TableRow>
                       </TableHead>
@@ -629,7 +629,7 @@ export default function HoroscopePage() {
 
         {mainTab === 2 && (
           <Card className='galaxy-card p-5'>
-            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#059669' }}>
+            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#006241' }}>
               🕉️ Vimshottari Dasha
             </Typography>
             <Typography variant='body2' className='mb-4' style={{ color: '#6b7280' }}>
@@ -654,7 +654,7 @@ export default function HoroscopePage() {
 
         {mainTab === 3 && (
           <Card className='galaxy-card p-5'>
-            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#059669' }}>
+            <Typography variant='h5' className='font-bold mb-4' style={{ color: '#006241' }}>
               💍 Kundli Match Making
             </Typography>
             <Typography variant='body2' className='mb-4' style={{ color: '#6b7280' }}>
@@ -680,7 +680,7 @@ export default function HoroscopePage() {
               <Box className='mt-6'>
                 {matchScore ? (
                   <div className='p-4 rounded-xl text-center' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                    <Typography variant='h3' className='font-bold' style={{ color: '#059669' }}>
+                    <Typography variant='h3' className='font-bold' style={{ color: '#006241' }}>
                       {matchScore.total} / {matchScore.max}
                     </Typography>
                     <Typography variant='body2' style={{ color: '#6b7280' }}>Ashtakoot Compatibility Score</Typography>

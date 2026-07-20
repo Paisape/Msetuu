@@ -256,8 +256,8 @@ const EpujaPage = () => {
             onChange={(_, val) => setActiveTab(val)}
             sx={{
               '& .MuiTab-root': { color: '#4b5563', fontWeight: 'medium' },
-              '& .Mui-selected': { color: '#059669 !important', fontWeight: 'bold' },
-              '& .MuiTabs-indicator': { backgroundColor: '#059669' }
+              '& .Mui-selected': { color: '#006241 !important', fontWeight: 'bold' },
+              '& .MuiTabs-indicator': { backgroundColor: '#006241' }
             }}
           >
             {categories.map((cat) => (
@@ -306,7 +306,7 @@ const EpujaPage = () => {
                         variant='outlined'
                         fullWidth
                         className='font-semibold'
-                        style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                        style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                       >
                         View Details
                       </Button>
@@ -340,9 +340,9 @@ const EpujaPage = () => {
             style: { border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px' }
           }}
         >
-          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#059669', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
+          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4 flex justify-between items-center' style={{ color: '#006241', borderBottom: '1px solid rgba(16,185,129,0.1)' }}>
             <span>Book {selectedPuja?.title} - Devotee Info</span>
-            <IconButton onClick={handleClose} size='small' style={{ color: '#059669' }}>
+            <IconButton onClick={handleClose} size='small' style={{ color: '#006241' }}>
               <i className='tabler-x text-xl' />
             </IconButton>
           </DialogTitle>
@@ -367,7 +367,7 @@ const EpujaPage = () => {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
                         '&:hover fieldset': { borderColor: '#10b981' },
-                        '&.Mui-focused fieldset': { borderColor: '#059669' }
+                        '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
                   >
@@ -533,7 +533,7 @@ const EpujaPage = () => {
                         ))}
                       </div>
                       {packageType === 'Family' && (
-                        <Button size='small' onClick={addFamilyMemberRow} startIcon={<i className='tabler-plus' />} className='mt-2 font-semibold' style={{ color: '#059669' }}>
+                        <Button size='small' onClick={addFamilyMemberRow} startIcon={<i className='tabler-plus' />} className='mt-2 font-semibold' style={{ color: '#006241' }}>
                           Add Another Family Member
                         </Button>
                       )}
@@ -542,7 +542,7 @@ const EpujaPage = () => {
 
                   <Box className='flex justify-between items-center p-4 rounded-lg mt-2' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
                     <Typography className='font-semibold' style={{ color: '#374151' }}>Total Price:</Typography>
-                    <Typography className='text-2xl font-bold' style={{ color: '#059669' }}>₹{getSelectedPackagePrice()}</Typography>
+                    <Typography className='text-2xl font-bold' style={{ color: '#006241' }}>₹{getSelectedPackagePrice()}</Typography>
                   </Box>
                 </>
               )}

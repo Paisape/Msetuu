@@ -17,7 +17,7 @@ const AstrologySection = () => {
   return (
     <section id='home-astrology' className='py-8 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-10'>
-        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ color: '#059669' }}>
+        <Typography variant='h2' className='font-bold mb-4 galaxy-glow-text' style={{ color: '#006241' }}>
           Consult a Verified Astrologer
         </Typography>
         <Typography variant='body1' style={{ color: '#374151' }} className='max-w-2xl mx-auto'>
@@ -30,7 +30,7 @@ const AstrologySection = () => {
         {HIGHLIGHTS.map((h, index) => (
           <Grid size={{ xs: 12, sm: 4, md: 4 }} key={index}>
             <Card className='galaxy-card h-full p-6 text-center'>
-              <i className={`${h.icon} text-4xl mb-4`} style={{ color: '#059669' }} />
+              <i className={`${h.icon} text-4xl mb-4`} style={{ color: '#006241' }} />
               <Typography variant='h6' className='font-bold mb-2' style={{ color: '#047857' }}>
                 {h.title}
               </Typography>

@@ -236,7 +236,7 @@ const KundliPage = () => {
                     </div>
                   </div>
                   <CardContent className='p-6'>
-                    <Typography variant='h5' className='font-bold mb-3' style={{ color: '#059669' }}>
+                    <Typography variant='h5' className='font-bold mb-3' style={{ color: '#006241' }}>
                       {item.title}
                     </Typography>
                     <Typography variant='body2' style={{ color: '#4b5563' }} className='leading-relaxed'>
@@ -246,7 +246,7 @@ const KundliPage = () => {
                 </div>
                 <CardContent className='p-6 pt-0 mt-auto border-t flex justify-between items-center' style={{ borderColor: 'rgba(16, 185, 129, 0.15)' }}>
                   <div>
-                    <span className='text-xl font-bold' style={{ color: '#059669' }}>
+                    <span className='text-xl font-bold' style={{ color: '#006241' }}>
                       {hasOfferDiscount(item) && (
                         <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.75em' }}>
                           ₹{item.price}
@@ -266,7 +266,7 @@ const KundliPage = () => {
                       href={`/front-pages/kundli/${item.id}`}
                       variant='outlined'
                       className='font-semibold'
-                      style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#059669' }}
+                      style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
                     >
                       View Details
                     </Button>
@@ -292,7 +292,7 @@ const KundliPage = () => {
             style: { border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '16px' }
           }}
         >
-          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4' style={{ color: '#059669', borderBottom: '1px solid rgba(16, 185, 129, 0.1)' }}>
+          <DialogTitle className='font-bold text-xl galaxy-glow-text pb-4' style={{ color: '#006241', borderBottom: '1px solid rgba(16, 185, 129, 0.1)' }}>
             Order {selectedType?.title}
           </DialogTitle>
 
@@ -415,7 +415,7 @@ const KundliPage = () => {
 
                   <Box className='flex justify-between items-center p-4 rounded-lg mt-2' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
                     <Typography className='font-semibold' style={{ color: '#374151' }}>Total Payable Amount:</Typography>
-                    <Typography className='text-2xl font-bold' style={{ color: '#059669' }}>
+                    <Typography className='text-2xl font-bold' style={{ color: '#006241' }}>
                       ₹{selectedType ? effectivePrice(selectedType) : 0}
                     </Typography>
                   </Box>
