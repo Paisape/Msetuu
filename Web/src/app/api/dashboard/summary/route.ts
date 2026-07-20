@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
-// GET /api/dashboard/summary — admin-only counts for the Mandir Setu dashboard landing page.
+// GET /api/dashboard/summary — admin-only counts for the Mandirsetuu dashboard landing page.
 export async function GET() {
   try {
     await requireAdmin()

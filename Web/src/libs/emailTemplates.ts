@@ -42,7 +42,7 @@ export function renderEmailLayout(bodyHtml: string, previewText = ''): string {
               <hr style="border:none;border-top:1px solid rgba(16,185,129,0.15);margin:0 0 16px;" />
               <div style="font-size:12px;color:#9ca3af;text-align:center;line-height:1.6;">
                 This is an automated message from Mandirsetuu.<br />
-                Need help? Reply to this email or contact us at <a href="mailto:info@mandirsetuu.in" style="color:${BRAND_GREEN};">info@mandirsetuu.in</a>.<br />
+                Need help? Reply to this email or contact us at <a href="mailto:admin@mandirsetuu.com" style="color:${BRAND_GREEN};">admin@mandirsetuu.com</a>.<br />
                 &copy; ${new Date().getFullYear()} Mandirsetuu. All rights reserved.
               </div>
             </td>
@@ -241,4 +241,21 @@ export function passwordResetOtpEmail(opts: { customerName: string; otp: string 
 
   return { subject, html: renderEmailLayout(body, 'Your password reset code.') }
 }
+
+export function adminLoginOtpEmail(opts: { otp: string }): { subject: string; html: string } {
+  const subject = 'Mandirsetuu Admin — OTP Code for Login Verification'
+
+  const body = `
+    <p>Namaste Admin,</p>
+    <p>A sign-in request was made for your Mandirsetuu Admin account.</p>
+    <p>Please enter this 6-digit one-time code to complete your login verification:</p>
+    <div style="text-align:center;margin:24px 0;">
+      <span style="display:inline-block;background:rgba(0,98,65,0.08);border:1px solid rgba(0,98,65,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#006241;">${opts.otp}</span>
+    </div>
+    <p style="color:#ef4444;font-size:13px;">This code expires in 10 minutes. If you did not request this login, secure your password immediately.</p>
+  `
+
+  return { subject, html: renderEmailLayout(body, 'Your admin login verification code.') }
+}
+
 

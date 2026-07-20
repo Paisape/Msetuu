@@ -7,16 +7,16 @@ import Link from 'next/link'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 
+type PurposeType = {
+  label: string
+  image: string
+}
+
 // Fallback used only if the database has no Shop Purpose tiles yet (e.g. before seeding).
-const FALLBACK_PURPOSES = [
-  { label: 'Wealth', image: '/images/devotional/wealth.jpg' },
-  { label: 'Love', image: '/images/devotional/love.jpg' },
-  { label: 'Protection', image: '/images/devotional/protection.jpg' },
-  { label: 'Zodiac', image: '/images/devotional/zodiac.jpg' }
-]
+const FALLBACK_PURPOSES: PurposeType[] = []
 
 const ShopByPurpose = () => {
-  const [purposes, setPurposes] = useState(FALLBACK_PURPOSES)
+  const [purposes, setPurposes] = useState<PurposeType[]>(FALLBACK_PURPOSES)
 
   useEffect(() => {
     fetch('/api/shop-purposes')

@@ -11,12 +11,23 @@ export type SendEmailInput = {
 
 export type SendEmailResult = { sent: true; id?: string } | { sent: false; reason: string }
 
+function stripHtml(html: string): string {
+  let text = html.replace(/<br\s*[\/]?>/gi, '\n')
+  text = text.replace(/<\/p>/gi, '\n\n')
+  text = text.replace(/<\/div>/gi, '\n')
+  text = text.replace(/<\/h[1-6]>/gi, '\n\n')
+  text = text.replace(/<[^>]*>?/gm, '')
+  text = text.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&copy;/g, '©')
+  return text.replace(/\n\s+\n/g, '\n\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<SendEmailResult> {
   if (!to || typeof to !== 'string') {
     return { sent: false, reason: 'No recipient email address provided.' }
   }
 
-  const result = await sendViaSmtp(to, subject, html)
+  const text = stripHtml(html)
+  const result = await sendViaSmtp(to, subject, html, text)
 
   if (!result.sent) {
     console.warn(`[email] Failed to send "${subject}" to ${to}: ${result.reason}`)

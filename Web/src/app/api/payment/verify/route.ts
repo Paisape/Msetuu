@@ -117,9 +117,16 @@ export async function POST(req: Request) {
     // 6. Atomically flip PENDING -> PAID. The where clause guards against a race where two
     // requests verify the same order concurrently — only one can win, so step 7 (invoice
     // creation) below only ever runs once per order.
+    let statusToSet = 'PROCESSING'
+    if (orderType === 'JYOTISH') {
+      statusToSet = 'CONFIRMED'
+    } else if (orderType === 'KUNDLI') {
+      statusToSet = 'SHARED_WITH_PANDIT'
+    }
+
     const claim = await model.updateMany({
       where: { id: orderId, paymentStatus: { not: 'PAID' } },
-      data: { paymentStatus: 'PAID', razorpayOrderId, razorpayPaymentId, razorpaySignature }
+      data: { paymentStatus: 'PAID', status: statusToSet, razorpayOrderId, razorpayPaymentId, razorpaySignature }
     })
 
     if (claim.count === 0) {
@@ -157,7 +164,7 @@ export async function POST(req: Request) {
     await logOrderTrail({
       orderType,
       orderId,
-      status: order.status,
+      status: statusToSet,
       note: `Payment verified via Razorpay Sandbox (Payment ID: ${razorpayPaymentId})`,
       actorId: user.id,
       actorRole: 'USER',

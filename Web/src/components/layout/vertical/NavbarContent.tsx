@@ -22,7 +22,7 @@ const shortcuts: ShortcutsType[] = [
     url: '/apps/mandir-setu',
     icon: 'tabler-building-temple',
     title: 'Dashboard',
-    subtitle: 'Mandir Setu overview'
+    subtitle: 'Mandirsetuu overview'
   },
   {
     url: '/apps/mandir-setu/orders/chadhava',

@@ -231,7 +231,7 @@ const GeotagPage = () => {
           page='geotag'
           variant='dark'
           defaultTitle='Geo-Tag Yourself'
-          defaultSubtitle='Click a picture to geotag your spiritual visit! We will overlay the Mandir Setu brand watermark automatically.'
+          defaultSubtitle='Click a picture to geotag your spiritual visit! We will overlay the Mandirsetuu brand watermark automatically.'
         />
 
         {errorMsg && (
@@ -276,7 +276,7 @@ const GeotagPage = () => {
 
           {success && (
             <Alert severity='success' className='bg-emerald-950/80 text-emerald-200 border border-orange-400/20 w-full mb-6'>
-              Photo successfully tagged and shared on the Mandir Setu live community board!
+              Photo successfully tagged and shared on the Mandirsetuu live community board!
             </Alert>
           )}
 

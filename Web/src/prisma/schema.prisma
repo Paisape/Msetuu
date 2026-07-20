@@ -721,3 +721,16 @@ model OfferVisit {
   offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
 }
 
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String?
+  role      String?
+  action    String   // e.g. LOGIN, FAILED_LOGIN, CHECKOUT, UPDATE_CONFIG, REGISTER, CONTENT_EDIT
+  details   String?  // JSON string or long description
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+

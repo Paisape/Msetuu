@@ -4,7 +4,7 @@ async function main() {
   console.log('Populating database under updated schema with 2 products/listings and 2 orders for each section...')
 
   // 1. Get or create a test user
-  const userEmail = 'testdevotee@mandirsetu.com'
+  const userEmail = 'testdevotee@mandirsetuu.com'
 
   const user = await prisma.user.upsert({
     where: { email: userEmail },

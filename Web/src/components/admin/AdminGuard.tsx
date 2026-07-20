@@ -9,7 +9,7 @@ const AccessDenied = () => (
       <Typography variant='h5' className='font-bold mb-2'>
         Access denied
       </Typography>
-      <Typography className='text-textSecondary'>This page is only available to Mandir Setu administrators.</Typography>
+      <Typography className='text-textSecondary'>This page is only available to Mandirsetuu administrators.</Typography>
     </Card>
   </div>
 )

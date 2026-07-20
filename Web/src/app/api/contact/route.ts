@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     // below fails to send (SMTP outage, misconfigured Config > Email settings, etc).
     await prisma.contactSubmission.create({ data: { name, email, message } })
 
-    const recipient = process.env.CONTACT_FORM_EMAIL || 'info@mandirsetuu.com'
+    const recipient = process.env.CONTACT_FORM_EMAIL || 'admin@mandirsetuu.com'
     const { subject, html } = contactFormNotificationEmail({ name, email, message })
 
     const result = await sendEmail({ to: recipient, subject, html })

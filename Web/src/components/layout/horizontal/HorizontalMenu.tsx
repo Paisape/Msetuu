@@ -89,7 +89,7 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
           menuSectionStyles: verticalMenuSectionStyles(verticalNavOptions, theme)
         }}
       >
-        <SubMenu label='Mandir Setu' icon={<i className='tabler-building-temple' />}>
+        <SubMenu label='Mandirsetuu' icon={<i className='tabler-building-temple' />}>
           <MenuItem href={`/${locale}/apps/mandir-setu`} icon={<i className='tabler-smart-home' />}>
             Dashboard
           </MenuItem>

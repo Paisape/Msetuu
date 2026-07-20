@@ -51,18 +51,7 @@ type Product = Priced & {
 }
 
 // Fallback used only if the database has no products yet (e.g. before seeding).
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: 'e1',
-    name: 'Energized 5 Mukhi Rudraksha Mala',
-    category: 'Rudraksha',
-    price: 499,
-    planet: 'Jupiter',
-    purpose: 'Health',
-    image: '/images/devotional/kedarnath.jpg',
-    description: 'Authentic 108 beads Panchmukhi Rudraksha Mala sourced from Nepal. Blessed by Vedic rituals.'
-  }
-]
+const FALLBACK_PRODUCTS: Product[] = []
 
 const EcommercePage = () => {
   const { addToCart } = useCart()
@@ -578,7 +567,7 @@ return basePrice * quantity
           items={[
             {
               question: "Are your gemstones and rudrakshas certified?",
-              answer: "Yes, every gemstone and rudraksha bead sold on Mandir Setu is accompanied by an authenticity certificate from government-approved independent gemological laboratories."
+              answer: "Yes, every gemstone and rudraksha bead sold on Mandirsetuu is accompanied by an authenticity certificate from government-approved independent gemological laboratories."
             },
             {
               question: "What does it mean for an item to be 'energized'?",

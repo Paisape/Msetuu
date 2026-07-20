@@ -110,7 +110,7 @@ export async function POST(req: Request) {
                   <a href="${baseUrl}/front-pages/offer/${offer.slug}" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">Claim Special Offer</a>
                 </div>
                 <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 11px; text-align: center; line-height: 1.4;">You received this email because you are a valued member of the Mandir Setu community.</p>
+                <p style="color: #94a3b8; font-size: 11px; text-align: center; line-height: 1.4;">You received this email because you are a valued member of the Mandirsetuu community.</p>
               </div>
             `
           })

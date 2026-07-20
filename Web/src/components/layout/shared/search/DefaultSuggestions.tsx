@@ -22,7 +22,7 @@ type DefaultSuggestionsType = {
 
 const defaultSuggestions: DefaultSuggestionsType[] = [
   {
-    sectionLabel: 'Mandir Setu',
+    sectionLabel: 'Mandirsetuu',
     items: [
       {
         label: 'Dashboard',

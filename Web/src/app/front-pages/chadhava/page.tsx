@@ -39,40 +39,7 @@ type ChadhavaItem = {
 }
 
 // Fallback used only if the database has no Chadhava listings yet (e.g. before seeding).
-const FALLBACK_LISTINGS: ChadhavaItem[] = [
-  {
-    id: 'c1',
-    title: 'Maha Shringar & Aarti Chadhava',
-    temple: 'Kashi Vishwanath Temple, Varanasi',
-    description: 'Offer a complete shringar puja to Lord Shiva with flowers, bilva patra, and special bhog.',
-    price: 1101,
-    image: '/images/devotional/kashi.jpg'
-  },
-  {
-    id: 'c2',
-    title: 'Sindoor Archana & Durva Chadhava',
-    temple: 'Siddhivinayak Temple, Mumbai',
-    description: 'Perform Sindoor Archana to Lord Ganesha for removing all obstacles from your life path.',
-    price: 501,
-    image: '/images/devotional/siddhivinayak.jpg'
-  },
-  {
-    id: 'c3',
-    title: 'Panchamrit Abhishek Chadhava',
-    temple: 'Mahakaleshwar Jyotirlinga, Ujjain',
-    description: 'Sacred milk, honey, ghee, sugar and curd offering performed on your behalf by temple priests.',
-    price: 2101,
-    image: '/images/devotional/mahakaleshwar.jpg'
-  },
-  {
-    id: 'c4',
-    title: 'Maha Bhog & Prasad Offering',
-    temple: 'Banke Bihari Temple, Vrindavan',
-    description: 'Laddoo and peda offering to Lord Krishna. Prasad delivered to your doorstep.',
-    price: 851,
-    image: '/images/devotional/rammandir.jpg'
-  }
-]
+const FALLBACK_LISTINGS: ChadhavaItem[] = []
 
 const ChadhavaPage = () => {
   const { addToCart } = useCart()

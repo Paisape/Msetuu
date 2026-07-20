@@ -276,7 +276,7 @@ return res.json()
                         {
                           question: 'Are your gemstones and rudrakshas certified?',
                           answer:
-                            'Yes, every gemstone and rudraksha bead sold on Mandir Setu is accompanied by an authenticity certificate from government-approved independent gemological laboratories.'
+                            'Yes, every gemstone and rudraksha bead sold on Mandirsetuu is accompanied by an authenticity certificate from government-approved independent gemological laboratories.'
                         },
                         {
                           question: "What does it mean for an item to be 'energized'?",

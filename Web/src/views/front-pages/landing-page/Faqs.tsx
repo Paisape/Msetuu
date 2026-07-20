@@ -44,7 +44,7 @@ const FaqsData: FaqsDataTypes[] = [
     id: 'panel3',
     question: 'Are the gemstones and items authentic?',
     answer:
-      'Absolutely. All gemstones, bracelets, and Rudraksha beads sold on Mandir Setu are certified by government-recognized gemological laboratories. They are energized by Vedic rituals before shipment and come with a physical certificate.'
+      'Absolutely. All gemstones, bracelets, and Rudraksha beads sold on Mandirsetuu are certified by government-recognized gemological laboratories. They are energized by Vedic rituals before shipment and come with a physical certificate.'
   },
   {
     id: 'panel4',

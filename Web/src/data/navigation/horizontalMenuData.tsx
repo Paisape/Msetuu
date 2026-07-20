@@ -4,7 +4,7 @@ import type { getDictionary } from '@/utils/getDictionary'
 
 const horizontalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>>): HorizontalMenuDataType[] => [
   {
-    label: 'Mandir Setu',
+    label: 'Mandirsetuu',
     icon: 'tabler-building-temple',
     children: [
       { label: 'Dashboard', href: '/apps/mandir-setu' },

@@ -134,7 +134,7 @@ const ContactUs = () => {
                     <div>
                       <Typography variant='body2' style={{ color: '#6b7280' }}>Email</Typography>
                       <Typography className='font-medium' style={{ color: '#1e293b' }}>
-                        support@mandirsetuu.in
+                        admin@mandirsetuu.com
                       </Typography>
                     </div>
                   </div>

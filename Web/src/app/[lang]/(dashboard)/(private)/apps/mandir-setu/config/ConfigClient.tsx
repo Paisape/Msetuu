@@ -39,10 +39,10 @@ const EMAIL_FIELDS: FieldMeta[] = [
   { key: 'SMTP_HOST', label: 'SMTP Host', secret: false, placeholder: 'smtp.zoho.in' },
   { key: 'SMTP_PORT', label: 'SMTP Port', secret: false, placeholder: '465' },
   { key: 'SMTP_SECURE', label: 'Use SSL (true / false)', secret: false, placeholder: 'true' },
-  { key: 'SMTP_USER', label: 'SMTP Username', secret: false, placeholder: 'info@mandirsetuu.in' },
+  { key: 'SMTP_USER', label: 'SMTP Username', secret: false, placeholder: 'admin@mandirsetuu.com' },
   { key: 'SMTP_PASSWORD', label: 'SMTP Password', secret: true },
   { key: 'SMTP_FROM_NAME', label: 'From Name', secret: false, placeholder: 'Mandirsetuu' },
-  { key: 'SMTP_FROM_EMAIL', label: 'From Email', secret: false, placeholder: 'info@mandirsetuu.in' }
+  { key: 'SMTP_FROM_EMAIL', label: 'From Email', secret: false, placeholder: 'admin@mandirsetuu.com' }
 ]
 
 const SMS_FIELDS: FieldMeta[] = [

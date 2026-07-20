@@ -60,7 +60,8 @@ async function getTransporter(): Promise<{ transporter: nodemailer.Transporter; 
 export async function sendViaSmtp(
   to: string,
   subject: string,
-  html: string
+  html: string,
+  text?: string
 ): Promise<{ sent: true; id?: string } | { sent: false; reason: string }> {
   const resolved = await getTransporter()
 
@@ -69,7 +70,7 @@ export async function sendViaSmtp(
   }
 
   try {
-    const info = await resolved.transporter.sendMail({ from: resolved.from, to, subject, html })
+    const info = await resolved.transporter.sendMail({ from: resolved.from, to, subject, html, text })
 
     return { sent: true, id: info.messageId }
   } catch (err) {

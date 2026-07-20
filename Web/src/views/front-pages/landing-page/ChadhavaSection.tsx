@@ -15,32 +15,7 @@ import { effectivePrice, hasOfferDiscount } from '@/libs/pricing'
 // Fallback used only if the database has no Chadhava listings yet (e.g. before seeding). No
 // `id` here — "View Details" falls back to the listing page for these since there's no real
 // detail page to link to.
-const FALLBACK_TEMPLES: { id?: string; name: string; location: string; offering: string; price: number; offerPrice: number | null; image: string }[] = [
-  {
-    name: 'Kashi Vishwanath Temple',
-    location: 'Varanasi, UP',
-    offering: 'Rudrabhishek Shringar & Bhog Chadhava',
-    price: 1101,
-    offerPrice: null,
-    image: '/images/devotional/kashi.jpg'
-  },
-  {
-    name: 'Siddhivinayak Temple',
-    location: 'Mumbai, Maharashtra',
-    offering: 'Modak Bhog & Durva Offering',
-    price: 501,
-    offerPrice: null,
-    image: '/images/devotional/siddhivinayak.jpg'
-  },
-  {
-    name: 'Mahakaleshwar Jyotirlinga',
-    location: 'Ujjain, MP',
-    offering: 'Bhasma Aarti Abhishek & Shringar',
-    price: 2101,
-    offerPrice: null,
-    image: '/images/devotional/mahakaleshwar.jpg'
-  }
-]
+const FALLBACK_TEMPLES: { id?: string; name: string; location: string; offering: string; price: number; offerPrice: number | null; image: string }[] = []
 
 const ChadhavaSection = () => {
   const [temples, setTemples] = useState(FALLBACK_TEMPLES)

@@ -23,6 +23,7 @@ export type CartItem = {
 export type CheckoutResult = {
   success: boolean
   errors?: string[]
+  orderIds?: string[]
 }
 
 type CartContextType = {
@@ -127,6 +128,7 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
     }
 
     const errors: string[] = []
+    const successfulOrderIds: string[] = []
 
     for (const item of cart) {
       const d = item.details || {}
@@ -220,7 +222,7 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
               key,
               amount,
               currency,
-              name: 'Mandir Setu',
+              name: 'Mandirsetuu',
               description: `Payment for ${item.name}`,
               order_id: rzpOrderId,
               prefill: {
@@ -245,6 +247,7 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
                   if (!verifyRes.ok) {
                     reject(new Error(verifyData?.error || 'Payment signature verification failed.'))
                   } else {
+                    successfulOrderIds.push(orderId)
                     resolve()
                   }
                 } catch (err) {
@@ -269,9 +272,7 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
 
     if (errors.length === 0) {
       clearCart()
-      setCartOpen(false)
-      
-return { success: true }
+      return { success: true, orderIds: successfulOrderIds }
     }
 
     return { success: false, errors }

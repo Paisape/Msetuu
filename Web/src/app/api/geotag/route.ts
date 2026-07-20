@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/geotag — logged-in user shares a geo-tagged (Mandir Setu logo overlaid) photo.
+// POST /api/geotag — logged-in user shares a geo-tagged (Mandirsetuu logo overlaid) photo.
 // The actual image file should first be uploaded via POST /api/upload to obtain `imageUrl`.
 export async function POST(req: Request) {
   try {

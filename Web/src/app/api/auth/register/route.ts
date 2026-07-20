@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/libs/prisma'
 import { sendEmail } from '@/libs/email'
 import { welcomeVerificationEmail } from '@/libs/emailTemplates'
+import { logActivity } from '@/libs/activityLog'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -57,6 +58,14 @@ export async function POST(req: Request) {
     const { subject, html } = welcomeVerificationEmail({ customerName: name, otp })
 
     sendEmail({ to: email, subject, html }).catch(console.error)
+
+    await logActivity({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      action: 'REGISTER',
+      details: 'New user account created successfully.'
+    })
 
     return NextResponse.json({ user, requireVerification: true }, { status: 201 })
   } catch (err: any) {

@@ -81,6 +81,7 @@ const JyotishPage = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
   const [formData, setFormData] = useState(emptyForm())
   const [success, setSuccess] = useState(false)
+  const [bookedId, setBookedId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -238,6 +239,7 @@ const JyotishPage = () => {
                 throw new Error(verifyData?.error || 'Payment signature verification failed.')
               }
 
+              setBookedId(data.booking.id)
               setSuccess(true)
               setFormData(emptyForm())
             } catch (err) {
@@ -251,6 +253,7 @@ const JyotishPage = () => {
           }
         })
       } else {
+        setBookedId(data.booking.id)
         setSuccess(true)
         setFormData(emptyForm())
         setSubmitting(false)
@@ -285,8 +288,9 @@ const JyotishPage = () => {
         <Card className='galaxy-card p-6 md:p-10'>
           {success ? (
             <Alert severity='success'>
-              Your consultation request has been booked successfully! A confirmation email with your booking
-              details has been sent to you. Our astrologer will connect with you at your preferred slot.
+              Your consultation request has been booked successfully! <strong>Booking ID: {bookedId}</strong>.
+              A confirmation email with your booking details has been sent to you.
+              Our astrologer will connect with you at your preferred slot.
             </Alert>
           ) : (
             <form onSubmit={handleSubmit}>

@@ -15,32 +15,7 @@ import { effectivePrice, hasOfferDiscount } from '@/libs/pricing'
 // Fallback used only if the database has no E-Puja listings yet (e.g. before seeding). No `id`
 // here — "View Details" falls back to the listing page for these since there's no real detail
 // page to link to.
-const FALLBACK_PUJAS: { id?: string; name: string; category: string; offering: string; price: number; offerPrice: number | null; image: string }[] = [
-  {
-    name: 'Maha Mrityunjaya Homa',
-    category: 'Mahadev',
-    offering: 'Vedic ritual for health, longevity, and protection from negative energies.',
-    price: 2100,
-    offerPrice: null,
-    image: '/images/devotional/mahakaleshwar.jpg'
-  },
-  {
-    name: 'Ganesha Atharvashirsha & Abhishek',
-    category: 'Ganesha',
-    offering: 'Clears business blockages and invokes wisdom and success.',
-    price: 1100,
-    offerPrice: null,
-    image: '/images/devotional/siddhivinayak.jpg'
-  },
-  {
-    name: 'Kanakadhara Stotram & Lakshmi Havan',
-    category: 'Lakshmi',
-    offering: 'Wealth enhancement ritual invoking Goddess Lakshmi.',
-    price: 1500,
-    offerPrice: null,
-    image: '/images/devotional/kashi.jpg'
-  }
-]
+const FALLBACK_PUJAS: { id?: string; name: string; category: string; offering: string; price: number; offerPrice: number | null; image: string }[] = []
 
 const EPujaSection = () => {
   const [pujas, setPujas] = useState(FALLBACK_PUJAS)

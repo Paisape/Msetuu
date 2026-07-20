@@ -43,56 +43,7 @@ type PujaListing = {
 }
 
 // Fallback used only if the database has no E-Puja listings yet (e.g. before seeding).
-const FALLBACK_LISTINGS: PujaListing[] = [
-  {
-    id: 'p1',
-    title: 'Maha Mrityunjaya Homa',
-    category: 'Mahadev',
-    description: 'Powerful Vedic ritual dedicated to Lord Shiva to pray for health, longevity, and ward off negative energies.',
-    image: '/images/devotional/mahakaleshwar.jpg',
-    packages: [
-      { id: 'p1-single', type: 'Single', price: 2100 },
-      { id: 'p1-couple', type: 'Couple', price: 3500 },
-      { id: 'p1-family', type: 'Family', price: 5100 }
-    ]
-  },
-  {
-    id: 'p2',
-    title: 'Ganesha Atharvashirsha & Abhishek',
-    category: 'Ganesha',
-    description: 'Performed at ancient Ganesha shrine to receive wisdom, clear business blockages, and get dynamic success.',
-    image: '/images/devotional/siddhivinayak.jpg',
-    packages: [
-      { id: 'p2-single', type: 'Single', price: 1100 },
-      { id: 'p2-couple', type: 'Couple', price: 1800 },
-      { id: 'p2-family', type: 'Family', price: 2700 }
-    ]
-  },
-  {
-    id: 'p3',
-    title: 'Kanakadhara Stotram & Lakshmi Havan',
-    category: 'Lakshmi',
-    description: 'Wealth enhancement ritual to invoke Goddess Lakshmi and attract financial growth and stable fortune.',
-    image: '/images/devotional/kashi.jpg',
-    packages: [
-      { id: 'p3-single', type: 'Single', price: 1500 },
-      { id: 'p3-couple', type: 'Couple', price: 2500 },
-      { id: 'p3-family', type: 'Family', price: 3600 }
-    ]
-  },
-  {
-    id: 'p4',
-    title: 'Navgrah Shanti Homa',
-    category: 'Durga',
-    description: 'Pacify negative astrological impacts of all 9 planetary deities and align health and peace charts.',
-    image: '/images/devotional/rammandir.jpg',
-    packages: [
-      { id: 'p4-single', type: 'Single', price: 1800 },
-      { id: 'p4-couple', type: 'Couple', price: 3000 },
-      { id: 'p4-family', type: 'Family', price: 4500 }
-    ]
-  }
-]
+const FALLBACK_LISTINGS: PujaListing[] = []
 
 const findPackage = (item: PujaListing | null, type: string) =>
   item?.packages.find(p => p.type.toLowerCase() === type.toLowerCase()) || null

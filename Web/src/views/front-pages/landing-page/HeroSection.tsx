@@ -13,24 +13,23 @@ import classnames from 'classnames'
 import styles from './styles.module.css'
 import frontCommonStyles from '@views/front-pages/styles.module.css'
 
+type Slide = {
+  title: string
+  subtitle: string
+  image: string
+  buttonText?: string
+  buttonLink?: string
+  buttonText2?: string
+  buttonLink2?: string
+}
+
 // Fallback used only if the database has no "home" banners yet (e.g. before seeding),
 // so the hero section never renders empty.
-const FALLBACK_SLIDES = [
-  {
-    title: 'Connect with Auspicious Divinity',
-    subtitle:
-      'Book E-Pujas, offer Chadhava at sacred ancient temples, consult verified Vedic Astrologers, and order handcrafted Janam Kundli with ease.',
-    buttonText: 'Book an E-Puja Now',
-    buttonLink: '/front-pages/epuja',
-    buttonText2: 'Remedial Store',
-    buttonLink2: '/front-pages/ecommerce',
-    image: '/images/devotional/hero.jpg'
-  }
-]
+const FALLBACK_SLIDES: Slide[] = []
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [slides, setSlides] = useState(FALLBACK_SLIDES)
+  const [slides, setSlides] = useState<Slide[]>(FALLBACK_SLIDES)
 
   useEffect(() => {
     fetch('/api/banners?page=home')
@@ -47,6 +46,8 @@ const HeroSection = () => {
   }, [])
 
   const activeSlide = slides[currentSlide] ?? slides[0]
+
+  if (!activeSlide) return null
 
   // Slide rotation logic
   useEffect(() => {

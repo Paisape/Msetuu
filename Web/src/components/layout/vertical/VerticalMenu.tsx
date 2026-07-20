@@ -81,7 +81,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
 
-        <MenuSection label='Mandir Setu'>
+        <MenuSection label='Mandirsetuu'>
           <MenuItem href={`/${locale}/apps/mandir-setu`} icon={<i className='tabler-building-temple' />}>
             Dashboard
           </MenuItem>

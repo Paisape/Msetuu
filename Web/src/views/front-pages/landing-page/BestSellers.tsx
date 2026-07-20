@@ -26,18 +26,7 @@ type BestSellerProduct = Priced & {
 // Fallback used only if the database has no Best Seller products yet (e.g. before seeding). No
 // real `id` here (it's not a real product row) — "View Details" falls back to the store listing
 // page for these instead of a broken detail-page link.
-const FALLBACK_PRODUCTS: BestSellerProduct[] = [
-  {
-    id: '',
-    name: 'Metal Dhan Yog Bracelet for Women',
-    price: 1400,
-    offerPrice: 899,
-    rating: 5.0,
-    reviews: 1654,
-    image: '/images/devotional/love.jpg',
-    purpose: 'Wealth & Prosperity'
-  }
-]
+const FALLBACK_PRODUCTS: BestSellerProduct[] = []
 
 const BestSellers = () => {
   const { addToCart } = useCart()

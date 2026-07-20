@@ -48,7 +48,7 @@ const ContentManagementModulePage = async (props: Props) => {
             Access denied
           </Typography>
           <Typography className='text-textSecondary'>
-            This console is only available to Mandir Setu administrators.
+            This console is only available to Mandirsetuu administrators.
           </Typography>
         </Card>
       </div>

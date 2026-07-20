@@ -35,40 +35,7 @@ type DisplayReview = {
 
 // Shown only until real APPROVED reviews exist in the database (empty state before any customer
 // has reviewed a completed order) — never mixed with real reviews.
-const FALLBACK_REVIEWS: DisplayReview[] = [
-  {
-    desc: "I booked a Puja at Kedarnath Temple through Mandir Setu. The live video of the pandit ji chanting my name and gotra was so emotional. Highly recommended!",
-    label: 'E-Puja Blessing',
-    rating: 5,
-    name: 'Vikram Malhotra',
-    position: 'Delhi, India',
-    avatarSrc: '/images/avatars/1.png'
-  },
-  {
-    desc: 'The Handcrafted Kundli prepared by Pandit Ramesh ji was extremely detailed. The tracking of the courier was smooth, and the scanned copy was emailed immediately.',
-    label: 'Kundli Order',
-    rating: 5,
-    name: 'Meenakshi Iyer',
-    position: 'Chennai, India',
-    avatarSrc: '/images/avatars/2.png'
-  },
-  {
-    desc: "Amazing astrology advice! Pandit Shastri guided me on my career path and suggested Vastu changes that completely transformed my business prospects.",
-    label: 'Jyotish Advice',
-    rating: 5,
-    name: 'Sanjeev Goel',
-    position: 'Mumbai, India',
-    avatarSrc: '/images/avatars/3.png'
-  },
-  {
-    desc: "Ordered Siddhivinayak Modak Bhog Chadhava. The packaging of Prasad was top-notch, and they also sent an energized rudraksha as a gift. Har Har Mahadev!",
-    label: 'Chadhava Offering',
-    rating: 5,
-    name: 'Aanya Sharma',
-    position: 'Pune, India',
-    avatarSrc: '/images/avatars/4.png'
-  }
-]
+const FALLBACK_REVIEWS: DisplayReview[] = []
 
 const ORDER_TYPE_LABELS: Record<string, string> = {
   CHADHAVA: 'Chadhava Offering',

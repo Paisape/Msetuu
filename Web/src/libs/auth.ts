@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
          * For e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
          * You can also use the `req` object to obtain additional parameters (i.e., the request IP address)
          */
-        const { email, password } = credentials as { email: string; password: string }
+        const { email, password, otp } = credentials as { email: string; password: string; otp?: string }
 
         try {
           // ** Login API Call to match the user credentials and receive user data in response along with his role
@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, otp })
           })
 
           const data = await res.json()

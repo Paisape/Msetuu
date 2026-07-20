@@ -48,7 +48,7 @@ const Footer = ({ mode }: { mode: Mode }) => {
                   <Logo color='var(--mui-palette-common-white)' />
                 </Link>
                 <Typography color='white' className='md:max-is-[390px] opacity-[0.78]'>
-                  Mandir Setu - Your sacred connection to E-Puja, Chadhava, Astrology consultations, and Handcrafted Kundli services.
+                  Mandirsetuu - Your sacred connection to E-Puja, Chadhava, Astrology consultations, and Handcrafted Kundli services.
                 </Typography>
                 <div className='flex items-end'>
                   <CustomTextField
@@ -118,6 +118,15 @@ const Footer = ({ mode }: { mode: Mode }) => {
                 <Typography component={Link} href='/front-pages/contact' color='white' className='opacity-[0.78]'>
                   Contact Us
                 </Typography>
+                <Typography component={Link} href='/front-pages/privacy-policy' color='white' className='opacity-[0.78]'>
+                  Privacy Policy
+                </Typography>
+                <Typography component={Link} href='/front-pages/refund-policy' color='white' className='opacity-[0.78]'>
+                  Refund Policy
+                </Typography>
+                <Typography component={Link} href='/front-pages/return-policy' color='white' className='opacity-[0.78]'>
+                  Return Policy
+                </Typography>
               </div>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -164,7 +173,7 @@ const Footer = ({ mode }: { mode: Mode }) => {
           )}
         >
           <Typography className='text-white' variant='body2'>
-            <span>{`© ${new Date().getFullYear()} Mandir Setu. All rights reserved.`}</span>
+            <span>{`© ${new Date().getFullYear()} Mandirsetuu. All rights reserved.`}</span>
           </Typography>
           <div className='flex gap-1.5 items-center'>
             <IconButton component={Link} size='small' href='https://github.com/pixinvent' target='_blank'>

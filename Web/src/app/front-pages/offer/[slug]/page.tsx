@@ -63,6 +63,7 @@ export default function OfferLandingPage() {
 
   const [bookingSubmitting, setBookingSubmitting] = useState(false)
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [successOrderId, setSuccessOrderId] = useState('')
   const [bookingError, setBookingError] = useState<string | null>(null)
 
   // Load offer details & log visit
@@ -222,7 +223,7 @@ return
           key: razorpayOrder.key,
           amount: razorpayOrder.amount,
           currency: razorpayOrder.currency,
-          name: 'Mandir Setu Promotion',
+          name: 'Mandirsetuu Promotion',
           description: `Payment for ${offer?.title}`,
           order_id: razorpayOrder.id,
           prefill: {
@@ -264,6 +265,7 @@ return
         })
       })
 
+      setSuccessOrderId(order.id)
       setBookingSuccess(true)
       setFormData({ name: '', email: '', phone: '', comment: '' })
       setDevotees([{ name: '', gotra: '' }])
@@ -453,7 +455,7 @@ return (
             <DialogContent className='py-6 flex flex-col gap-5'>
               {bookingSuccess ? (
                 <Alert severity='success' className='py-4'>
-                  Congratulations! Your special offer booking has been paid and confirmed. You will receive a receipt via email shortly.
+                  Congratulations! Your special offer booking has been paid and confirmed. <strong>Order ID: {successOrderId}</strong>. You will receive a receipt via email shortly.
                 </Alert>
               ) : (
                 <>

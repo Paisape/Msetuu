@@ -17,6 +17,8 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
 
 // Third-party Imports
 import { signIn } from 'next-auth/react'
@@ -88,6 +90,9 @@ const Login = ({ mode }: { mode: SystemMode }) => {
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [errorState, setErrorState] = useState<ErrorType | null>(null)
+  const [showOtpField, setShowOtpField] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [precheckLoading, setPrecheckLoading] = useState(false)
 
   // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
@@ -129,11 +134,47 @@ const Login = ({ mode }: { mode: SystemMode }) => {
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
   const onSubmit: SubmitHandler<FormData> = async (data: FormData) => {
+    setErrorState(null)
+
+    if (!showOtpField) {
+      setPrecheckLoading(true)
+
+      try {
+        const res = await fetch('/api/auth/login-precheck', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email, password: data.password })
+        })
+
+        const checkData = await res.json().catch(() => null)
+        setPrecheckLoading(false)
+
+        if (!res.ok) {
+          setErrorState({ message: [checkData?.error || 'Invalid credentials'] })
+          return
+        }
+
+        if (checkData?.requireOtp) {
+          setShowOtpField(true)
+          return
+        }
+      } catch (err) {
+        setPrecheckLoading(false)
+        setErrorState({ message: ['Connection failure. Please try again.'] })
+        return
+      }
+    }
+
+    setPrecheckLoading(true)
+
     const res = await signIn('credentials', {
       email: data.email,
       password: data.password,
+      otp: showOtpField ? otp : undefined,
       redirect: false
     })
+
+    setPrecheckLoading(false)
 
     if (res && res.ok && res.error === null) {
       // Vars
@@ -184,84 +225,129 @@ const Login = ({ mode }: { mode: SystemMode }) => {
             onSubmit={handleSubmit(onSubmit)}
             className='flex flex-col gap-6'
           >
-            <Controller
-              name='email'
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
+            {showOtpField ? (
+              <Box className='flex flex-col gap-6'>
+                <Typography variant='body2' className='text-slate-400'>
+                  Please enter the 6-digit verification code sent to your email to verify your identity.
+                </Typography>
                 <CustomTextField
-                  {...field}
                   autoFocus
                   fullWidth
-                  type='email'
-                  label='Email'
-                  placeholder='Enter your email'
+                  label='Verification Code'
+                  placeholder='Enter 6-digit OTP'
+                  value={otp}
                   onChange={e => {
-                    field.onChange(e.target.value)
+                    setOtp(e.target.value.trim())
                     errorState !== null && setErrorState(null)
                   }}
-                  {...((errors.email || errorState !== null) && {
+                  {...(errorState !== null && {
                     error: true,
-                    helperText: errors?.email?.message || errorState?.message[0]
+                    helperText: errorState?.message[0]
                   })}
                 />
-              )}
-            />
-            <Controller
-              name='password'
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <CustomTextField
-                  {...field}
+                <Button
                   fullWidth
-                  label='Password'
-                  placeholder='············'
-                  id='login-password'
-                  type={isPasswordShown ? 'text' : 'password'}
-                  onChange={e => {
-                    field.onChange(e.target.value)
-                    errorState !== null && setErrorState(null)
+                  variant='contained'
+                  type='submit'
+                  disabled={precheckLoading}
+                >
+                  {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Verify & Log In'}
+                </Button>
+                <Button
+                  fullWidth
+                  variant='text'
+                  color='secondary'
+                  onClick={() => {
+                    setShowOtpField(false)
+                    setOtp('')
+                    setErrorState(null)
                   }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position='end'>
-                          <IconButton
-                            edge='end'
-                            onClick={handleClickShowPassword}
-                            onMouseDown={e => e.preventDefault()}
-                          >
-                            <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                  {...(errors.password && { error: true, helperText: errors.password.message })}
+                >
+                  Go Back
+                </Button>
+              </Box>
+            ) : (
+              <>
+                <Controller
+                  name='email'
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <CustomTextField
+                      {...field}
+                      autoFocus
+                      fullWidth
+                      type='email'
+                      label='Email'
+                      placeholder='Enter your email'
+                      onChange={e => {
+                        field.onChange(e.target.value)
+                        errorState !== null && setErrorState(null)
+                      }}
+                      {...((errors.email || errorState !== null) && {
+                        error: true,
+                        helperText: errors?.email?.message || errorState?.message[0]
+                      })}
+                    />
+                  )}
                 />
-              )}
-            />
-            <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
-              <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
-              <Typography
-                className='text-end'
-                color='primary.main'
-                component={Link}
-                href={getLocalizedUrl('/forgot-password', locale as Locale)}
-              >
-                Forgot password?
-              </Typography>
-            </div>
-            <Button fullWidth variant='contained' type='submit'>
-              Login
-            </Button>
-            <div className='flex justify-center items-center flex-wrap gap-2'>
-              <Typography>New on our platform?</Typography>
-              <Typography component={Link} href={getLocalizedUrl('/register', locale as Locale)} color='primary.main'>
-                Create an account
-              </Typography>
-            </div>
+                <Controller
+                  name='password'
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <CustomTextField
+                      {...field}
+                      fullWidth
+                      label='Password'
+                      placeholder='············'
+                      id='login-password'
+                      type={isPasswordShown ? 'text' : 'password'}
+                      onChange={e => {
+                        field.onChange(e.target.value)
+                        errorState !== null && setErrorState(null)
+                      }}
+                      slotProps={{
+                        input: {
+                          endAdornment: (
+                            <InputAdornment position='end'>
+                              <IconButton
+                                edge='end'
+                                onClick={handleClickShowPassword}
+                                onMouseDown={e => e.preventDefault()}
+                              >
+                                <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
+                              </IconButton>
+                            </InputAdornment>
+                          )
+                        }
+                      }}
+                      {...(errors.password && { error: true, helperText: errors.password.message })}
+                    />
+                  )}
+                />
+                <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
+                  <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
+                  <Typography
+                    className='text-end'
+                    color='primary.main'
+                    component={Link}
+                    href={getLocalizedUrl('/forgot-password', locale as Locale)}
+                  >
+                    Forgot password?
+                  </Typography>
+                </div>
+                <Button fullWidth variant='contained' type='submit' disabled={precheckLoading}>
+                  {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Login'}
+                </Button>
+                <div className='flex justify-center items-center flex-wrap gap-2'>
+                  <Typography>New on our platform?</Typography>
+                  <Typography component={Link} href={getLocalizedUrl('/register', locale as Locale)} color='primary.main'>
+                    Create an account
+                  </Typography>
+                </div>
+              </>
+            )}
             <Divider className='gap-2'>or</Divider>
             <Button
               color='secondary'

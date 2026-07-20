@@ -103,7 +103,7 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
           <div className='flex justify-between items-start mb-8 flex-wrap gap-4'>
             <div>
               <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
-                Mandir Setu
+                Mandirsetuu
               </Typography>
               <Typography variant='body2' className='text-textSecondary'>
                 GST Invoice

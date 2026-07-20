@@ -42,7 +42,7 @@ const DashboardClient = () => {
   return (
     <div className='p-6'>
       <Typography variant='h4' className='font-bold mb-1'>
-        Mandir Setu — Dashboard
+        Mandirsetuu — Dashboard
       </Typography>
       <Typography variant='body2' className='text-textSecondary mb-6'>
         Overview across all modules. Use the Orders menu for day-to-day order management.

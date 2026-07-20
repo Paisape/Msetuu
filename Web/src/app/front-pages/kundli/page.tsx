@@ -77,6 +77,7 @@ const KundliPage = () => {
   })
 
   const [success, setSuccess] = useState(false)
+  const [orderId, setOrderId] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -164,7 +165,7 @@ const KundliPage = () => {
         key: data.razorpayOrder.key,
         amount: data.razorpayOrder.amount,
         currency: data.razorpayOrder.currency,
-        name: 'Mandir Setu',
+        name: 'Mandirsetuu',
         description: `Order Kundli — ${selectedType?.title}`,
         order_id: data.razorpayOrder.id,
         prefill: {
@@ -194,6 +195,7 @@ const KundliPage = () => {
               throw new Error(verifyData?.error || 'Payment signature verification failed.')
             }
 
+            setOrderId(data.order.id)
             setSuccess(true)
           } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Signature verification failed.')
@@ -300,7 +302,7 @@ const KundliPage = () => {
             <DialogContent className='py-6 flex flex-col gap-5'>
               {success ? (
                 <Alert severity='success'>
-                  Janam Kundli Order Placed! We will share details with Pandit ji. A scan copy PDF and courier tracking number will be shared soon.
+                  Janam Kundli Order Placed successfully! <strong>Order ID: {orderId}</strong>. We will share details with Pandit ji. A scan copy PDF and courier tracking number will be shared soon.
                 </Alert>
               ) : (
                 <>
