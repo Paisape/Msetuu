@@ -13,7 +13,8 @@ async function main() {
       name: 'Mandirsetuu Admin',
       email: adminEmail,
       password: await bcrypt.hash(adminPassword, 12),
-      role: 'ADMIN'
+      role: 'ADMIN',
+      emailVerified: new Date()
     }
   })
 
@@ -438,6 +439,59 @@ async function main() {
       rating: 5,
       comment: 'Siddhivinayak temple chadhava was done beautifully. Got the prasadam delivered safely to my home.',
       status: 'APPROVED'
+    }
+  })
+
+  // Seed default mantras
+  await prisma.mantra.upsert({
+    where: { id: 'seed-mantra-gayatri' },
+    update: {},
+    create: {
+      id: 'seed-mantra-gayatri',
+      title: 'Gayatri Mantra',
+      subtitle: 'Sacred chant for wisdom, light, and spiritual enlightenment.',
+      fileUrl: '/audio/mantras/sounovamusic-gayatri-mantra-493174.mp3',
+      duration: '4:57',
+      deity: 'Goddess Gayatri'
+    }
+  })
+
+  await prisma.mantra.upsert({
+    where: { id: 'seed-mantra-mahamrityunjaya' },
+    update: {},
+    create: {
+      id: 'seed-mantra-mahamrityunjaya',
+      title: 'Mahamrityunjaya Mantra',
+      subtitle: 'Powerful verse dedicated to Lord Shiva for healing and protection.',
+      fileUrl: '/audio/mantras/mahamrityunjaya.mp3',
+      duration: '0:31',
+      deity: 'Lord Shiva'
+    }
+  })
+
+  await prisma.mantra.upsert({
+    where: { id: 'seed-mantra-hanuman' },
+    update: {},
+    create: {
+      id: 'seed-mantra-hanuman',
+      title: 'Om Hanumate Namaha',
+      subtitle: 'Auspicious chant for strength, courage, and removing obstacles.',
+      fileUrl: '/audio/mantras/kalsstockmedia-om-hanumate-namaha-short-audio-447279.mp3',
+      duration: '0:50',
+      deity: 'Lord Hanuman'
+    }
+  })
+
+  await prisma.mantra.upsert({
+    where: { id: 'seed-mantra-shiva-dhun' },
+    update: {},
+    create: {
+      id: 'seed-mantra-shiva-dhun',
+      title: 'Shiv Dhun (Monday)',
+      subtitle: 'Devotional Shiva dhun perfect for peace and Monday prayers.',
+      fileUrl: '/audio/mantras/Monday.mp3',
+      duration: '2:52',
+      deity: 'Lord Shiva'
     }
   })
 

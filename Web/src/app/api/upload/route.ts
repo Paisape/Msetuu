@@ -29,7 +29,9 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/mp4',
   'video/webm',
   'video/quicktime',
-  'application/pdf' // Kundli scan copies are often scanned as PDF
+  'application/pdf', // Kundli scan copies are often scanned as PDF
+  'audio/mpeg',
+  'audio/mp3'
 ])
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50MB, checked against the original upload
@@ -123,7 +125,9 @@ function guessExtension(mimeType: string): string {
     'video/mp4': '.mp4',
     'video/webm': '.webm',
     'video/quicktime': '.mov',
-    'application/pdf': '.pdf'
+    'application/pdf': '.pdf',
+    'audio/mpeg': '.mp3',
+    'audio/mp3': '.mp3'
   }
 
   return map[mimeType] ?? ''

@@ -27,7 +27,7 @@ import IconButton from '@mui/material/IconButton'
 export type FieldConfig = {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'number' | 'boolean' | 'image' | 'select'
+  type: 'text' | 'textarea' | 'number' | 'boolean' | 'image' | 'select' | 'audio'
   required?: boolean
   options?: { value: string; label: string }[]
   defaultValue?: unknown
@@ -384,6 +384,45 @@ const EntityManager = ({ title, listUrl, itemUrl, fields, columns, emptyMessage,
                     )}
                   </div>
                   {value && <img src={value} alt='' className='h-20 w-20 object-cover rounded' />}
+                </div>
+              )
+            }
+
+            if (field.type === 'audio') {
+              const sizeInfo = uploadSizeInfo[field.key]
+
+              return (
+                <div key={field.key} className='flex flex-col gap-2'>
+                  <TextField
+                    label={field.label}
+                    placeholder='https://...'
+                    fullWidth
+                    value={value ?? ''}
+                    onChange={e => handleFieldChange(field.key, e.target.value)}
+                  />
+                  <div className='flex items-center gap-2 flex-wrap'>
+                    <Button component='label' variant='outlined' size='small' disabled={uploadingKey === field.key}>
+                      {uploadingKey === field.key ? <CircularProgress size={16} /> : `Or upload an audio file for ${field.label}`}
+                      <input
+                        type='file'
+                        accept='audio/*'
+                        hidden
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+
+                          if (file) handleFileUpload(field, file)
+                        }}
+                      />
+                    </Button>
+                    {sizeInfo && (
+                      <Typography variant='caption' className='text-textSecondary'>
+                        {formatBytes(sizeInfo.original)} → {formatBytes(sizeInfo.final)}
+                      </Typography>
+                    )}
+                  </div>
+                  {value && (
+                    <audio src={value} controls className='w-full mt-2' />
+                  )}
                 </div>
               )
             }

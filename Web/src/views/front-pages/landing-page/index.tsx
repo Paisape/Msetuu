@@ -11,6 +11,7 @@ import HeroSection from './HeroSection'
 import ShopByPurpose from './ShopByPurpose'
 import ChadhavaSection from './ChadhavaSection'
 import EPujaSection from './EPujaSection'
+import MantraSection from './MantraSection'
 import BestSellers from './BestSellers'
 import CustomerReviews from './CustomerReviews'
 import Faqs from './Faqs'
@@ -40,6 +41,9 @@ const LandingPageWrapper = ({ mode }: { mode: SystemMode }) => {
 
       {/* Section 4: E-Puja Offerings */}
       <EPujaSection />
+
+      {/* Section 4.5: Divine Mantras */}
+      <MantraSection />
 
       {/* Section 5: Reviews */}
       <CustomerReviews />

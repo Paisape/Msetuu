@@ -48,7 +48,8 @@ const verticalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>>)
         label: 'Operation',
         icon: 'tabler-video',
         children: [
-          { label: 'Video Upload', href: '/apps/mandir-setu/operation/video-upload' }
+          { label: 'Video Upload', href: '/apps/mandir-setu/operation/video-upload' },
+          { label: 'Mantras', href: '/apps/mandir-setu/operation/mantra' }
         ]
       },
       {

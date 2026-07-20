@@ -15,6 +15,7 @@ import AppReactToastify from '@/libs/styles/AppReactToastify'
 import { getMode, getSettingsFromCookie, getSystemMode } from '@core/utils/serverHelpers'
 
 import { CartProvider } from '@/contexts/CartContext'
+import { MantraProvider } from '@/contexts/MantraContext'
 
 type Props = ChildrenType & {
   direction: Direction
@@ -35,9 +36,11 @@ const Providers = async (props: Props) => {
         <SettingsProvider settingsCookie={settingsCookie} mode={mode}>
           <ThemeProvider direction={direction} systemMode={systemMode}>
             <ReduxProvider>
-              <CartProvider>
-                {children}
-              </CartProvider>
+              <MantraProvider>
+                <CartProvider>
+                  {children}
+                </CartProvider>
+              </MantraProvider>
             </ReduxProvider>
             <AppReactToastify direction={direction} hideProgressBar />
           </ThemeProvider>

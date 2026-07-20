@@ -733,4 +733,14 @@ model ActivityLog {
   createdAt DateTime @default(now())
 }
 
+model Mantra {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String
+  fileUrl   String
+  duration  String
+  deity     String
+  createdAt DateTime @default(now())
+}
+
 
