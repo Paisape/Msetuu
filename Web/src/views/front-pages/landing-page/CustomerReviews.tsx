@@ -45,33 +45,12 @@ const ORDER_TYPE_LABELS: Record<string, string> = {
   ECOMMERCE: 'Product Review'
 }
 
-const CustomerReviews = () => {
-  const [data, setData] = useState<DisplayReview[]>(FALLBACK_REVIEWS)
+type ReviewsSliderProps = {
+  data: DisplayReview[]
+  onSliderInit: (instance: any) => void
+}
 
-  useEffect(() => {
-    fetch('/api/reviews?recent=1&limit=8')
-      .then(res => res.json())
-      .then((reviews: any[]) => {
-        if (Array.isArray(reviews)) {
-          const mapped = reviews
-            .filter(r => r.comment)
-            .map(r => ({
-              desc: r.comment,
-              label: ORDER_TYPE_LABELS[r.orderType] || r.targetTitle || 'Verified Purchase',
-              rating: r.rating,
-              name: r.customerName || 'Verified Customer',
-              position: 'Verified Purchase',
-              avatarSrc: '/images/avatars/1.png'
-            }))
-
-          if (mapped.length > 0) setData(mapped)
-        }
-      })
-      .catch(() => {
-        // Keep the fallback reviews on error
-      })
-  }, [])
-
+const ReviewsSlider = ({ data, onSliderInit }: { data: DisplayReview[]; onSliderInit: (instance: any) => void }) => {
   const [sliderRef, instanceRef] = useKeenSlider<HTMLDivElement>(
     {
       loop: true,
@@ -103,6 +82,77 @@ const CustomerReviews = () => {
     ]
   )
 
+  useEffect(() => {
+    if (instanceRef.current) {
+      onSliderInit(instanceRef.current)
+    }
+  }, [instanceRef.current, onSliderInit])
+
+  return (
+    <AppKeenSlider>
+      <div ref={sliderRef} className='keen-slider mbe-6'>
+        {data.map((item, index) => (
+          <div key={index} className='keen-slider__slide flex p-4 sm:p-3'>
+            <Card elevation={0} className='flex items-start border border-emerald-100 bg-white rounded-2xl shadow-sm w-full'>
+              <CardContent className='p-8 items-center mlb-auto w-full'>
+                <div className='flex flex-col gap-4 items-start'>
+                  <span
+                    className='text-sm font-bold px-3 py-1 rounded-full'
+                    style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
+                  >
+                    {item.label}
+                  </span>
+                  <Typography style={{ color: '#374151' }}>{item.desc}</Typography>
+                  <Rating value={item.rating} readOnly sx={{ '& .MuiRating-iconFilled': { color: '#f59e0b' } }} />
+                  <div className='flex items-center gap-x-3'>
+                    <CustomAvatar size={32} src={item.avatarSrc} alt={item.name} />
+                    <div className='flex flex-col items-start'>
+                      <Typography className='font-medium' style={{ color: '#0f172a' }}>
+                        {item.name}
+                      </Typography>
+                      <Typography variant='body2' style={{ color: '#6b7280' }}>
+                        {item.position}
+                      </Typography>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </div>
+    </AppKeenSlider>
+  )
+}
+
+const CustomerReviews = () => {
+  const [data, setData] = useState<DisplayReview[]>(FALLBACK_REVIEWS)
+  const [sliderInstance, setSliderInstance] = useState<any>(null)
+
+  useEffect(() => {
+    fetch('/api/reviews?recent=1&limit=8')
+      .then(res => res.json())
+      .then((reviews: any[]) => {
+        if (Array.isArray(reviews)) {
+          const mapped = reviews
+            .filter(r => r.comment)
+            .map(r => ({
+              desc: r.comment,
+              label: ORDER_TYPE_LABELS[r.orderType] || r.targetTitle || 'Verified Purchase',
+              rating: r.rating,
+              name: r.customerName || 'Verified Customer',
+              position: 'Verified Purchase',
+              avatarSrc: '/images/avatars/1.png'
+            }))
+
+          if (mapped.length > 0) setData(mapped)
+        }
+      })
+      .catch(() => {
+        // Keep the fallback reviews on error
+      })
+  }, [])
+
   return (
     <section className={classnames('flex flex-col gap-8 plb-[100px]', styles.sectionStartRadius)}
       style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)' }}>
@@ -133,14 +183,14 @@ const CustomerReviews = () => {
           <div className='flex gap-x-4 mbs-11'>
             <CustomIconButton
               variant='tonal'
-              onClick={() => instanceRef.current?.prev()}
+              onClick={() => sliderInstance?.prev()}
               style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
             >
               <i className='tabler-chevron-left' />
             </CustomIconButton>
             <CustomIconButton
               variant='tonal'
-              onClick={() => instanceRef.current?.next()}
+              onClick={() => sliderInstance?.next()}
               style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
             >
               <i className='tabler-chevron-right' />
@@ -150,39 +200,7 @@ const CustomerReviews = () => {
 
         <div className='is-full md:is-[70%]'>
           {data.length > 0 ? (
-            <AppKeenSlider>
-              <div ref={sliderRef} className='keen-slider mbe-6'>
-                {data.map((item, index) => (
-                  <div key={index} className='keen-slider__slide flex p-4 sm:p-3'>
-                    <Card elevation={0} className='flex items-start border border-emerald-100 bg-white rounded-2xl shadow-sm w-full'>
-                      <CardContent className='p-8 items-center mlb-auto w-full'>
-                        <div className='flex flex-col gap-4 items-start'>
-                          <span
-                            className='text-sm font-bold px-3 py-1 rounded-full'
-                            style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#006241' }}
-                          >
-                            {item.label}
-                          </span>
-                          <Typography style={{ color: '#374151' }}>{item.desc}</Typography>
-                          <Rating value={item.rating} readOnly sx={{ '& .MuiRating-iconFilled': { color: '#f59e0b' } }} />
-                          <div className='flex items-center gap-x-3'>
-                            <CustomAvatar size={32} src={item.avatarSrc} alt={item.name} />
-                            <div className='flex flex-col items-start'>
-                              <Typography className='font-medium' style={{ color: '#0f172a' }}>
-                                {item.name}
-                              </Typography>
-                              <Typography variant='body2' style={{ color: '#6b7280' }}>
-                                {item.position}
-                              </Typography>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
-              </div>
-            </AppKeenSlider>
+            <ReviewsSlider data={data} onSliderInit={setSliderInstance} />
           ) : (
             <div className='flex flex-col items-center justify-center p-8 bg-white border border-emerald-100 rounded-2xl h-full w-full min-h-[200px]'>
               <Typography style={{ color: '#6b7280', fontWeight: 500 }}>
