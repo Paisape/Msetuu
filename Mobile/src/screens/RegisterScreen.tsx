@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { Alert } from 'react-native'
 
-import { register } from '../api/client'
+import * as authApi from '../api/auth'
+import { Field, PrimaryButton, Screen, ScreenTitle, SecondaryButton } from '../components/ui'
 
-type Props = {
-  onRegistered: () => void
+export default function RegisterScreen({
+  onRegistered,
+  onNavigateToLogin
+}: {
+  onRegistered: (email: string) => void
   onNavigateToLogin: () => void
-}
-
-export default function RegisterScreen({ onRegistered, onNavigateToLogin }: Props) {
+}) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -25,8 +27,10 @@ export default function RegisterScreen({ onRegistered, onNavigateToLogin }: Prop
     setLoading(true)
 
     try {
-      await register(name, email, password, phone || undefined)
-      Alert.alert('Account created', 'You can now log in.', [{ text: 'OK', onPress: onRegistered }])
+      await authApi.register(name, email, password, phone || undefined)
+      Alert.alert('Account created', 'Enter the verification code we emailed you to finish signing up.', [
+        { text: 'OK', onPress: () => onRegistered(email) }
+      ])
     } catch (err) {
       Alert.alert('Registration failed', err instanceof Error ? err.message : 'Please try again.')
     } finally {
@@ -35,34 +39,14 @@ export default function RegisterScreen({ onRegistered, onNavigateToLogin }: Prop
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <TextInput style={styles.input} placeholder='Full name' value={name} onChangeText={setName} />
-      <TextInput
-        style={styles.input}
-        placeholder='Email'
-        autoCapitalize='none'
-        keyboardType='email-address'
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput style={styles.input} placeholder='Phone (optional)' keyboardType='phone-pad' value={phone} onChangeText={setPhone} />
-      <TextInput style={styles.input} placeholder='Password' secureTextEntry value={password} onChangeText={setPassword} />
-      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Creating…' : 'Create Account'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onNavigateToLogin}>
-        <Text style={styles.link}>Already have an account? Login</Text>
-      </TouchableOpacity>
-    </View>
+    <Screen>
+      <ScreenTitle>Create Account</ScreenTitle>
+      <Field label='Full name' value={name} onChangeText={setName} placeholder='Abhijeet Patil' />
+      <Field label='Email' value={email} onChangeText={setEmail} placeholder='you@example.com' keyboardType='email-address' />
+      <Field label='Phone (optional)' value={phone} onChangeText={setPhone} placeholder='98765 43210' keyboardType='phone-pad' />
+      <Field label='Password' value={password} onChangeText={setPassword} placeholder='At least 8 characters' secureTextEntry />
+      <PrimaryButton label='Create Account' onPress={handleRegister} loading={loading} />
+      <SecondaryButton label='Already have an account? Sign in' onPress={onNavigateToLogin} />
+    </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 32, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 12 },
-  button: { backgroundColor: '#ff6b35', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  link: { textAlign: 'center', marginTop: 16, color: '#ff6b35' }
-})

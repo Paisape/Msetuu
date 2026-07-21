@@ -1,51 +1,80 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
+import { useState } from 'react'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
-type Props = {
-  userName: string
-  onSelectModule: (module: string) => void
-}
+import { OrbitMenu } from '../components/OrbitMenu'
+import { useAuth } from '../context/AuthContext'
+import type { RootStackParamList } from '../navigation/types'
 
-const MODULES = [
-  { key: 'chadhava', label: 'Chadhava' },
-  { key: 'epuja', label: 'E-Puja' },
-  { key: 'kundli', label: 'Kundli' },
-  { key: 'jyotish', label: 'Jyotish' },
-  { key: 'ecommerce', label: 'E-commerce' },
-  { key: 'yatra', label: 'Yatra Booking' },
-  { key: 'darshan', label: 'Darshan Experience' },
-  { key: 'geotag', label: 'Geo Tagging' }
-]
+type Nav = NativeStackNavigationProp<RootStackParamList>
 
-export default function HomeScreen({ userName, onSelectModule }: Props) {
+export default function HomeScreen({ navigation }: { navigation: Nav }) {
+  const { logout } = useAuth()
+  const [muted, setMuted] = useState(false)
+
+  const menuItems = [
+    { key: 'darshan', label: 'Darshan', icon: '🛕', onPress: () => navigation.navigate('DarshanList') },
+    { key: 'store', label: 'Puja Store', icon: '🛒', onPress: () => navigation.navigate('SearchPujaExpertise') },
+    { key: 'kundli', label: 'Kundli', icon: '🔯', onPress: () => navigation.navigate('Horoscope') },
+    { key: 'geotag', label: 'Geo Tag', icon: '📍', onPress: () => navigation.navigate('CameraGeotag') },
+    { key: 'epuja', label: 'E-Puja', icon: '🪔', onPress: () => navigation.navigate('PujaList', {}) },
+    { key: 'jyotishi', label: 'Jyotishi', icon: '🔮', onPress: () => navigation.navigate('AstrologerList') },
+    { key: 'yatra', label: 'Yatra', icon: '🏔️', onPress: () => navigation.navigate('Yatra') },
+    { key: 'chadhava', label: 'Chadhava', icon: '🌸', onPress: () => navigation.navigate('ChadhavaList') }
+  ]
+
   return (
     <View style={styles.container}>
-      <Text style={styles.greeting}>Namaste, {userName} 🙏</Text>
-      <FlatList
-        data={MODULES}
-        keyExtractor={item => item.key}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.tile} onPress={() => onSelectModule(item.key)}>
-            <Text style={styles.tileText}>{item.label}</Text>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => setMuted(m => !m)}>
+            <Text style={styles.iconButtonText}>{muted ? '🔇' : '🔊'}</Text>
           </TouchableOpacity>
-        )}
-      />
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('EditProfile')}>
+            <Text style={styles.iconButtonText}>👤</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={styles.iconButtonText}>🔔</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.logoBlock}>
+          <Text style={styles.logo}>Mandir Setu</Text>
+          <Text style={styles.tagline}>Connect with the Divine, Anytime, Anywhere</Text>
+        </View>
+
+        <OrbitMenu items={menuItems} size={320} />
+
+        <TouchableOpacity onPress={() => navigation.navigate('MyBookings')} style={styles.bookingsLink}>
+          <Text style={styles.bookingsLinkText}>My Bookings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={logout} style={{ marginTop: 12 }}>
+          <Text style={styles.logout}>Logout</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  greeting: { fontSize: 20, fontWeight: '600', marginVertical: 16 },
-  row: { justifyContent: 'space-between' },
-  tile: {
-    backgroundColor: '#fff4ec',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
-    width: '48%',
-    alignItems: 'center'
+  container: { flex: 1, backgroundColor: '#0a0e2a' },
+  safe: { flex: 1, alignItems: 'center' },
+  topBar: { flexDirection: 'row', gap: 12, alignSelf: 'flex-end', paddingHorizontal: 16, paddingTop: 8 },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(45, 212, 212, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)'
   },
-  tileText: { fontWeight: '600', color: '#ff6b35' }
+  iconButtonText: { fontSize: 18 },
+  logoBlock: { alignItems: 'center', marginTop: 12, marginBottom: 8 },
+  logo: { fontSize: 26, fontWeight: '800', color: '#ff6b35' },
+  tagline: { color: '#e5e5e5', fontSize: 12, marginTop: 4 },
+  bookingsLink: { marginTop: 16, borderWidth: 1, borderColor: '#ff6b35', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 24 },
+  bookingsLinkText: { color: '#ff6b35', fontWeight: '700' },
+  logout: { color: '#e57373', fontWeight: '600' }
 })
