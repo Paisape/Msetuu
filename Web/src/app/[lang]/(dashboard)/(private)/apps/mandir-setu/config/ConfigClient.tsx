@@ -72,6 +72,17 @@ const ADSENSE_FIELDS: FieldMeta[] = [
   { key: 'ADSENSE_SIDEBAR_SLOT_ID', label: 'Sidebar Ad Slot ID', secret: false, placeholder: '5678901234' }
 ]
 
+const WHATSAPP_FIELDS: FieldMeta[] = [
+  { key: 'WHATSAPP_PROVIDER', label: 'WhatsApp Provider', secret: false, placeholder: 'Meta Cloud API, Interakt, AiSensy' },
+  { key: 'WHATSAPP_API_KEY', label: 'WhatsApp API Key / Access Token', secret: true },
+  { key: 'WHATSAPP_PHONE_NUMBER_ID', label: 'WhatsApp Phone Number ID', secret: false }
+]
+
+const FIREBASE_FIELDS: FieldMeta[] = [
+  { key: 'FIREBASE_PROJECT_ID', label: 'Firebase Project ID', secret: false, placeholder: 'mandirsetuu-app' },
+  { key: 'FIREBASE_SERVER_KEY', label: 'Firebase FCM Server Key', secret: true }
+]
+
 type FieldEntry = { value: string; configured: boolean; source: 'db' | 'env' | 'none' }
 
 // A single settings form (PG / Email / SMS) — loads redacted values from its endpoint, lets the
@@ -411,6 +422,8 @@ const ConfigClient = () => {
               <Tab label='SMS' />
               <Tab label='Astrology' />
               <Tab label='Google AdSense' />
+              <Tab label='WhatsApp' />
+              <Tab label='Firebase Push' />
             </Tabs>
           </Box>
           <CardContent>
@@ -452,6 +465,18 @@ const ConfigClient = () => {
               <>
                 <Chip size='small' label='Monetize VR Experiences & Mandirsetuu Pages with Google AdSense Auto-Ads & Banner Ad Units' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/adsense' fields={ADSENSE_FIELDS} />
+              </>
+            )}
+            {tabIndex === 5 && (
+              <>
+                <Chip size='small' label='Configure Meta WhatsApp Cloud API, Interakt, or AiSensy for instant WhatsApp notifications' className='mb-4' />
+                <SettingsPanel endpoint='/api/secure-config/settings/whatsapp' fields={WHATSAPP_FIELDS} />
+              </>
+            )}
+            {tabIndex === 6 && (
+              <>
+                <Chip size='small' label='Configure Firebase Cloud Messaging (FCM) Server Key for mobile & web push notifications' className='mb-4' />
+                <SettingsPanel endpoint='/api/secure-config/settings/firebase' fields={FIREBASE_FIELDS} />
               </>
             )}
           </CardContent>

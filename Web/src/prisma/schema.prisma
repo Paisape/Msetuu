@@ -48,6 +48,7 @@ model User {
   verificationOtpExpires  DateTime?
   resetPasswordOtp        String?
   resetPasswordOtpExpires DateTime?
+  fcmToken                String?
   createdAt               DateTime  @default(now())
   accounts                Account[]
   sessions                Session[]
@@ -755,6 +756,21 @@ model Mantra {
   duration  String
   deity     String
   createdAt DateTime @default(now())
+}
+
+model NotificationLog {
+  id             String   @id @default(cuid())
+  title          String
+  message        String
+  actionUrl      String?
+  targetAudience String   @default("ALL") // ALL, USER, CUSTOMERS
+  targetEmail    String?
+  channels       Json     // ["email", "sms", "whatsapp", "firebase"]
+  status         String   @default("SENT") // SENT, PARTIAL, FAILED
+  stats          Json     // { emailSent: 10, smsSent: 10, whatsappSent: 10, firebaseSent: 10 }
+  errorDetails   String?
+  sentById       String?
+  createdAt      DateTime @default(now())
 }
 
 

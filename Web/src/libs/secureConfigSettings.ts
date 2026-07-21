@@ -3,7 +3,7 @@ import { getSettingsForCategory, setSettings } from '@/libs/appSettings'
 // Shared field catalogue + redaction logic for the Config > PG/Email/SMS admin forms. Centralised
 // here so every settings route (GET redact, POST save) enforces the exact same allow-list of keys
 // per category — a route can never read/write a key that isn't declared below.
-export type SettingsCategory = 'PG' | 'EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE'
+export type SettingsCategory = 'PG' | 'EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE' | 'WHATSAPP' | 'FIREBASE'
 
 type FieldDef = { key: string; secret: boolean; label: string }
 
@@ -42,6 +42,15 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
     { key: 'SMS_API_KEY', secret: true, label: 'SMS API Key' },
     { key: 'SMS_API_SECRET', secret: true, label: 'SMS API Secret' },
     { key: 'SMS_SENDER_ID', secret: false, label: 'Sender ID' }
+  ],
+  WHATSAPP: [
+    { key: 'WHATSAPP_PROVIDER', secret: false, label: 'WhatsApp Provider (e.g. Meta Cloud API, Interakt, AiSensy)' },
+    { key: 'WHATSAPP_API_KEY', secret: true, label: 'WhatsApp API Key / Access Token' },
+    { key: 'WHATSAPP_PHONE_NUMBER_ID', secret: false, label: 'WhatsApp Phone Number ID' }
+  ],
+  FIREBASE: [
+    { key: 'FIREBASE_PROJECT_ID', secret: false, label: 'Firebase Project ID' },
+    { key: 'FIREBASE_SERVER_KEY', secret: true, label: 'Firebase Server Key (FCM Cloud Messaging)' }
   ]
 }
 
