@@ -115,6 +115,7 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
           <SubMenu label='Operation' icon={<i className='tabler-video' />}>
             <MenuItem href={`/${locale}/apps/mandir-setu/operation/video-upload`}>Video Upload</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/operation/geotag`}>Geo-Tagged Photos</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/operation/vr-hosting`}>VR & Video Hosting</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/offers`}>Special Offers</MenuItem>
           </SubMenu>
           <SubMenu label='Content Management' icon={<i className='tabler-photo-edit' />}>

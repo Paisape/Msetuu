@@ -612,6 +612,20 @@ model Review {
   @@index([orderType, targetId, status])
 }
 
+model VrMedia {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  description  String?
+  mediaType    String   @default("VR_360_IMAGE") // VR_360_IMAGE, VR_360_VIDEO, HD_VIDEO
+  mediaUrl     String
+  thumbnailUrl String?
+  active       Boolean  @default(true)
+  viewsCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // Generic encrypted key-value settings store for backend-configurable secrets (Razorpay keys,
 // SMTP credentials, SMS provider config) that admins manage via the password-protected Config
 // menu instead of editing .env directly. `value` is encrypted at rest (see

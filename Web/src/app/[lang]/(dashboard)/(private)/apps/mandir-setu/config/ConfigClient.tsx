@@ -60,6 +60,14 @@ const ASTROLOGY_FIELDS: FieldMeta[] = [
   { key: 'ASTROLOGYAPI_API_KEY', label: 'AstrologyAPI.com API Key (Rashifal)', secret: true }
 ]
 
+const ADSENSE_FIELDS: FieldMeta[] = [
+  { key: 'ADSENSE_CLIENT_ID', label: 'Google AdSense Publisher Client ID', secret: false, placeholder: 'ca-pub-XXXXXXXXXXXXXXXX' },
+  { key: 'ADSENSE_AUTO_ADS_ENABLED', label: 'Enable Auto-Ads (true / false)', secret: false, placeholder: 'true' },
+  { key: 'ADSENSE_HEADER_SLOT_ID', label: 'Top Banner Ad Slot ID', secret: false, placeholder: '1234567890' },
+  { key: 'ADSENSE_BOTTOM_SLOT_ID', label: 'Bottom Banner Ad Slot ID', secret: false, placeholder: '0987654321' },
+  { key: 'ADSENSE_SIDEBAR_SLOT_ID', label: 'Sidebar Ad Slot ID', secret: false, placeholder: '5678901234' }
+]
+
 type FieldEntry = { value: string; configured: boolean; source: 'db' | 'env' | 'none' }
 
 // A single settings form (PG / Email / SMS) — loads redacted values from its endpoint, lets the
@@ -398,6 +406,7 @@ const ConfigClient = () => {
               <Tab label='Email' />
               <Tab label='SMS' />
               <Tab label='Astrology' />
+              <Tab label='Google AdSense' />
             </Tabs>
           </Box>
           <CardContent>
@@ -433,6 +442,12 @@ const ConfigClient = () => {
               <>
                 <Chip size='small' label='Panchang: freeastrologyapi.com — Rashifal: astrologyapi.com (separate providers)' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/astrology' fields={ASTROLOGY_FIELDS} />
+              </>
+            )}
+            {tabIndex === 4 && (
+              <>
+                <Chip size='small' label='Monetize VR Experiences & Mandirsetuu Pages with Google AdSense Auto-Ads & Banner Ad Units' className='mb-4' />
+                <SettingsPanel endpoint='/api/secure-config/settings/adsense' fields={ADSENSE_FIELDS} />
               </>
             )}
           </CardContent>

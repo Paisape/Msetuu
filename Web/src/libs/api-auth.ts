@@ -1,6 +1,9 @@
+import { headers } from 'next/headers'
+
 import { NextResponse } from 'next/server'
 
 import { getServerSession } from 'next-auth'
+import { decode } from 'next-auth/jwt'
 
 import { authOptions } from '@/libs/auth'
 import prisma from '@/libs/prisma'
@@ -13,17 +16,53 @@ export type SessionUser = {
 }
 
 /**
- * Resolves the currently authenticated user (from the NextAuth session) against the
- * database, or null if the request is unauthenticated. Always re-checks the DB rather
- * than trusting the JWT role blindly, since roles can change after the token was issued.
+ * Resolves the caller's email from a mobile bearer token, if present.
+ *
+ * Mobile clients can't use the HttpOnly session cookie the web app relies on, so
+ * they authenticate via `Authorization: Bearer <token>` instead, where the token is
+ * a NextAuth-compatible JWT minted by POST /api/mobile/login. Decoding it with the
+ * same NEXTAUTH_SECRET reconstructs the same payload NextAuth would have put in the
+ * session cookie, so every route below stays agnostic to which transport was used.
+ */
+async function getEmailFromBearerToken(): Promise<string | null> {
+  const authHeader = headers().get('authorization')
+
+  if (!authHeader?.startsWith('Bearer ')) return null
+
+  const secret = process.env.NEXTAUTH_SECRET
+
+  if (!secret) return null
+
+  try {
+    const payload = await decode({ token: authHeader.slice('Bearer '.length), secret })
+
+    return typeof payload?.email === 'string' ? payload.email : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Resolves the currently authenticated user (from the NextAuth session cookie, or a
+ * mobile bearer token) against the database, or null if unauthenticated. Always
+ * re-checks the DB rather than trusting the JWT role blindly, since roles can change
+ * after the token was issued.
  */
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  const session = await getServerSession(authOptions)
+  const bearerEmail = await getEmailFromBearerToken()
 
-  if (!session?.user?.email) return null
+  let email = bearerEmail
+
+  if (!email) {
+    const session = await getServerSession(authOptions)
+
+    email = session?.user?.email ?? null
+  }
+
+  if (!email) return null
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email },
     select: { id: true, name: true, email: true, role: true }
   })
 

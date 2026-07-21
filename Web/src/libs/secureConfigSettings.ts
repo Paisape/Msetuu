@@ -3,7 +3,7 @@ import { getSettingsForCategory, setSettings } from '@/libs/appSettings'
 // Shared field catalogue + redaction logic for the Config > PG/Email/SMS admin forms. Centralised
 // here so every settings route (GET redact, POST save) enforces the exact same allow-list of keys
 // per category — a route can never read/write a key that isn't declared below.
-export type SettingsCategory = 'PG' | 'EMAIL' | 'SMS' | 'ASTROLOGY'
+export type SettingsCategory = 'PG' | 'EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE'
 
 type FieldDef = { key: string; secret: boolean; label: string }
 
@@ -11,6 +11,13 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   PG: [
     { key: 'RAZORPAY_KEY_ID', secret: false, label: 'Razorpay Key ID' },
     { key: 'RAZORPAY_KEY_SECRET', secret: true, label: 'Razorpay Key Secret' }
+  ],
+  ADSENSE: [
+    { key: 'ADSENSE_CLIENT_ID', secret: false, label: 'Google AdSense Publisher Client ID' },
+    { key: 'ADSENSE_AUTO_ADS_ENABLED', secret: false, label: 'Enable Auto Ads (true / false)' },
+    { key: 'ADSENSE_HEADER_SLOT_ID', secret: false, label: 'Top Banner Ad Slot ID' },
+    { key: 'ADSENSE_BOTTOM_SLOT_ID', secret: false, label: 'Bottom Banner Ad Slot ID' },
+    { key: 'ADSENSE_SIDEBAR_SLOT_ID', secret: false, label: 'Sidebar Ad Slot ID' }
   ],
   ASTROLOGY: [
     { key: 'ASTROLOGY_API_KEY', secret: true, label: 'FreeAstrologyAPI Key (Panchang/Choghadiya)' },

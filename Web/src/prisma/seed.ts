@@ -506,6 +506,39 @@ async function main() {
     }
   })
 
+  // Seed VR Media Items
+  await prisma.vrMedia.upsert({
+    where: { slug: 'kashi-vishwanath-360' },
+    update: {},
+    create: {
+      id: 'seed-vr-kashi',
+      slug: 'kashi-vishwanath-360',
+      title: 'Kashi Vishwanath 360° Virtual VR Darshan',
+      description: 'Experience sacred 360-degree immersive virtual darshan of Lord Kashi Vishwanath in Varanasi.',
+      mediaType: 'VR_360_IMAGE',
+      mediaUrl: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc',
+      active: true,
+      viewsCount: 142
+    }
+  })
+
+  await prisma.vrMedia.upsert({
+    where: { slug: 'kedarnath-360' },
+    update: {},
+    create: {
+      id: 'seed-vr-kedarnath',
+      slug: 'kedarnath-360',
+      title: 'Kedarnath Temple 360° Himalayan Virtual Yatra',
+      description: 'Panoramic 360° high-definition view of Shri Kedarnath Dham surrounded by majestic snow peaks.',
+      mediaType: 'VR_360_IMAGE',
+      mediaUrl: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23',
+      active: true,
+      viewsCount: 289
+    }
+  })
+
   console.log('Seed data ready.')
 }
 
