@@ -82,7 +82,7 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
       .catch(() => null)
   }, [slug])
 
-  // Pre-Roll Countdown Timer effect
+  // Pre-Roll Countdown Timer effect — mandatory completion before video/VR starts
   useEffect(() => {
     if (!showPreRoll) return
 
@@ -91,6 +91,12 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
         setPreRollTimer(prev => prev - 1)
       }, 1000)
       return () => clearTimeout(timer)
+    } else {
+      // Auto-start VR experience as soon as mandatory pre-roll ad timer finishes
+      setShowPreRoll(false)
+      if (videoRef.current) {
+        videoRef.current.play().catch(() => null)
+      }
     }
   }, [showPreRoll, preRollTimer])
 
@@ -173,7 +179,7 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
         <div className='flex-1 flex flex-col gap-6'>
           <div className='relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-amber-500/20 shadow-2xl shadow-amber-950/30 group'>
             
-            {/* 1. PRE-ROLL AD OVERLAY (Before Start Video / VR) */}
+            {/* 1. MANDATORY PRE-ROLL AD OVERLAY (Before Start Video / VR — No Skip Button) */}
             {showPreRoll && (
               <div className='absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center border-2 border-amber-500/40 rounded-2xl'>
                 <div className='max-w-md w-full flex flex-col items-center gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-xl shadow-2xl'>
@@ -181,8 +187,8 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
                     <span className='text-xs font-semibold text-amber-400 uppercase tracking-widest flex items-center gap-1.5'>
                       <span>📺</span> Sponsor Advertisement
                     </span>
-                    <span className='text-xs text-slate-400 font-mono'>
-                      {preRollTimer > 0 ? `VR starts in ${preRollTimer}s` : 'VR Ready'}
+                    <span className='text-xs font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30'>
+                      {preRollTimer > 0 ? `VR starts in ${preRollTimer}s` : 'Starting VR...'}
                     </span>
                   </div>
 
@@ -191,17 +197,15 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
                     <AdBanner slotId={adConfig?.prerollSlotId} slotType='bottom' />
                   </div>
 
-                  {/* Action Button: Skip Ad / Start VR */}
-                  <button
-                    onClick={handleDismissPreRoll}
-                    className={`w-full py-2.5 px-6 font-semibold text-sm rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 ${
-                      preRollTimer <= 0
-                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/30 cursor-pointer animate-pulse'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                    }`}
-                  >
-                    {preRollTimer <= 0 ? '▶ Watch 360° VR Experience Now' : `Skip Ad (${preRollTimer}s)`}
-                  </button>
+                  {/* Mandatory Non-Skippable Timer Bar */}
+                  <div className='w-full py-2.5 px-4 bg-slate-950/90 border border-slate-800 rounded-lg text-slate-300 text-xs font-medium flex items-center justify-center gap-2'>
+                    <div className='w-2 h-2 rounded-full bg-amber-400 animate-ping'></div>
+                    <span>
+                      {preRollTimer > 0
+                        ? `Please wait ${preRollTimer} seconds for VR Virtual Darshan to load...`
+                        : 'Starting 360° VR Experience...'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
