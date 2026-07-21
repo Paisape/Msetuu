@@ -15,6 +15,8 @@ import Tab from '@mui/material/Tab'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 
+import AdminCredentialsPanel from '@/components/admin/AdminCredentialsPanel'
+
 type FieldMeta = { key: string; label: string; secret: boolean; placeholder?: string }
 
 const PG_FIELDS: FieldMeta[] = [
@@ -369,6 +371,16 @@ const ConfigClient = () => {
         Payment gateway, email, and SMS credentials. Protected by a secondary password, separate from your admin
         login. This password must be rotated every 15 days via an OTP emailed to the recovery address.
       </Typography>
+
+      <Card className='mb-6'>
+        <CardHeader
+          title='Admin Login Credentials'
+          subheader='Change your active Admin Email Address and Admin Password.'
+        />
+        <CardContent>
+          <AdminCredentialsPanel />
+        </CardContent>
+      </Card>
 
       {statusLoading ? (
         <div className='p-6 text-center'>
