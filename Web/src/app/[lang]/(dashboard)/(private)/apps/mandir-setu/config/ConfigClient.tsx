@@ -63,6 +63,10 @@ const ASTROLOGY_FIELDS: FieldMeta[] = [
 const ADSENSE_FIELDS: FieldMeta[] = [
   { key: 'ADSENSE_CLIENT_ID', label: 'Google AdSense Publisher Client ID', secret: false, placeholder: 'ca-pub-XXXXXXXXXXXXXXXX' },
   { key: 'ADSENSE_AUTO_ADS_ENABLED', label: 'Enable Auto-Ads (true / false)', secret: false, placeholder: 'true' },
+  { key: 'ADSENSE_PREROLL_ENABLED', label: 'Enable Pre-Roll Video/VR Ad (true / false)', secret: false, placeholder: 'true' },
+  { key: 'ADSENSE_PREROLL_SECONDS', label: 'Pre-Roll Countdown Duration (Seconds)', secret: false, placeholder: '5' },
+  { key: 'ADSENSE_OVERLAY_ADS_ENABLED', label: 'Enable On-Screen Player Overlay Ad (true / false)', secret: false, placeholder: 'true' },
+  { key: 'ADSENSE_PREROLL_SLOT_ID', label: 'Pre-Roll & Overlay Ad Slot ID', secret: false, placeholder: '1122334455' },
   { key: 'ADSENSE_HEADER_SLOT_ID', label: 'Top Banner Ad Slot ID', secret: false, placeholder: '1234567890' },
   { key: 'ADSENSE_BOTTOM_SLOT_ID', label: 'Bottom Banner Ad Slot ID', secret: false, placeholder: '0987654321' },
   { key: 'ADSENSE_SIDEBAR_SLOT_ID', label: 'Sidebar Ad Slot ID', secret: false, placeholder: '5678901234' }

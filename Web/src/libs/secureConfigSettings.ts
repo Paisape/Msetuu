@@ -15,6 +15,10 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   ADSENSE: [
     { key: 'ADSENSE_CLIENT_ID', secret: false, label: 'Google AdSense Publisher Client ID' },
     { key: 'ADSENSE_AUTO_ADS_ENABLED', secret: false, label: 'Enable Auto Ads (true / false)' },
+    { key: 'ADSENSE_PREROLL_ENABLED', secret: false, label: 'Enable Pre-Roll Video/VR Ad (true / false)' },
+    { key: 'ADSENSE_PREROLL_SECONDS', secret: false, label: 'Pre-Roll Ad Countdown Duration (Seconds, e.g. 5)' },
+    { key: 'ADSENSE_OVERLAY_ADS_ENABLED', secret: false, label: 'Enable On-Screen Overlay Ad on Video/VR Player (true / false)' },
+    { key: 'ADSENSE_PREROLL_SLOT_ID', secret: false, label: 'Pre-Roll & Overlay Ad Slot ID' },
     { key: 'ADSENSE_HEADER_SLOT_ID', secret: false, label: 'Top Banner Ad Slot ID' },
     { key: 'ADSENSE_BOTTOM_SLOT_ID', secret: false, label: 'Bottom Banner Ad Slot ID' },
     { key: 'ADSENSE_SIDEBAR_SLOT_ID', secret: false, label: 'Sidebar Ad Slot ID' }
