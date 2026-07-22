@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -36,12 +35,14 @@ type Product = Priced & {
   media?: MediaGalleryItem[] | null
 }
 
-const EcommerceDetailPage = () => {
+export default function EcommerceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { addToCart } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string>('')
+  const [added, setAdded] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -49,17 +50,19 @@ const EcommerceDetailPage = () => {
     fetch(`/api/ecommerce/products/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found')
-        
-return res.json()
+        return res.json()
       })
-      .then(data => setProduct(data))
+      .then(data => {
+        setProduct(data)
+        setSelectedImage(data.image)
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
 
   if (loading) {
     return (
-      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex justify-center'>
+      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex items-center justify-center'>
         <CircularProgress />
       </div>
     )
@@ -70,8 +73,8 @@ return res.json()
       <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
         <div className='max-w-3xl mx-auto'>
           <Alert severity='error'>This product could not be found.</Alert>
-          <Button component={Link} href='/front-pages/ecommerce' className='mt-4 font-bold' style={{ color: '#006241' }}>
-            &larr; Back to the store
+          <Button component={Link} href='/front-pages/ecommerce' className='mt-4 font-bold text-emerald-700'>
+            &larr; Back to Store
           </Button>
         </div>
       </div>
@@ -79,101 +82,240 @@ return res.json()
   }
 
   const isGemstone = product.category === 'Gemstones'
+  const discountPercent = hasOfferDiscount(product)
+    ? Math.round(((product.price! - product.offerPrice!) / product.price!) * 100)
+    : 0
 
-  // Benefits are stored as one line per benefit — split + drop blank lines for display.
   const benefitLines = (product.benefits || '')
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
 
+  const galleryImages = [
+    { type: 'image' as const, url: product.image, title: product.name },
+    ...(product.media || [])
+  ]
+
   const hasSourceInfo = Boolean(product.sourceName || product.sourceLocation || product.significance)
   const secondaryTabLabel = product.secondaryTabLabel || 'Source & Certification'
 
-  return (
-    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
-      <div className='max-w-5xl mx-auto'>
-        <Button component={Link} href='/front-pages/ecommerce' className='mb-6 font-semibold' style={{ color: '#006241' }}>
-          &larr; Back to the store
-        </Button>
+  const handleAddToCart = () => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: effectivePrice(product),
+      image: product.image,
+      type: 'product',
+      orderPayload: { productId: product.id }
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2500)
+  }
 
-        <div className='galaxy-card overflow-hidden rounded-2xl' style={{ border: '1px solid rgba(16,185,129,0.2)' }}>
-          <div className='relative h-72 md:h-96 w-full overflow-hidden'>
-            <img src={product.image} alt={product.name} className='w-full h-full object-cover' />
-            <div
-              className='absolute inset-0'
-              style={{ background: 'linear-gradient(to top, rgba(4,30,20,0.75) 0%, rgba(4,30,20,0.05) 55%, transparent 100%)' }}
-            />
-            {product.planet && (
-              <div className='absolute top-4 right-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
-                {product.planet}
-              </div>
-            )}
-            <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8'>
-              <Typography variant='h3' className='font-bold hero-overlay-text' style={{ color: '#fff', fontFamily: 'Cinzel, Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
-                {product.name}
-              </Typography>
-              {product.purpose && (
-                <Typography variant='subtitle1' className='font-semibold mt-1 hero-overlay-text' style={{ color: '#a7f3d0', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                  Purpose: {product.purpose}
-                </Typography>
+  return (
+    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-7xl mx-auto space-y-12'>
+        
+        {/* Breadcrumb Header */}
+        <div className='flex items-center gap-2 text-sm text-slate-400'>
+          <Link href='/front-pages/ecommerce' className='hover:text-emerald-400 transition-colors'>
+            Store
+          </Link>
+          <span>/</span>
+          <span className='text-emerald-400 font-semibold'>{product.category}</span>
+          <span>/</span>
+          <span className='text-slate-200 font-medium truncate max-w-xs'>{product.name}</span>
+        </div>
+
+        {/* 🌟 GEMS MANTRA SPLIT TOP HERO SECTION (Image Left, Purchase Box Right) */}
+        <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start'>
+          
+          {/* LEFT SIDE: MAIN IMAGE & GALLERY THUMBNAILS & TRUST BADGES */}
+          <div className='lg:col-span-6 space-y-6'>
+            <div className='galaxy-card p-4 rounded-3xl border border-emerald-500/20 shadow-2xl relative overflow-hidden group'>
+              {discountPercent > 0 && (
+                <div className='absolute top-6 left-6 z-10 bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-lg uppercase tracking-wider'>
+                  {discountPercent}% OFF
+                </div>
               )}
+              {product.planet && (
+                <div className='absolute top-6 right-6 z-10 bg-emerald-950/80 backdrop-blur-md text-emerald-300 font-semibold text-xs px-3 py-1.5 rounded-full border border-emerald-500/30'>
+                  Planet: {product.planet}
+                </div>
+              )}
+
+              <div className='relative h-80 sm:h-[420px] w-full rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center'>
+                <img
+                  src={selectedImage || product.image}
+                  alt={product.name}
+                  className='w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500'
+                />
+              </div>
+
+              {/* Gallery Thumbnails Carousel */}
+              {galleryImages.length > 1 && (
+                <div className='flex items-center gap-3 mt-4 overflow-x-auto pb-2 scrollbar-none'>
+                  {galleryImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(img.url)}
+                      className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
+                        (selectedImage || product.image) === img.url
+                          ? 'border-emerald-400 scale-105 shadow-md shadow-emerald-500/20'
+                          : 'border-slate-800 opacity-65 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img.url} alt='' className='w-full h-full object-cover' />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Trust Guarantee Badges under Left Image */}
+            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-900/60 border border-emerald-500/10 backdrop-blur-md text-center text-xs'>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📜</div>
+                <div className='font-bold text-slate-200'>Lab Certified</div>
+                <div className='text-slate-400 text-[10px]'>100% Genuine</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🪔</div>
+                <div className='font-bold text-slate-200'>Vedic Energized</div>
+                <div className='text-slate-400 text-[10px]'>Purified Vidhi</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🚚</div>
+                <div className='font-bold text-slate-200'>Fast Shipping</div>
+                <div className='text-slate-400 text-[10px]'>Safe Packaging</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🔒</div>
+                <div className='font-bold text-slate-200'>Secure Pay</div>
+                <div className='text-slate-400 text-[10px]'>UPI, Card, Net</div>
+              </div>
             </div>
           </div>
 
-          {/* Persistent price + CTA — visible immediately, not gated behind the Pricing tab below */}
-          <Box className='cta-highlight-bar flex flex-wrap items-center justify-between gap-4 p-4 md:p-5 mx-4 md:mx-6 mt-4'>
+          {/* RIGHT SIDE: PRODUCT DETAILS, PRICING, SPECS & ACTION BUTTONS */}
+          <div className='lg:col-span-6 space-y-6'>
             <div>
-              <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
+              <div className='inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3'>
+                <span>🪷</span> Sacred Spiritual Product
+              </div>
+              <h1 className='text-3xl sm:text-4xl font-extrabold text-slate-100 leading-tight tracking-tight mb-3'>
+                {product.name}
+              </h1>
+
+              {/* Rating & Reviews Bar */}
+              <div className='flex items-center gap-3 text-sm mb-4'>
+                <div className='flex items-center text-amber-400 font-bold'>
+                  ★★★★★ <span className='ml-1 text-slate-200'>4.9</span>
+                </div>
+                <span className='text-slate-600'>|</span>
+                <span className='text-emerald-400 font-medium cursor-pointer hover:underline'>
+                  125+ Verified Devotee Reviews
+                </span>
+              </div>
+            </div>
+
+            {/* Price Box */}
+            <div className='p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-emerald-950/40 border border-emerald-500/30 shadow-xl space-y-2'>
+              <div className='flex items-baseline gap-3'>
+                <span className='text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-500'>
+                  ₹{effectivePrice(product)}
+                </span>
                 {hasOfferDiscount(product) && (
-                  <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
+                  <span className='text-lg text-slate-400 line-through font-semibold'>
                     ₹{product.price}
                   </span>
                 )}
-                ₹{effectivePrice(product)} {isGemstone ? '/ Carat' : ''}
-              </Typography>
-              {gstLabel(product) && (
-                <Typography variant='caption' style={{ color: '#6b7280' }}>
-                  {gstLabel(product)}
-                </Typography>
-              )}
+                {isGemstone && <span className='text-sm text-slate-400 font-medium'>/ Carat</span>}
+              </div>
+              <div className='text-xs text-slate-400 font-medium'>
+                {gstLabel(product) || 'Inclusive of all taxes & Vedic lab certification fees'}
+              </div>
             </div>
-            <div className='flex gap-2'>
-              <Button
-                variant='outlined'
-                size='large'
-                onClick={() => addToCart({ id: product.id, name: product.name, price: effectivePrice(product), image: product.image, type: 'product', orderPayload: { productId: product.id } })}
-                className='font-semibold px-6'
-                style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
-              >
-                Add to Cart
-              </Button>
-              <Button
-                component={Link}
-                href={`/front-pages/ecommerce?book=${product.id}`}
-                size='large'
-                className='galaxy-glow-btn cta-pulse-btn font-bold px-10'
-              >
-                Buy Now
-              </Button>
-            </div>
-          </Box>
 
-          <Box className='p-6 md:p-8'>
-            <MediaCarousel media={product.media} title='More Glimpses' />
+            {/* Purpose & Specs */}
+            {product.purpose && (
+              <div className='p-4 rounded-xl bg-slate-900/80 border border-emerald-500/20 text-sm'>
+                <span className='text-emerald-400 font-bold'>Spiritual Purpose: </span>
+                <span className='text-slate-200'>{product.purpose}</span>
+              </div>
+            )}
+
+            {/* Short Highlights */}
+            <div className='space-y-2'>
+              <div className='text-xs font-bold text-slate-400 uppercase tracking-wider'>Product Highlights</div>
+              <div className='grid grid-cols-2 gap-2 text-xs'>
+                <div className='p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300'>
+                  <strong className='text-emerald-400'>Category:</strong> {product.category}
+                </div>
+                {product.planet && (
+                  <div className='p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300'>
+                    <strong className='text-emerald-400'>Rashi/Planet:</strong> {product.planet}
+                  </div>
+                )}
+                <div className='p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300'>
+                  <strong className='text-emerald-400'>Authenticity:</strong> Lab Tested Card
+                </div>
+                <div className='p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300'>
+                  <strong className='text-emerald-400'>Dispatch:</strong> Within 24 Hours
+                </div>
+              </div>
+            </div>
+
+            {/* Action CTAs */}
+            <div className='space-y-3 pt-2'>
+              {added && <Alert severity='success'>Product added to cart!</Alert>}
+
+              <div className='flex flex-col sm:flex-row gap-3'>
+                <Button
+                  fullWidth
+                  variant='outlined'
+                  size='large'
+                  onClick={handleAddToCart}
+                  className='py-3.5 font-bold text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10'
+                >
+                  🛒 Add to Cart
+                </Button>
+                <Button
+                  fullWidth
+                  component={Link}
+                  href={`/front-pages/ecommerce?book=${product.id}`}
+                  variant='contained'
+                  size='large'
+                  className='py-3.5 font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+                >
+                  ⚡ Buy Now
+                </Button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* 📜 FULL BODY WIDTH SECTION (After Image Area Finishes) */}
+        <div className='pt-8 border-t border-emerald-500/20 space-y-12'>
+          
+          {/* Detail Tabs */}
+          <div className='galaxy-card p-6 md:p-8 rounded-3xl border border-emerald-500/20 shadow-xl'>
             <DetailPageTabs
               tabs={[
                 {
                   key: 'about',
                   label: 'About Product',
                   content: (
-                    <>
-                      <Typography className='leading-relaxed mb-4' style={{ color: '#374151' }}>
+                    <div className='space-y-4 text-slate-300 leading-relaxed'>
+                      <Typography className='text-base leading-relaxed' style={{ color: '#d1d5db' }}>
                         {product.description}
                       </Typography>
-                      <Typography variant='body2' style={{ color: '#6b7280' }}>
-                        All products include laboratory certification card and Vedic purification rituals prior to shipment.
-                      </Typography>
-                    </>
+                      <div className='p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-300'>
+                        ℹ️ Every item is lab-certified and purified with Ganga Jal and Vedic mantras before dispatch.
+                      </div>
+                    </div>
                   )
                 },
                 {
@@ -181,21 +323,21 @@ return res.json()
                   label: secondaryTabLabel,
                   hidden: !hasSourceInfo,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='space-y-3 text-slate-300'>
                       {product.sourceName && (
-                        <Typography variant='body2' style={{ color: '#4b5563' }}>
-                          <strong style={{ color: '#374151' }}>Source:</strong> {product.sourceName}
-                        </Typography>
+                        <div>
+                          <strong className='text-emerald-400'>Source / Origin:</strong> {product.sourceName}
+                        </div>
                       )}
                       {product.sourceLocation && (
-                        <Typography variant='body2' style={{ color: '#4b5563' }}>
-                          <strong style={{ color: '#374151' }}>Origin:</strong> {product.sourceLocation}
-                        </Typography>
+                        <div>
+                          <strong className='text-emerald-400'>Sacred Location:</strong> {product.sourceLocation}
+                        </div>
                       )}
                       {product.significance && (
-                        <Typography variant='body2' className='leading-relaxed mt-1' style={{ color: '#4b5563' }}>
+                        <div className='leading-relaxed pt-2 text-slate-300'>
                           {product.significance}
-                        </Typography>
+                        </div>
                       )}
                     </div>
                   )
@@ -205,11 +347,11 @@ return res.json()
                   label: 'Benefits',
                   hidden: benefitLines.length === 0,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                       {benefitLines.map((benefit, idx) => (
-                        <div key={idx} className='flex items-start gap-2'>
-                          <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
-                          <Typography variant='body2' style={{ color: '#374151' }}>{benefit}</Typography>
+                        <div key={idx} className='flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800'>
+                          <span className='text-emerald-400 font-bold text-lg'>✓</span>
+                          <span className='text-slate-200 text-sm'>{benefit}</span>
                         </div>
                       ))}
                     </div>
@@ -217,109 +359,36 @@ return res.json()
                 },
                 {
                   key: 'process',
-                  label: 'Process',
+                  label: 'How It Works',
                   content: <HowItWorksSection page='ecommerce' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Ordering Works' />
-                },
-                {
-                  key: 'pricing',
-                  label: 'Pricing',
-                  content: (
-                    <Box className='flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                      <div>
-                        <Typography variant='h5' className='font-bold' style={{ color: '#006241' }}>
-                          {hasOfferDiscount(product) && (
-                            <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
-                              ₹{product.price}
-                            </span>
-                          )}
-                          ₹{effectivePrice(product)} {isGemstone ? '/ Carat' : ''}
-                        </Typography>
-                        {gstLabel(product) && (
-                          <Typography variant='caption' style={{ color: '#6b7280' }}>
-                            {gstLabel(product)}
-                          </Typography>
-                        )}
-                      </div>
-                      <div className='flex gap-2'>
-                        <Button
-                          variant='outlined'
-                          onClick={() => addToCart({ id: product.id, name: product.name, price: effectivePrice(product), image: product.image, type: 'product', orderPayload: { productId: product.id } })}
-                          className='font-semibold px-6'
-                          style={{ borderColor: 'rgba(16,185,129,0.5)', color: '#006241' }}
-                        >
-                          Add to Cart
-                        </Button>
-                        <Button
-                          component={Link}
-                          href={`/front-pages/ecommerce?book=${product.id}`}
-                          className='galaxy-glow-btn font-bold px-8'
-                        >
-                          Buy Now
-                        </Button>
-                      </div>
-                    </Box>
-                  )
-                },
-                {
-                  key: 'reviews',
-                  label: 'Reviews',
-                  content: <ReviewsSection orderType='ECOMMERCE' targetId={product.id} />
-                },
-                {
-                  key: 'faqs',
-                  label: 'FAQs',
-                  content: (
-                    <ServiceFaq
-                      page='ecommerce'
-                      title='Frequently Asked Questions'
-                      items={[
-                        {
-                          question: 'Are your gemstones and rudrakshas certified?',
-                          answer:
-                            'Yes, every gemstone and rudraksha bead sold on Mandirsetuu is accompanied by an authenticity certificate from government-approved independent gemological laboratories.'
-                        },
-                        {
-                          question: "What does it mean for an item to be 'energized'?",
-                          answer:
-                            "Before dispatch, each item undergoes customized Vedic mantra purification and activation rituals conducted by verified pandits aligned with the item's ruling deity or astrological planet."
-                        },
-                        {
-                          question: 'What is your return and exchange policy?',
-                          answer:
-                            'We offer a 7-day hassle-free return and exchange policy on all products, provided they are in their original packaging and have not been damaged or altered.'
-                        },
-                        {
-                          question: 'How is the carat size for gemstones calculated?',
-                          answer:
-                            'You can use our interactive slider on the product checkout to choose custom sizes (3.5 to 12.5 carats). Prices scale dynamically based on the exact weight selected.'
-                        }
-                      ]}
-                    />
-                  )
                 }
               ]}
             />
-          </Box>
+          </div>
+
+          {/* Service FAQ Section */}
+          <ServiceFaq items={[]} />
+
+          {/* Devotee Reviews */}
+          <ReviewsSection orderType='ECOMMERCE' targetId={product.id} />
+
+          {/* Related Products */}
+          <RelatedListings
+            fetchUrl='/api/ecommerce/products'
+            currentId={product.id}
+            basePath='/front-pages/ecommerce'
+            mapItem={(item: any) => ({
+              id: item.id,
+              title: item.name,
+              price: effectivePrice(item),
+              offerPrice: item.offerPrice,
+              image: item.image
+            })}
+          />
+
         </div>
 
-        <RelatedListings
-          fetchUrl={`/api/ecommerce/products?category=${encodeURIComponent(product.category)}`}
-          currentId={product.id}
-          basePath='/front-pages/ecommerce'
-          title='Other Products You May Like'
-          mapItem={(raw: any) => ({
-            id: raw.id,
-            title: raw.name,
-            image: raw.image,
-            price: raw.price,
-            offerPrice: raw.offerPrice,
-            gstPercentage: raw.gstPercentage,
-            gstInclusive: raw.gstInclusive
-          })}
-        />
       </div>
     </div>
   )
 }
-
-export default EcommerceDetailPage

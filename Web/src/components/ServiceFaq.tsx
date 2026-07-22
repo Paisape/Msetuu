@@ -21,10 +21,10 @@ type Props = {
   // FAQs exist for this page, they replace `items` entirely; otherwise `items` (the page's
   // built-in defaults) is shown so the section never renders empty before content is configured.
   page?: string
-  items: FaqItem[]
+  items?: FaqItem[]
 }
 
-export default function ServiceFaq({ title = 'Frequently Asked Questions', subtitle = 'Got questions? We have got answers.', page, items }: Props) {
+export default function ServiceFaq({ title = 'Frequently Asked Questions', subtitle = 'Got questions? We have got answers.', page, items = [] }: Props) {
   const [expanded, setExpanded] = useState<number | false>(0)
   const [displayItems, setDisplayItems] = useState<FaqItem[]>(items)
 

@@ -45,8 +45,8 @@ export async function POST(req: Request) {
       const gstPercentage = cellToNumber(row.gstPercentage)
       const gstInclusive = cellToBoolean(row.gstInclusive, true)
 
-      if (!title || !description || !image) {
-        errors.push({ row: rowNumber, error: 'Title, Description and Image URL are required.' })
+      if (!title || !image) {
+        errors.push({ row: rowNumber, error: 'Title and Image URL are required.' })
         continue
       }
 

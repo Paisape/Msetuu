@@ -90,6 +90,18 @@ export async function getRedactedSettings(category: SettingsCategory): Promise<R
   return result
 }
 
+export async function getResolvedSettings(category: SettingsCategory): Promise<Record<string, string>> {
+  const fields = FIELD_DEFS[category]
+  const dbValues = await getSettingsForCategory(category)
+  const result: Record<string, string> = {}
+
+  for (const f of fields) {
+    result[f.key] = dbValues[f.key] || process.env[f.key] || ''
+  }
+
+  return result
+}
+
 // Saves only the fields that belong to this category and that the admin actually changed. Blank
 // values and values matching the masked placeholder pattern (••••1234) are skipped, so re-saving
 // the form without touching a secret field never overwrites it with a masked placeholder string.

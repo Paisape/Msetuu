@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -39,11 +38,13 @@ type PujaListing = {
   media?: MediaGalleryItem[] | null
 }
 
-const EpujaDetailPage = () => {
+export default function EpujaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [listing, setListing] = useState<PujaListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string>('')
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('')
 
   useEffect(() => {
     if (!id) return
@@ -51,17 +52,22 @@ const EpujaDetailPage = () => {
     fetch(`/api/epuja/listings/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found')
-        
-return res.json()
+        return res.json()
       })
-      .then(data => setListing(data))
+      .then(data => {
+        setListing(data)
+        setSelectedImage(data.image)
+        if (data.packages && data.packages.length > 0) {
+          setSelectedPackageId(data.packages[0].id)
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
 
   if (loading) {
     return (
-      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex justify-center'>
+      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex items-center justify-center'>
         <CircularProgress />
       </div>
     )
@@ -71,8 +77,8 @@ return res.json()
     return (
       <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
         <div className='max-w-3xl mx-auto'>
-          <Alert severity='error'>This E-Puja could not be found.</Alert>
-          <Button component={Link} href='/front-pages/epuja' className='mt-4 font-bold' style={{ color: '#006241' }}>
+          <Alert severity='error'>This E-Puja listing could not be found.</Alert>
+          <Button component={Link} href='/front-pages/epuja' className='mt-4 font-bold text-amber-400'>
             &larr; Back to all E-Pujas
           </Button>
         </div>
@@ -80,92 +86,228 @@ return res.json()
     )
   }
 
-  // Benefits are stored as one line per benefit — split + drop blank lines for display.
   const benefitLines = (listing.benefits || '')
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
 
+  const galleryImages = [
+    { type: 'image' as const, url: listing.image, title: listing.title },
+    ...(listing.media || [])
+  ]
+
   const hasTempleInfo = Boolean(listing.templeName || listing.templeLocation || listing.significance)
   const secondaryTabLabel = listing.secondaryTabLabel || 'Temple Details'
 
-  // Packages are priced individually (Single/Couple/Family) — show the lowest as a "starting
-  // from" price in the persistent CTA bar, same idea as the per-package prices in the Packages tab.
   const cheapestPackage = listing.packages.length > 0
     ? listing.packages.reduce((min, pkg) => (effectivePrice(pkg) < effectivePrice(min) ? pkg : min), listing.packages[0])
     : null
 
-  return (
-    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
-      <div className='max-w-5xl mx-auto'>
-        <Button component={Link} href='/front-pages/epuja' className='mb-6 font-semibold' style={{ color: '#006241' }}>
-          &larr; Back to all E-Pujas
-        </Button>
+  const activePackage = listing.packages.find(p => p.id === selectedPackageId) || cheapestPackage
 
-        {/* Hero */}
-        <div className='galaxy-card overflow-hidden rounded-2xl' style={{ border: '1px solid rgba(16,185,129,0.2)' }}>
-          <div className='relative h-72 md:h-[420px] w-full overflow-hidden'>
-            <img src={listing.image} alt={listing.title} className='w-full h-full object-cover' />
-            <div
-              className='absolute inset-0'
-              style={{ background: 'linear-gradient(to top, rgba(4,30,20,0.75) 0%, rgba(4,30,20,0.05) 55%, transparent 100%)' }}
-            />
-            <div className='absolute top-4 left-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
-              {listing.category}
-            </div>
-            <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8'>
-              <Typography variant='h3' className='font-bold hero-overlay-text' style={{ color: '#fff', fontFamily: 'Cinzel, Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
-                {listing.title}
-              </Typography>
-              {(listing.templeName || listing.templeLocation) && (
-                <Typography variant='subtitle1' className='font-semibold mt-1 hero-overlay-text' style={{ color: '#a7f3d0', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                  📍 {[listing.templeName, listing.templeLocation].filter(Boolean).join(', ')}
-                </Typography>
+  return (
+    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-7xl mx-auto space-y-12'>
+        
+        {/* Breadcrumb Navigation */}
+        <div className='flex items-center gap-2 text-sm text-slate-400'>
+          <Link href='/front-pages/epuja' className='hover:text-amber-400 transition-colors'>
+            E-Pujas
+          </Link>
+          <span>/</span>
+          <span className='text-amber-400 font-semibold'>{listing.category}</span>
+          <span>/</span>
+          <span className='text-slate-200 font-medium truncate max-w-xs'>{listing.title}</span>
+        </div>
+
+        {/* 🌟 GEMS MANTRA SPLIT TOP HERO SECTION (Image Left, Package & Booking Box Right) */}
+        <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start'>
+          
+          {/* LEFT COLUMN: PUJA HERO IMAGE & GALLERY & TRUST BADGES */}
+          <div className='lg:col-span-6 space-y-6'>
+            <div className='galaxy-card p-4 rounded-3xl border border-amber-500/20 shadow-2xl relative overflow-hidden group'>
+              {listing.templeName && (
+                <div className='absolute top-6 left-6 z-10 bg-amber-950/80 backdrop-blur-md text-amber-300 font-semibold text-xs px-3.5 py-1.5 rounded-full border border-amber-500/30 flex items-center gap-1.5'>
+                  <span>🛕</span> {listing.templeName}
+                </div>
               )}
+
+              <div className='relative h-80 sm:h-[420px] w-full rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center'>
+                <img
+                  src={selectedImage || listing.image}
+                  alt={listing.title}
+                  className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500'
+                />
+              </div>
+
+              {/* Gallery Thumbnails */}
+              {galleryImages.length > 1 && (
+                <div className='flex items-center gap-3 mt-4 overflow-x-auto pb-2 scrollbar-none'>
+                  {galleryImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(img.url)}
+                      className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
+                        (selectedImage || listing.image) === img.url
+                          ? 'border-amber-400 scale-105 shadow-md shadow-amber-500/20'
+                          : 'border-slate-800 opacity-65 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img.url} alt='' className='w-full h-full object-cover' />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sacred Guarantee Badges under Left Image */}
+            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-900/60 border border-amber-500/10 backdrop-blur-md text-center text-xs'>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📜</div>
+                <div className='font-bold text-slate-200'>Agama Shastra</div>
+                <div className='text-slate-400 text-[10px]'>Vedic Vidhi</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🙏</div>
+                <div className='font-bold text-slate-200'>Personal Sankalp</div>
+                <div className='text-slate-400 text-[10px]'>Name & Gotra</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📽️</div>
+                <div className='font-bold text-slate-200'>HD Video Link</div>
+                <div className='text-slate-400 text-[10px]'>Proof Video</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📦</div>
+                <div className='font-bold text-slate-200'>Blessed Prasad</div>
+                <div className='text-slate-400 text-[10px]'>Home Delivery</div>
+              </div>
             </div>
           </div>
 
-          {/* Persistent price + CTA — visible immediately, not gated behind the Packages tab below */}
-          {cheapestPackage && (
-            <Box className='cta-highlight-bar flex flex-wrap items-center justify-between gap-4 p-4 md:p-5 mx-4 md:mx-6 mt-4'>
-              <div>
-                <Typography variant='caption' style={{ color: '#6b7280' }}>Starting from</Typography>
-                <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
-                  {hasOfferDiscount(cheapestPackage) && (
-                    <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
-                      ₹{cheapestPackage.price}
-                    </span>
-                  )}
-                  ₹{effectivePrice(cheapestPackage)}
-                </Typography>
-                {gstLabel(cheapestPackage) && (
-                  <Typography variant='caption' style={{ color: '#6b7280' }}>
-                    {gstLabel(cheapestPackage)}
-                  </Typography>
+          {/* RIGHT COLUMN: PUJA TITLE, PRICING, PACKAGE SELECTOR & BOOKING CTA */}
+          <div className='lg:col-span-6 space-y-6'>
+            <div>
+              <div className='inline-flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3'>
+                <span>🪔</span> Online Temple E-Puja Service
+              </div>
+              <h1 className='text-3xl sm:text-4xl font-extrabold text-slate-100 leading-tight tracking-tight mb-3'>
+                {listing.title}
+              </h1>
+
+              {/* Rating & Reviews Bar */}
+              <div className='flex items-center gap-3 text-sm mb-4'>
+                <div className='flex items-center text-amber-400 font-bold'>
+                  ★★★★★ <span className='ml-1 text-slate-200'>4.95</span>
+                </div>
+                <span className='text-slate-600'>|</span>
+                <span className='text-amber-400 font-medium cursor-pointer hover:underline'>
+                  180+ Devotee Sankalps Conducted
+                </span>
+              </div>
+            </div>
+
+            {/* Price Box */}
+            <div className='p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-amber-950/40 border border-amber-500/30 shadow-xl space-y-2'>
+              <div className='text-xs font-bold text-amber-400 uppercase tracking-wider'>
+                Cheapest Package Starting From
+              </div>
+              <div className='flex items-baseline gap-3'>
+                <span className='text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500'>
+                  ₹{activePackage ? effectivePrice(activePackage) : cheapestPackage ? effectivePrice(cheapestPackage) : 0}
+                </span>
+                {activePackage && hasOfferDiscount(activePackage) && (
+                  <span className='text-lg text-slate-400 line-through font-semibold'>
+                    ₹{activePackage.price}
+                  </span>
                 )}
               </div>
-              <Button
-                component={Link}
-                href={`/front-pages/epuja?book=${listing.id}`}
-                size='large'
-                className='galaxy-glow-btn cta-pulse-btn font-bold px-10'
-              >
-                Configure & Buy
-              </Button>
-            </Box>
-          )}
+              <div className='text-xs text-slate-400 font-medium'>
+                {activePackage ? gstLabel(activePackage) : 'Includes Pandit Dakshina, Puja Samagri & Prasad Shipping'}
+              </div>
+            </div>
 
-          <Box className='p-6 md:p-8'>
-            <MediaCarousel media={listing.media} title='More Glimpses' />
+            {/* Package Selector Cards (Single / Couple / Family) */}
+            {listing.packages.length > 0 && (
+              <div className='space-y-3'>
+                <div className='text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between'>
+                  <span>Select Puja Package</span>
+                  <span className='text-amber-400 font-normal'>Choose Devotee Option</span>
+                </div>
+
+                <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                  {listing.packages.map(pkg => {
+                    const isSelected = selectedPackageId === pkg.id
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => setSelectedPackageId(pkg.id)}
+                        className={`p-4 rounded-xl border text-left transition-all relative ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-400 shadow-md shadow-amber-500/10'
+                            : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className='font-bold text-slate-200 text-sm mb-1'>{pkg.type}</div>
+                        <div className='text-amber-300 font-black text-base'>₹{effectivePrice(pkg)}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Temple Location Summary */}
+            {listing.templeName && (
+              <div className='p-4 rounded-xl bg-slate-900/80 border border-amber-500/20 text-sm space-y-1'>
+                <div>
+                  <strong className='text-amber-400'>Temple Shrine:</strong> {listing.templeName}
+                </div>
+                {listing.templeLocation && (
+                  <div className='text-xs text-slate-400'>
+                    📍 {listing.templeLocation}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Primary Action Button */}
+            <div className='pt-2'>
+              <Button
+                fullWidth
+                component={Link}
+                href={`/front-pages/epuja?book=${listing.id}${activePackage ? `&package=${activePackage.id}` : ''}`}
+                variant='contained'
+                size='large'
+                className='py-4 font-extrabold text-base bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 shadow-xl shadow-amber-500/20 hover:scale-[1.02] transition-all'
+              >
+                🪔 Book E-Puja & Submit Sankalp
+              </Button>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* 📜 FULL BODY WIDTH SECTION (After Image & Package Selection Finishes) */}
+        <div className='pt-8 border-t border-amber-500/20 space-y-12'>
+          
+          {/* Detail Tabs */}
+          <div className='galaxy-card p-6 md:p-8 rounded-3xl border border-amber-500/20 shadow-xl'>
             <DetailPageTabs
               tabs={[
                 {
                   key: 'about',
-                  label: 'About Puja',
+                  label: 'About E-Puja',
                   content: (
-                    <Typography className='leading-relaxed' style={{ color: '#374151' }}>
-                      {listing.description}
-                    </Typography>
+                    <div className='space-y-4 text-slate-300 leading-relaxed'>
+                      <Typography className='text-base leading-relaxed' style={{ color: '#d1d5db' }}>
+                        {listing.description}
+                      </Typography>
+                      <div className='p-4 rounded-xl bg-amber-950/30 border border-amber-500/20 text-xs text-amber-300'>
+                        ℹ️ Name, Gotra & wishes submitted during booking are recited by Vedic Priests during live Sankalp.
+                      </div>
+                    </div>
                   )
                 },
                 {
@@ -173,21 +315,21 @@ return res.json()
                   label: secondaryTabLabel,
                   hidden: !hasTempleInfo,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='space-y-3 text-slate-300'>
                       {listing.templeName && (
-                        <Typography variant='body2' style={{ color: '#4b5563' }}>
-                          <strong style={{ color: '#374151' }}>Temple:</strong> {listing.templeName}
-                        </Typography>
+                        <div>
+                          <strong className='text-amber-400'>Sacred Temple Shrine:</strong> {listing.templeName}
+                        </div>
                       )}
                       {listing.templeLocation && (
-                        <Typography variant='body2' style={{ color: '#4b5563' }}>
-                          <strong style={{ color: '#374151' }}>Location:</strong> {listing.templeLocation}
-                        </Typography>
+                        <div>
+                          <strong className='text-amber-400'>Holy Location:</strong> {listing.templeLocation}
+                        </div>
                       )}
                       {listing.significance && (
-                        <Typography variant='body2' className='leading-relaxed mt-1' style={{ color: '#4b5563' }}>
+                        <div className='leading-relaxed pt-2 text-slate-300'>
                           {listing.significance}
-                        </Typography>
+                        </div>
                       )}
                     </div>
                   )
@@ -197,11 +339,11 @@ return res.json()
                   label: 'Benefits',
                   hidden: benefitLines.length === 0,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                       {benefitLines.map((benefit, idx) => (
-                        <div key={idx} className='flex items-start gap-2'>
-                          <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
-                          <Typography variant='body2' style={{ color: '#374151' }}>{benefit}</Typography>
+                        <div key={idx} className='flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800'>
+                          <span className='text-amber-400 font-bold text-lg'>✓</span>
+                          <span className='text-slate-200 text-sm'>{benefit}</span>
                         </div>
                       ))}
                     </div>
@@ -209,104 +351,35 @@ return res.json()
                 },
                 {
                   key: 'process',
-                  label: 'Process',
-                  content: <HowItWorksSection page='epuja' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Booking Works' />
-                },
-                {
-                  key: 'packages',
-                  label: 'Packages',
-                  content: (
-                    <>
-                      <div className='flex flex-col gap-2 text-sm' style={{ color: '#4b5563' }}>
-                        {listing.packages.map(pkg => {
-                          const icon = pkg.type === 'Single' ? '👤' : pkg.type === 'Couple' ? '👥' : '👨‍👩‍👧'
-
-                          return (
-                            <div key={pkg.id} className='p-3 rounded-lg' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                              {icon} {pkg.type}:{' '}
-                              <strong style={{ color: '#006241' }}>
-                                {hasOfferDiscount(pkg) && (
-                                  <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 4 }}>₹{pkg.price}</span>
-                                )}
-                                ₹{effectivePrice(pkg)}
-                              </strong>
-                              {gstLabel(pkg) && <span className='ml-1 text-xs' style={{ color: '#6b7280' }}>({gstLabel(pkg)})</span>}
-                            </div>
-                          )
-                        })}
-                      </div>
-                      <Box className='flex justify-end mt-4'>
-                        <Button
-                          component={Link}
-                          href={`/front-pages/epuja?book=${listing.id}`}
-                          className='galaxy-glow-btn font-bold px-8'
-                        >
-                          Configure & Buy
-                        </Button>
-                      </Box>
-                    </>
-                  )
-                },
-                {
-                  key: 'reviews',
-                  label: 'Reviews',
-                  content: <ReviewsSection orderType='EPUJA' targetId={listing.id} />
-                },
-                {
-                  key: 'faqs',
-                  label: 'FAQs',
-                  content: (
-                    <ServiceFaq
-                      page='epuja'
-                      title='Frequently Asked Questions'
-                      items={[
-                        {
-                          question: 'Do I need to be online during the Puja?',
-                          answer:
-                            'No, you do not need to be online. The pandits perform the Puja on your behalf chanting your name and gotra. However, you can join the live streaming or watch the recorded session later via your dashboard.'
-                        },
-                        {
-                          question: 'What details are required to book an E-Puja?',
-                          answer:
-                            "To book a Puja, we require the primary devotee's Name, Gender, Date of Birth, Birth Place (for horoscope mapping), and Gotra or family members' names (for sankalp/resolution chanting)."
-                        },
-                        {
-                          question: 'Is Prasad sent after the E-Puja is completed?',
-                          answer:
-                            'Yes! A package containing energized dry fruits Prasad, threads, tilak, and local temple blessings is dispatched to your shipping address and reaches you in 3-5 business days.'
-                        },
-                        {
-                          question: 'Who performs these online Pujas?',
-                          answer:
-                            'All Pujas are conducted by qualified, certified Vedic pandits and shastris at prominent historical temple complexes in major spiritual cities like Kashi, Kedarnath, and Ujjain.'
-                        }
-                      ]}
-                    />
-                  )
+                  label: 'How It Works',
+                  content: <HowItWorksSection page='epuja' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How E-Puja Works' />
                 }
               ]}
             />
-          </Box>
+          </div>
+
+          {/* Service FAQ Section */}
+          <ServiceFaq items={[]} />
+
+          {/* Devotee Reviews */}
+          <ReviewsSection orderType='EPUJA' targetId={listing.id} />
+
+          {/* Related E-Pujas */}
+          <RelatedListings
+            fetchUrl='/api/epuja/listings'
+            currentId={listing.id}
+            basePath='/front-pages/epuja'
+            mapItem={(item: any) => ({
+              id: item.id,
+              title: item.title,
+              price: effectivePrice(item.packages?.[0] || item),
+              image: item.image
+            })}
+          />
+
         </div>
 
-        <RelatedListings
-          fetchUrl='/api/epuja/listings'
-          currentId={listing.id}
-          basePath='/front-pages/epuja'
-          title='Other E-Pujas You May Like'
-          mapItem={(raw: any) => ({
-            id: raw.id,
-            title: raw.title,
-            image: raw.image,
-            price: raw.price,
-            offerPrice: raw.packages?.[0]?.offerPrice ?? null,
-            gstPercentage: raw.packages?.[0]?.gstPercentage,
-            gstInclusive: raw.packages?.[0]?.gstInclusive
-          })}
-        />
       </div>
     </div>
   )
 }
-
-export default EpujaDetailPage

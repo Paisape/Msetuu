@@ -24,8 +24,8 @@ type Props = {
   // Matches Review.orderType — CHADHAVA, EPUJA, KUNDLI, JYOTISH, ECOMMERCE
   orderType: string
 
-  // The ChadhavaListing/PujaListing/KundliListing/Astrologer/Product id being reviewed
-  targetId: string
+  // The ChadhavaListing/PujaListing/KundliListing/Astrologer/Product id being reviewed (optional)
+  targetId?: string
 }
 
 // Read-only display of a listing's approved customer reviews + average rating. Submission
@@ -38,8 +38,10 @@ const ReviewsSection = ({ orderType, targetId }: Props) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
-    fetch(`/api/reviews?orderType=${encodeURIComponent(orderType)}&targetId=${encodeURIComponent(targetId)}`)
+    const queryParams = new URLSearchParams({ orderType })
+    if (targetId) queryParams.set('targetId', targetId)
+
+    fetch(`/api/reviews?${queryParams.toString()}`)
       .then(res => res.json())
       .then(data => {
         setReviews(Array.isArray(data.reviews) ? data.reviews : [])

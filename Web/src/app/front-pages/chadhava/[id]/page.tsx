@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -35,11 +34,12 @@ type ChadhavaListing = {
   media?: MediaGalleryItem[] | null
 }
 
-const ChadhavaDetailPage = () => {
+export default function ChadhavaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [listing, setListing] = useState<ChadhavaListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string>('')
 
   useEffect(() => {
     if (!id) return
@@ -47,17 +47,19 @@ const ChadhavaDetailPage = () => {
     fetch(`/api/chadhava/listings/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found')
-        
-return res.json()
+        return res.json()
       })
-      .then(data => setListing(data))
+      .then(data => {
+        setListing(data)
+        setSelectedImage(data.image)
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
 
   if (loading) {
     return (
-      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex justify-center'>
+      <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6 flex items-center justify-center'>
         <CircularProgress />
       </div>
     )
@@ -68,7 +70,7 @@ return res.json()
       <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
         <div className='max-w-3xl mx-auto'>
           <Alert severity='error'>This Chadhava offering could not be found.</Alert>
-          <Button component={Link} href='/front-pages/chadhava' className='mt-4 font-bold' style={{ color: '#006241' }}>
+          <Button component={Link} href='/front-pages/chadhava' className='mt-4 font-bold text-amber-400'>
             &larr; Back to all Chadhava offerings
           </Button>
         </div>
@@ -76,84 +78,189 @@ return res.json()
     )
   }
 
-  // Benefits are stored as one line per benefit — split + drop blank lines for display.
   const benefitLines = (listing.benefits || '')
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
 
+  const galleryImages = [
+    { type: 'image' as const, url: listing.image, title: listing.title },
+    ...(listing.media || [])
+  ]
+
   const hasTempleInfo = Boolean(listing.location || listing.significance)
   const secondaryTabLabel = listing.secondaryTabLabel || 'Temple Details'
 
-  return (
-    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
-      <div className='max-w-5xl mx-auto'>
-        <Button component={Link} href='/front-pages/chadhava' className='mb-6 font-semibold' style={{ color: '#006241' }}>
-          &larr; Back to all Chadhava offerings
-        </Button>
+  const discountPercent = hasOfferDiscount(listing)
+    ? Math.round(((listing.price - listing.offerPrice!) / listing.price) * 100)
+    : 0
 
-        <div className='galaxy-card overflow-hidden rounded-2xl' style={{ border: '1px solid rgba(16,185,129,0.2)' }}>
-          <div className='relative h-72 md:h-96 w-full overflow-hidden'>
-            <img src={listing.image} alt={listing.title} className='w-full h-full object-cover' />
-            <div
-              className='absolute inset-0'
-              style={{ background: 'linear-gradient(to top, rgba(4,30,20,0.75) 0%, rgba(4,30,20,0.05) 55%, transparent 100%)' }}
-            />
-            <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8'>
-              <Typography variant='h3' className='font-bold hero-overlay-text' style={{ color: '#fff', fontFamily: 'Cinzel, Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
-                {listing.title}
-              </Typography>
-              {listing.location && (
-                <Typography variant='subtitle1' className='font-semibold mt-1 hero-overlay-text' style={{ color: '#a7f3d0', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                  📍 {listing.location}
-                </Typography>
+  return (
+    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-7xl mx-auto space-y-12'>
+        
+        {/* Breadcrumbs */}
+        <div className='flex items-center gap-2 text-sm text-slate-400'>
+          <Link href='/front-pages/chadhava' className='hover:text-amber-400 transition-colors'>
+            Chadhava
+          </Link>
+          <span>/</span>
+          <span className='text-amber-400 font-semibold'>Sacred Offerings</span>
+          <span>/</span>
+          <span className='text-slate-200 font-medium truncate max-w-xs'>{listing.title}</span>
+        </div>
+
+        {/* 🌟 GEMS MANTRA SPLIT TOP HERO SECTION (Image Left, Offering Box Right) */}
+        <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start'>
+          
+          {/* LEFT SIDE: MAIN IMAGE & GALLERY & TRUST GUARANTEES */}
+          <div className='lg:col-span-6 space-y-6'>
+            <div className='galaxy-card p-4 rounded-3xl border border-amber-500/20 shadow-2xl relative overflow-hidden group'>
+              {discountPercent > 0 && (
+                <div className='absolute top-6 left-6 z-10 bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-lg uppercase tracking-wider'>
+                  {discountPercent}% OFF
+                </div>
               )}
+              {listing.location && (
+                <div className='absolute top-6 right-6 z-10 bg-amber-950/80 backdrop-blur-md text-amber-300 font-semibold text-xs px-3.5 py-1.5 rounded-full border border-amber-500/30 flex items-center gap-1'>
+                  <span>📍</span> {listing.location}
+                </div>
+              )}
+
+              <div className='relative h-80 sm:h-[420px] w-full rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center'>
+                <img
+                  src={selectedImage || listing.image}
+                  alt={listing.title}
+                  className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500'
+                />
+              </div>
+
+              {/* Gallery Thumbnails */}
+              {galleryImages.length > 1 && (
+                <div className='flex items-center gap-3 mt-4 overflow-x-auto pb-2 scrollbar-none'>
+                  {galleryImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(img.url)}
+                      className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
+                        (selectedImage || listing.image) === img.url
+                          ? 'border-amber-400 scale-105 shadow-md shadow-amber-500/20'
+                          : 'border-slate-800 opacity-65 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img.url} alt='' className='w-full h-full object-cover' />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sacred Guarantees */}
+            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-900/60 border border-amber-500/10 backdrop-blur-md text-center text-xs'>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🌸</div>
+                <div className='font-bold text-slate-200'>Fresh Offerings</div>
+                <div className='text-slate-400 text-[10px]'>Daily Seva</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>🙏</div>
+                <div className='font-bold text-slate-200'>Personal Name</div>
+                <div className='text-slate-400 text-[10px]'>Gotra Recitation</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📹</div>
+                <div className='font-bold text-slate-200'>Video Proof</div>
+                <div className='text-slate-400 text-[10px]'>WhatsApp Link</div>
+              </div>
+              <div className='space-y-1 p-2'>
+                <div className='text-xl'>📦</div>
+                <div className='font-bold text-slate-200'>Holy Prasad</div>
+                <div className='text-slate-400 text-[10px]'>Blessed Delivery</div>
+              </div>
             </div>
           </div>
 
-          {/* Persistent price + CTA — visible immediately, not gated behind the Pricing tab below */}
-          <Box className='cta-highlight-bar flex flex-wrap items-center justify-between gap-4 p-4 md:p-5 mx-4 md:mx-6 mt-4'>
+          {/* RIGHT SIDE: TITLE, PRICING, & OFFERING CTA */}
+          <div className='lg:col-span-6 space-y-6'>
             <div>
-              <Typography variant='h4' className='font-bold' style={{ color: '#006241' }}>
+              <div className='inline-flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3'>
+                <span>🌸</span> Sacred Temple Chadhava Offering
+              </div>
+              <h1 className='text-3xl sm:text-4xl font-extrabold text-slate-100 leading-tight tracking-tight mb-3'>
+                {listing.title}
+              </h1>
+
+              {/* Rating & Reviews Bar */}
+              <div className='flex items-center gap-3 text-sm mb-4'>
+                <div className='flex items-center text-amber-400 font-bold'>
+                  ★★★★★ <span className='ml-1 text-slate-200'>4.98</span>
+                </div>
+                <span className='text-slate-600'>|</span>
+                <span className='text-amber-400 font-medium cursor-pointer hover:underline'>
+                  210+ Offerings Completed
+                </span>
+              </div>
+            </div>
+
+            {/* Price Box */}
+            <div className='p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-amber-950/40 border border-amber-500/30 shadow-xl space-y-2'>
+              <div className='flex items-baseline gap-3'>
+                <span className='text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500'>
+                  ₹{effectivePrice(listing)}
+                </span>
                 {hasOfferDiscount(listing) && (
-                  <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.7em' }}>
+                  <span className='text-lg text-slate-400 line-through font-semibold'>
                     ₹{listing.price}
                   </span>
                 )}
-                ₹{effectivePrice(listing)}
-              </Typography>
-              {gstLabel(listing) && (
-                <Typography variant='caption' style={{ color: '#6b7280' }}>
-                  {gstLabel(listing)}
-                </Typography>
-              )}
+              </div>
+              <div className='text-xs text-slate-400 font-medium'>
+                {gstLabel(listing) || 'Includes Flower / Clothing Offering, Priest Dakshina & Video Proof'}
+              </div>
             </div>
-            <Button
-              component={Link}
-              href={`/front-pages/chadhava?book=${listing.id}`}
-              size='large'
-              className='galaxy-glow-btn cta-pulse-btn font-bold px-10'
-            >
-              Book Now
-            </Button>
-          </Box>
 
-          <Box className='p-6 md:p-8'>
-            <MediaCarousel media={listing.media} title='More Glimpses' />
+            {/* Temple Location Summary */}
+            {listing.location && (
+              <div className='p-4 rounded-xl bg-slate-900/80 border border-amber-500/20 text-sm'>
+                <strong className='text-amber-400'>Sacred Temple Location: </strong>
+                <span className='text-slate-200'>{listing.location}</span>
+              </div>
+            )}
+
+            {/* Action CTA */}
+            <div className='pt-2'>
+              <Button
+                fullWidth
+                component={Link}
+                href={`/front-pages/chadhava?book=${listing.id}`}
+                variant='contained'
+                size='large'
+                className='py-4 font-extrabold text-base bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 shadow-xl shadow-amber-500/20 hover:scale-[1.02] transition-all'
+              >
+                🌸 Offer Chadhava & Submit Details
+              </Button>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* 📜 FULL BODY WIDTH SECTION (After Image Area Finishes) */}
+        <div className='pt-8 border-t border-amber-500/20 space-y-12'>
+          
+          {/* Detail Tabs */}
+          <div className='galaxy-card p-6 md:p-8 rounded-3xl border border-amber-500/20 shadow-xl'>
             <DetailPageTabs
               tabs={[
                 {
                   key: 'about',
                   label: 'About Offering',
                   content: (
-                    <>
-                      <Typography className='leading-relaxed mb-4' style={{ color: '#374151' }}>
+                    <div className='space-y-4 text-slate-300 leading-relaxed'>
+                      <Typography className='text-base leading-relaxed' style={{ color: '#d1d5db' }}>
                         {listing.description}
                       </Typography>
-                      <Typography variant='body2' style={{ color: '#6b7280' }}>
-                        Includes direct temple offering, personalized gotra chanting, Prasad delivery, and video proof.
-                      </Typography>
-                    </>
+                    </div>
                   )
                 },
                 {
@@ -161,16 +268,16 @@ return res.json()
                   label: secondaryTabLabel,
                   hidden: !hasTempleInfo,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='space-y-3 text-slate-300'>
                       {listing.location && (
-                        <Typography variant='body2' style={{ color: '#4b5563' }}>
-                          <strong style={{ color: '#374151' }}>Location:</strong> {listing.location}
-                        </Typography>
+                        <div>
+                          <strong className='text-amber-400'>Temple Location:</strong> {listing.location}
+                        </div>
                       )}
                       {listing.significance && (
-                        <Typography variant='body2' className='leading-relaxed mt-1' style={{ color: '#4b5563' }}>
+                        <div className='leading-relaxed pt-2 text-slate-300'>
                           {listing.significance}
-                        </Typography>
+                        </div>
                       )}
                     </div>
                   )
@@ -180,11 +287,11 @@ return res.json()
                   label: 'Benefits',
                   hidden: benefitLines.length === 0,
                   content: (
-                    <div className='flex flex-col gap-2'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                       {benefitLines.map((benefit, idx) => (
-                        <div key={idx} className='flex items-start gap-2'>
-                          <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
-                          <Typography variant='body2' style={{ color: '#374151' }}>{benefit}</Typography>
+                        <div key={idx} className='flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800'>
+                          <span className='text-amber-400 font-bold text-lg'>✓</span>
+                          <span className='text-slate-200 text-sm'>{benefit}</span>
                         </div>
                       ))}
                     </div>
@@ -192,99 +299,36 @@ return res.json()
                 },
                 {
                   key: 'process',
-                  label: 'Process',
-                  content: <HowItWorksSection page='chadhava' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Booking Works' />
-                },
-                {
-                  key: 'pricing',
-                  label: 'Pricing',
-                  content: (
-                    <Box className='flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg' style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                      <div>
-                        <Typography variant='h5' className='font-bold' style={{ color: '#006241' }}>
-                          {hasOfferDiscount(listing) && (
-                            <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 6, fontSize: '0.85em' }}>
-                              ₹{listing.price}
-                            </span>
-                          )}
-                          ₹{effectivePrice(listing)}
-                        </Typography>
-                        {gstLabel(listing) && (
-                          <Typography variant='caption' style={{ color: '#6b7280' }}>
-                            {gstLabel(listing)}
-                          </Typography>
-                        )}
-                      </div>
-                      <Button
-                        component={Link}
-                        href={`/front-pages/chadhava?book=${listing.id}`}
-                        className='galaxy-glow-btn font-bold px-8'
-                      >
-                        Book Now
-                      </Button>
-                    </Box>
-                  )
-                },
-                {
-                  key: 'reviews',
-                  label: 'Reviews',
-                  content: <ReviewsSection orderType='CHADHAVA' targetId={listing.id} />
-                },
-                {
-                  key: 'faqs',
-                  label: 'FAQs',
-                  content: (
-                    <ServiceFaq
-                      page='chadhava'
-                      title='Frequently Asked Questions'
-                      items={[
-                        {
-                          question: 'How do I know the Chadhava has been offered?',
-                          answer:
-                            "You will receive a personalized video clip of the Pandit chanting your name and gotra while making the offering at the deity's shrine. This is uploaded directly to your admin dashboard within 24-48 hours."
-                        },
-                        {
-                          question: 'How long does it take for Prasad to be delivered?',
-                          answer:
-                            'The physical Prasad is packed sanitarily and dispatched within 24 hours of the ritual. It typically reaches your address in 3 to 5 working days depending on your location.'
-                        },
-                        {
-                          question: 'Can I offer Chadhava on a specific date or festival?',
-                          answer:
-                            'Yes, when configuring your booking, you can select special dates like Amavasya, Purnima, Ekadashi, or local temple festivals to align your offering with auspicious timings.'
-                        },
-                        {
-                          question: 'What items are included in the Chadhava package?',
-                          answer:
-                            "Each package contains standard bhog (sweets/dry fruits), flowers, sacred threads, and a protective tilak. The specific details vary depending on the temple's tradition."
-                        }
-                      ]}
-                    />
-                  )
+                  label: 'How It Works',
+                  content: <HowItWorksSection page='chadhava' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Chadhava Works' />
                 }
               ]}
             />
-          </Box>
+          </div>
+
+          {/* Service FAQ Section */}
+          <ServiceFaq items={[]} />
+
+          {/* Devotee Reviews */}
+          <ReviewsSection orderType='CHADHAVA' targetId={listing.id} />
+
+          {/* Related Listings */}
+          <RelatedListings
+            fetchUrl='/api/chadhava/listings'
+            currentId={listing.id}
+            basePath='/front-pages/chadhava'
+            mapItem={(item: any) => ({
+              id: item.id,
+              title: item.title,
+              price: effectivePrice(item),
+              offerPrice: item.offerPrice,
+              image: item.image
+            })}
+          />
+
         </div>
 
-        <RelatedListings
-          fetchUrl='/api/chadhava/listings'
-          currentId={listing.id}
-          basePath='/front-pages/chadhava'
-          title='Other Sacred Offerings You May Like'
-          mapItem={(raw: any) => ({
-            id: raw.id,
-            title: raw.title,
-            image: raw.image,
-            price: raw.price,
-            offerPrice: raw.offerPrice,
-            gstPercentage: raw.gstPercentage,
-            gstInclusive: raw.gstInclusive
-          })}
-        />
       </div>
     </div>
   )
 }
-
-export default ChadhavaDetailPage

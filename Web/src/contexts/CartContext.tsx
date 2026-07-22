@@ -34,7 +34,7 @@ type CartContextType = {
   clearCart: () => void
   cartOpen: boolean
   setCartOpen: (open: boolean) => void
-  checkout: (opts?: { shippingAddress?: string }) => Promise<CheckoutResult>
+  checkout: (opts?: { shippingAddress?: string; itemsOverride?: CartItem[] }) => Promise<CheckoutResult>
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -106,15 +106,21 @@ return
   // in `item.details`; quick "Add to Cart" lines fall back to the logged-in user's name and
   // placeholder values, which is a known simplification worth revisiting once real checkout
   // forms collect this up front for every line.
-  const checkout = async (opts?: { shippingAddress?: string }): Promise<CheckoutResult> => {
+  // `itemsOverride` lets a caller (e.g. a "Buy Now" button) check out one specific item
+  // immediately without first going through `addToCart` + waiting for the cart state to update
+  // (React batches that, so reading `cart` right after `addToCart` would still see the old
+  // value) and without permanently adding it to the persisted cart.
+  const checkout = async (opts?: { shippingAddress?: string; itemsOverride?: CartItem[] }): Promise<CheckoutResult> => {
     if (!session) {
       setCartOpen(false)
       router.push('/login?redirectTo=/front-pages/landing-page')
-      
+
 return { success: false, errors: ['You must be logged in to checkout.'] }
     }
 
-    if (cart.length === 0) return { success: false, errors: ['Your cart is empty.'] }
+    const itemsToProcess = opts?.itemsOverride ?? cart
+
+    if (itemsToProcess.length === 0) return { success: false, errors: ['Your cart is empty.'] }
 
     try {
       const { loadRazorpayScript } = await import('@/libs/razorpayClient')
@@ -130,7 +136,7 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
     const errors: string[] = []
     const successfulOrderIds: string[] = []
 
-    for (const item of cart) {
+    for (const item of itemsToProcess) {
       const d = item.details || {}
       const fallbackName = d.name || session.user?.name || 'Devotee'
       const fallbackDob = d.dob || new Date().toISOString().slice(0, 10)
@@ -271,7 +277,10 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
     }
 
     if (errors.length === 0) {
-      clearCart()
+      // Only clear the persisted cart when we actually checked it out — a Buy Now purchase
+      // (itemsOverride) shouldn't touch whatever's still sitting in the customer's real cart.
+      if (!opts?.itemsOverride) clearCart()
+
       return { success: true, orderIds: successfulOrderIds }
     }
 

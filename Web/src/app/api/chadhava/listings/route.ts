@@ -23,9 +23,9 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { title, description, location, image, price, offerPrice, gstPercentage, gstInclusive, significance, benefits, secondaryTabLabel, media } = body
 
-    if (!title || !description || !image || typeof price !== 'number' || price <= 0) {
+    if (!title || !image || typeof price !== 'number' || price <= 0) {
       return NextResponse.json(
-        { error: 'title, description, image and a positive price are required.' },
+        { error: 'title, image and a positive price are required.' },
         { status: 400 }
       )
     }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const listing = await prisma.chadhavaListing.create({
       data: {
         title,
-        description,
+        description: description || '',
         location,
         image,
         price,

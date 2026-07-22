@@ -29,8 +29,9 @@ type BestSellerProduct = Priced & {
 const FALLBACK_PRODUCTS: BestSellerProduct[] = []
 
 const BestSellers = () => {
-  const { addToCart } = useCart()
+  const { addToCart, checkout } = useCart()
   const [products, setProducts] = useState<BestSellerProduct[]>(FALLBACK_PRODUCTS)
+  const [buyingId, setBuyingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/ecommerce/products?bestseller=1')
@@ -64,8 +65,31 @@ const BestSellers = () => {
       name: p.name,
       price: effectivePrice(p),
       image: p.image,
-      type: 'product'
+      type: 'product',
+      orderPayload: { productId: p.id }
     })
+  }
+
+  const handleBuyNow = async (p: BestSellerProduct) => {
+    setBuyingId(p.id)
+
+    try {
+      await checkout({
+        itemsOverride: [
+          {
+            id: p.id,
+            name: p.name,
+            price: effectivePrice(p),
+            image: p.image,
+            quantity: 1,
+            type: 'product',
+            orderPayload: { productId: p.id }
+          }
+        ]
+      })
+    } finally {
+      setBuyingId(null)
+    }
   }
 
   return (
@@ -139,6 +163,16 @@ const BestSellers = () => {
                     <i className='tabler-plus text-xs' /> Add
                   </Button>
                 </div>
+                <Button
+                  onClick={() => handleBuyNow(p)}
+                  disabled={buyingId === p.id}
+                  fullWidth
+                  size='small'
+                  className='font-bold'
+                  style={{ backgroundColor: '#006241', color: '#fff', textTransform: 'none' }}
+                >
+                  {buyingId === p.id ? 'Processing…' : 'Buy Now'}
+                </Button>
                 <Button
                   component={Link}
                   href={p.id ? `/front-pages/ecommerce/${p.id}` : '/front-pages/ecommerce'}

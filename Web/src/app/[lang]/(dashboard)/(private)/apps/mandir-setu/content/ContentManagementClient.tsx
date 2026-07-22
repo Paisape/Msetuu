@@ -137,7 +137,7 @@ const purposeColumns: ColumnConfig[] = [
 // -- Chadhava Listings --------------------------------------------------------
 const chadhavaFields: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text', required: true },
-  { key: 'description', label: 'Offering description', type: 'textarea', required: true },
+  { key: 'description', label: 'Offering description', type: 'textarea', optional: true, helperText: 'Optional — leave blank if this offering doesn\'t need one.' },
   { key: 'location', label: 'Temple location', type: 'text' },
   { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'chadhava' },
   { key: 'price', label: 'Sale price (₹)', type: 'number', required: true },
@@ -620,8 +620,10 @@ const TABS = [
   }
 ]
 
+// Must stay 1:1 with the TABS array above (same order, same count) — a mismatch here silently
+// sends admins to the wrong form (e.g. "Products" rendering the Categories tab), which is exactly
+// what happened before this was aligned, so double check both arrays when adding/removing a tab.
 const SLUG_TO_INDEX: Record<string, number> = {
-  'contact-messages': 13,
   'banners': 0,
   'shop-purposes': 1,
   'chadhava-listings': 2,
@@ -634,7 +636,8 @@ const SLUG_TO_INDEX: Record<string, number> = {
   'darshan-temples': 9,
   'faqs': 10,
   'how-it-works': 11,
-  'reviews': 12
+  'reviews': 12,
+  'contact-messages': 13
 }
 
 const ContentManagementClient = ({ slug }: { slug: string }) => {

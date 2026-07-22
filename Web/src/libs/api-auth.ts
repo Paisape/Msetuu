@@ -25,7 +25,8 @@ export type SessionUser = {
  * session cookie, so every route below stays agnostic to which transport was used.
  */
 async function getEmailFromBearerToken(): Promise<string | null> {
-  const authHeader = headers().get('authorization')
+  const headerList = await headers()
+  const authHeader = headerList.get('authorization')
 
   if (!authHeader?.startsWith('Bearer ')) return null
 
@@ -96,6 +97,8 @@ export async function requireAdmin(): Promise<SessionUser> {
 
   return user
 }
+
+export const requireAdminApi = requireAdmin
 
 export function handleApiError(err: unknown) {
   if (err instanceof ApiAuthError) {

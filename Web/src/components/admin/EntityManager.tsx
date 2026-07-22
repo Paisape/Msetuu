@@ -79,6 +79,23 @@ const uploadFile = async (file: File, uploadType: string): Promise<UploadResult>
   return { url: data.url, originalSizeBytes: data.originalSizeBytes ?? file.size, finalSizeBytes: data.finalSizeBytes ?? file.size }
 }
 
+// A Google Drive "share" link (drive.google.com/file/d/<id>/view, or open?id=<id>) points to an
+// HTML viewer page, not raw image bytes, so it can never render in an <img> tag as-is. Rewrite it
+// to Drive's direct-content endpoint instead. Only works if the file is shared as "Anyone with
+// the link can view" — Drive still occasionally rate-limits/blocks hotlinking at scale, so this
+// is best-effort, not a guarantee.
+const normalizeImageUrl = (url: string): string => {
+  const trimmed = url.trim()
+
+  if (!/drive\.google\.com/.test(trimmed)) return trimmed
+
+  const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+
+  if (!fileIdMatch) return trimmed
+
+  return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+}
+
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -360,8 +377,14 @@ const EntityManager = ({ title, listUrl, itemUrl, fields, columns, emptyMessage,
                     label={field.label}
                     placeholder='https://...'
                     fullWidth
+                    helperText='Pasting a Google Drive share link auto-converts it to a direct image link. The file must be shared as "Anyone with the link".'
                     value={value ?? ''}
                     onChange={e => handleFieldChange(field.key, e.target.value)}
+                    onBlur={e => {
+                      const normalized = normalizeImageUrl(e.target.value)
+
+                      if (normalized !== e.target.value) handleFieldChange(field.key, normalized)
+                    }}
                   />
                   <div className='flex items-center gap-2 flex-wrap'>
                     <Button component='label' variant='outlined' size='small' disabled={uploadingKey === field.key}>
