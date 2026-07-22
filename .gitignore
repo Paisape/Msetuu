@@ -1,0 +1,14 @@
+# Mobile Apps & Build Artifacts
+Mobile/
+Mobile-Astrologer/
+Mobile-Bramhin/
+*.apk
+*.fig
+.env
+.env.local
+.env.*.local
+node_modules/
+dist/
+.next/
+.expo/
+build/
