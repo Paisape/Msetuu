@@ -9,7 +9,7 @@ import type { RootStackParamList } from '../navigation/types'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export default function HomeScreen({ navigation }: { navigation: Nav }) {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const [muted, setMuted] = useState(false)
 
   const menuItems = [
@@ -30,9 +30,15 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
           <TouchableOpacity style={styles.iconButton} onPress={() => setMuted(m => !m)}>
             <Text style={styles.iconButtonText}>{muted ? '🔇' : '🔊'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('EditProfile')}>
-            <Text style={styles.iconButtonText}>👤</Text>
-          </TouchableOpacity>
+          {user ? (
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('EditProfile')}>
+              <Text style={styles.iconButtonText}>👤</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.loginPill} onPress={() => navigation.navigate('SignIn')}>
+              <Text style={styles.loginPillText}>Sign In</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Notifications')}>
             <Text style={styles.iconButtonText}>🔔</Text>
           </TouchableOpacity>
@@ -45,12 +51,20 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
 
         <OrbitMenu items={menuItems} size={320} />
 
-        <TouchableOpacity onPress={() => navigation.navigate('MyBookings')} style={styles.bookingsLink}>
-          <Text style={styles.bookingsLinkText}>My Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={logout} style={{ marginTop: 12 }}>
-          <Text style={styles.logout}>Logout</Text>
-        </TouchableOpacity>
+        {user ? (
+          <>
+            <TouchableOpacity onPress={() => navigation.navigate('MyBookings')} style={styles.bookingsLink}>
+              <Text style={styles.bookingsLinkText}>My Bookings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={logout} style={{ marginTop: 12 }}>
+              <Text style={styles.logout}>Logout</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity onPress={() => navigation.navigate('SignIn')} style={styles.bookingsLink}>
+            <Text style={styles.bookingsLinkText}>🔑 Sign In / Register</Text>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </View>
   )
@@ -71,6 +85,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)'
   },
   iconButtonText: { fontSize: 18 },
+  loginPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#ff6b35',
+    backgroundColor: 'rgba(255,107,53,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loginPillText: { color: '#ff6b35', fontWeight: '700', fontSize: 12 },
   logoBlock: { alignItems: 'center', marginTop: 12, marginBottom: 8 },
   logo: { fontSize: 26, fontWeight: '800', color: '#ff6b35' },
   tagline: { color: '#e5e5e5', fontSize: 12, marginTop: 4 },

@@ -5,6 +5,7 @@ import { Alert, Text } from 'react-native'
 import { createChadhavaOrder, getChadhavaListing } from '../api/bookings'
 import type { ChadhavaListing, PersonDetail } from '../api/types'
 import { Card, LoadingView, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui'
+import { useAuth } from '../context/AuthContext'
 import type { RootStackParamList } from '../navigation/types'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReviewChadhavaBooking'>
@@ -12,6 +13,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ReviewChadhavaBooking'>
 export default function ReviewChadhavaBookingScreen({ route, navigation }: Props) {
   const { listingId, name, gender, dob, birthPlace, comment, personsJson } = route.params
   const persons: PersonDetail[] = JSON.parse(personsJson)
+  const { user } = useAuth()
   const [listing, setListing] = useState<ChadhavaListing | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -22,6 +24,15 @@ export default function ReviewChadhavaBookingScreen({ route, navigation }: Props
   }, [listingId])
 
   const handlePay = async () => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in or create an account to complete your chadhava booking.', [
+        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+        { text: 'Cancel', style: 'cancel' }
+      ])
+
+      return
+    }
+
     setSubmitting(true)
 
     try {

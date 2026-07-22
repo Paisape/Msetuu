@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Alert, Text } from 'react-native'
 
 import { Field, PrimaryButton, Screen, ScreenTitle, SecondaryButton } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
+import type { RootStackParamList } from '../navigation/types'
 
-export default function SignInScreen({ onNavigateToRegister }: { onNavigateToRegister: () => void }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'SignIn'>
+
+export default function SignInScreen({ navigation }: Props) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,6 +25,11 @@ export default function SignInScreen({ onNavigateToRegister }: { onNavigateToReg
 
     try {
       await login(email, password)
+      if (navigation.canGoBack()) {
+        navigation.goBack()
+      } else {
+        navigation.replace('Home')
+      }
     } catch (err) {
       Alert.alert('Login failed', err instanceof Error ? err.message : 'Please try again.')
     } finally {
@@ -35,7 +44,8 @@ export default function SignInScreen({ onNavigateToRegister }: { onNavigateToReg
       <Field label='Email' value={email} onChangeText={setEmail} placeholder='you@example.com' keyboardType='email-address' />
       <Field label='Password' value={password} onChangeText={setPassword} placeholder='••••••••' secureTextEntry />
       <PrimaryButton label='Get OTP / Login' onPress={handleLogin} loading={loading} />
-      <SecondaryButton label='New here? Create an account' onPress={onNavigateToRegister} />
+      <SecondaryButton label='New here? Create an account' onPress={() => navigation.navigate('Register')} />
     </Screen>
   )
 }
+

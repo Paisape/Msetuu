@@ -4,15 +4,26 @@ import { Alert, Text } from 'react-native'
 
 import { createKundliOrder } from '../api/bookings'
 import { Card, PrimaryButton, Screen, ScreenTitle } from '../components/ui'
+import { useAuth } from '../context/AuthContext'
 import type { RootStackParamList } from '../navigation/types'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReviewKundliBooking'>
 
 export default function ReviewKundliBookingScreen({ route, navigation }: Props) {
   const { listingId, name, gender, dob, timeOfBirth, birthPlace, comment } = route.params
+  const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in or create an account to request your Kundali.', [
+        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+        { text: 'Cancel', style: 'cancel' }
+      ])
+
+      return
+    }
+
     setSubmitting(true)
 
     try {

@@ -68,7 +68,7 @@ function AuthStack() {
 }
 
 export default function RootNavigator() {
-  const { user, initializing } = useAuth()
+  const { initializing } = useAuth()
   const [splashDone, setSplashDone] = useState(false)
 
   if (!splashDone) {
@@ -79,13 +79,13 @@ export default function RootNavigator() {
     return null
   }
 
-  if (!user) {
-    return <AuthStack />
-  }
-
   return (
     <Stack.Navigator initialRouteName='Home' screenOptions={{ headerTintColor: '#ff6b35' }}>
       <Stack.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name='SignIn' component={SignInScreen} options={{ title: 'Sign In' }} />
+      <Stack.Screen name='Register' component={RegisterScreen} options={{ title: 'Create Account' }} />
+      <Stack.Screen name='OTPVerification' component={OTPVerificationScreen} options={{ title: 'Verify OTP' }} />
+
       <Stack.Screen name='PilgrimServices' component={PilgrimServicesScreen} options={{ title: 'Pilgrim Services' }} />
       <Stack.Screen name='GodGoddesses' component={GodGoddessesScreen} options={{ title: 'God / Goddesses' }} />
       <Stack.Screen name='CitySearch' component={CitySearchScreen} options={{ title: 'Search City' }} />
@@ -133,3 +133,4 @@ export default function RootNavigator() {
     </Stack.Navigator>
   )
 }
+

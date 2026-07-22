@@ -30,8 +30,11 @@ export default function StartSessionScreen({ route, navigation }: Props) {
       return
     }
 
-    if (!user?.name || !user?.email) {
-      Alert.alert('Sign in required', 'Please sign in again.')
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in or create an account to book an astrologer consultation.', [
+        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+        { text: 'Cancel', style: 'cancel' }
+      ])
 
       return
     }
