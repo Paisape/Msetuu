@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY Web/package.json Web/package-lock.json* ./
+COPY Web/package.json ./
 RUN npm install --legacy-peer-deps --ignore-scripts
 
 # Rebuild the source code only when needed
