@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { sanitizeMediaGallery } from '@/libs/mediaGallery'
+import { notifyNewListing } from '@/libs/notifyEvent'
 
 // GET /api/epuja/listings — public catalog, optionally filtered by ?category=
 export async function GET(req: Request) {
@@ -59,6 +60,8 @@ export async function POST(req: Request) {
       },
       include: { packages: true }
     })
+
+    notifyNewListing('E-Puja', listing.title, `/front-pages/epuja/${listing.id}`)
 
     return NextResponse.json(listing, { status: 201 })
   } catch (err) {

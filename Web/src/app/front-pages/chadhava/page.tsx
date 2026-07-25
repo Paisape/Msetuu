@@ -19,6 +19,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
+import Pagination from '@mui/material/Pagination'
 
 import { useCart } from '@/contexts/CartContext'
 import ServiceFaq from '@/components/ServiceFaq'
@@ -50,6 +51,8 @@ const ChadhavaPage = () => {
   const [bookingOpen, setBookingOpen] = useState(false)
   const [selectedChadhava, setSelectedChadhava] = useState<ChadhavaItem | null>(null)
   const [listings, setListings] = useState<ChadhavaItem[]>(FALLBACK_LISTINGS)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 9
 
   const [formData, setFormData] = useState({
     name: '',
@@ -58,7 +61,6 @@ const ChadhavaPage = () => {
     birthPlace: '',
     comment: ''
   })
-
 
   // Chadhava pricing is per person — every person offered under this booking needs their own
   // name + gotra, and the total charged is (per-person price x number of persons).
@@ -144,6 +146,11 @@ const ChadhavaPage = () => {
     }, 1500)
   }
 
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentListings = listings.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(listings.length / itemsPerPage)
+
   return (
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
       <div className='max-w-7xl mx-auto'>
@@ -156,7 +163,7 @@ const ChadhavaPage = () => {
 
         {/* Listings Grid - small vertical cards (3 per row) */}
         <Grid container spacing={6}>
-          {listings.map((item) => (
+          {currentListings.map((item) => (
             <Grid size={{ xs: 12, sm: 4, md: 4 }} key={item.id}>
               <Card className='galaxy-card flex flex-col justify-between overflow-hidden h-full relative'>
                 <div className='relative h-48 w-full overflow-hidden'>
@@ -213,6 +220,22 @@ const ChadhavaPage = () => {
             </Grid>
           ))}
         </Grid>
+
+        {totalPages > 1 && (
+          <Box className='flex justify-center mt-8'>
+            <Pagination 
+              count={totalPages} 
+              page={currentPage} 
+              onChange={(e, page) => setCurrentPage(page)} 
+              color='primary' 
+              size='large'
+              sx={{
+                '& .MuiPaginationItem-root': { color: '#a7f3d0' },
+                '& .Mui-selected': { backgroundColor: 'rgba(16, 185, 129, 0.2) !important' }
+              }}
+            />
+          </Box>
+        )}
 
         {/* Booking & Details Entry Dialog */}
         <Dialog 

@@ -5,6 +5,7 @@ import { requireUser, requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { cancelInvoiceAndRefund } from '@/libs/invoice'
 import { expireStaleVideos } from '@/libs/videoUpload'
+import { notifyOrderAccepted, notifyVideoUploaded } from '@/libs/notifyEvent'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -45,6 +46,10 @@ export async function PATCH(req: Request, { params }: Params) {
     const body = await req.json()
     const { status, paymentStatus, videoUrl, imageUrl } = body
 
+    const before = await prisma.pujaOrder.findUnique({ where: { id }, select: { status: true, videoUrl: true, userId: true } })
+
+    if (!before) return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+
     const data: Record<string, unknown> = {}
 
     if (status !== undefined) {
@@ -80,7 +85,13 @@ export async function PATCH(req: Request, { params }: Params) {
 
       if (status === 'CANCELLED') {
         await cancelInvoiceAndRefund('EPUJA', id)
+      } else if (before.status === 'PENDING' && status !== 'PENDING') {
+        notifyOrderAccepted(before.userId, 'E-Puja', id)
       }
+    }
+
+    if (videoUrl !== undefined && videoUrl && !before.videoUrl) {
+      notifyVideoUploaded(before.userId, 'E-Puja', id)
     }
 
     return NextResponse.json(order)

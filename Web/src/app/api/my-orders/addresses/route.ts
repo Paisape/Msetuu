@@ -10,7 +10,7 @@ export async function GET() {
       select: { shippingAddress: true },
       distinct: ['shippingAddress']
     })
-    const addresses = orders.map(o => o.shippingAddress).filter(Boolean)
+    const addresses = orders.map((o: any) => o.shippingAddress).filter(Boolean)
     return NextResponse.json(addresses)
   } catch (err) {
     return handleApiError(err)

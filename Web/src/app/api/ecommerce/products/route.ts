@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { sanitizeMediaGallery } from '@/libs/mediaGallery'
+import { notifyNewListing } from '@/libs/notifyEvent'
 
 // GET /api/ecommerce/products — public catalog, filterable by category, purpose, planet, bestseller
 export async function GET(req: Request) {
@@ -55,7 +56,9 @@ export async function POST(req: Request) {
       significance,
       benefits,
       secondaryTabLabel,
-      media
+      media,
+      specification,
+      howToWear
     } = body
 
     if (!name || !category || typeof price !== 'number' || price <= 0 || !image || !description) {
@@ -89,9 +92,13 @@ export async function POST(req: Request) {
         significance: significance || null,
         benefits: benefits || null,
         secondaryTabLabel: secondaryTabLabel || null,
-        media: media !== undefined ? (sanitizeMediaGallery(media) as any) : undefined
+        media: media !== undefined ? (sanitizeMediaGallery(media) as any) : undefined,
+        specification: specification || null,
+        howToWear: howToWear || null
       }
     })
+
+    notifyNewListing('Product', product.name, `/front-pages/ecommerce/${product.id}`)
 
     return NextResponse.json(product, { status: 201 })
   } catch (err) {

@@ -28,7 +28,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat su-exec
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -50,7 +50,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
 
 RUN chmod +x ./entrypoint.sh
 
-USER nextjs
+# Stay root here on purpose: entrypoint.sh fixes ownership of any mounted volume
+# (e.g. a persistent /app/public/uploads mount, which platforms create as root)
+# before dropping privileges to the nextjs user via su-exec. Without this, a
+# runtime-mounted volume silently overrides the --chown set at build time above
+# and uploads fail with EACCES even though the image itself is correct.
 
 EXPOSE 3000
 

@@ -8,6 +8,7 @@ export type MediaGalleryItem = { url: string; type: 'image' | 'video' }
 type Props = {
   media?: MediaGalleryItem[] | null
   title?: string
+  onItemClick?: (item: MediaGalleryItem) => void
 }
 
 // Auto-scrolling horizontal gallery of extra images/videos for a listing/product detail page,
@@ -15,7 +16,7 @@ type Props = {
 // (a single item isn't worth an animated strip — the hero image already covers that case).
 // Scroll animation + pause-on-hover are defined once in globals.css (.media-carousel-track) to
 // avoid re-declaring keyframes per instance.
-const MediaCarousel = ({ media, title = 'Gallery' }: Props) => {
+const MediaCarousel = ({ media, title = 'Gallery', onItemClick }: Props) => {
   const items = Array.isArray(media) ? media.filter(m => m && m.url) : []
 
   if (items.length < 2) return null
@@ -40,13 +41,17 @@ const MediaCarousel = ({ media, title = 'Gallery' }: Props) => {
           {loopItems.map((item, i) => (
             <Box
               key={`${item.url}-${i}`}
+              onClick={() => onItemClick?.(item)}
               sx={{
                 flex: '0 0 auto',
                 width: { xs: 140, sm: 200 },
                 height: { xs: 140, sm: 200 },
                 borderRadius: '10px',
                 overflow: 'hidden',
-                border: '1px solid rgba(16,185,129,0.2)'
+                border: '1px solid rgba(16,185,129,0.2)',
+                cursor: onItemClick ? 'pointer' : 'default',
+                transition: 'transform 0.2s',
+                '&:hover': onItemClick ? { transform: 'scale(1.05)' } : {}
               }}
             >
               {item.type === 'video' ? (

@@ -14,6 +14,7 @@ export type HowItWorksStepItem = {
 type Props = {
   title?: string
   subtitle?: string
+  layout?: 'horizontal' | 'vertical'
 
   // Which page's steps to load from the backend (Content Management > How It Works). When
   // admin-managed steps exist for this page, they replace `items` entirely; otherwise `items`
@@ -31,7 +32,7 @@ export const DEFAULT_HOW_IT_WORKS_STEPS: HowItWorksStepItem[] = [
   { title: 'Receive Your Video', description: 'Get a video of your package by email — download it within 48 hours of receiving it.' }
 ]
 
-export default function HowItWorksSection({ title = 'How It Works', subtitle = 'A simple, transparent process from start to finish.', page, items }: Props) {
+export default function HowItWorksSection({ title = 'How It Works', subtitle = 'A simple, transparent process from start to finish.', layout = 'horizontal', page, items }: Props) {
   const [displaySteps, setDisplaySteps] = useState<HowItWorksStepItem[]>(items)
 
   useEffect(() => {
@@ -60,47 +61,81 @@ export default function HowItWorksSection({ title = 'How It Works', subtitle = '
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
-        {displaySteps.map((step, idx) => (
-          <Grid size={{ xs: 12, sm: 6, md: 12 / Math.min(displaySteps.length, 4) }} key={idx}>
-            <Box
-              className='galaxy-card h-full'
-              sx={{
-                p: 3,
-                borderRadius: '16px',
-                border: '1px solid rgba(16,185,129,0.15)',
-                textAlign: 'center',
-                position: 'relative'
-              }}
-            >
+      {layout === 'horizontal' ? (
+        <Grid container spacing={4}>
+          {displaySteps.map((step, idx) => (
+            <Grid size={{ xs: 12, sm: 6, md: 12 / Math.min(displaySteps.length, 4) }} key={idx}>
+              <Box
+                className='galaxy-card h-full'
+                sx={{
+                  p: 3,
+                  borderRadius: '16px',
+                  border: '1px solid rgba(16,185,129,0.15)',
+                  textAlign: 'center',
+                  position: 'relative'
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    mx: 'auto',
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '18px',
+                    color: '#fff',
+                    background: 'linear-gradient(135deg, #10b981, #006241)'
+                  }}
+                >
+                  {idx + 1}
+                </Box>
+                <Typography className='font-bold mb-2' style={{ color: '#047857' }}>
+                  {step.title}
+                </Typography>
+                <Typography variant='body2' style={{ color: '#4b5563' }}>
+                  {step.description}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Box className='flex flex-col gap-4'>
+          {displaySteps.map((step, idx) => (
+            <Box key={idx} className='flex items-start gap-3 galaxy-card p-3 rounded-xl border border-emerald-500/15'>
               <Box
                 sx={{
-                  width: 44,
-                  height: 44,
+                  width: 32,
+                  height: 32,
                   borderRadius: '50%',
-                  mx: 'auto',
-                  mb: 2,
+                  flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 700,
-                  fontSize: '18px',
+                  fontSize: '14px',
                   color: '#fff',
                   background: 'linear-gradient(135deg, #10b981, #006241)'
                 }}
               >
                 {idx + 1}
               </Box>
-              <Typography className='font-bold mb-2' style={{ color: '#047857' }}>
-                {step.title}
-              </Typography>
-              <Typography variant='body2' style={{ color: '#4b5563' }}>
-                {step.description}
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant='subtitle2' className='font-bold mb-0.5' style={{ color: '#047857' }}>
+                  {step.title}
+                </Typography>
+                <Typography variant='body2' style={{ color: '#4b5563', fontSize: '0.8rem' }}>
+                  {step.description}
+                </Typography>
+              </Box>
             </Box>
-          </Grid>
-        ))}
-      </Grid>
+          ))}
+        </Box>
+      )}
     </Box>
   )
 }

@@ -14,6 +14,8 @@ import type { FieldConfig, ColumnConfig } from '@/components/admin/EntityManager
 import BulkImportPanel from '@/components/admin/BulkImportPanel'
 import PujaPackagesDialog from './PujaPackagesDialog'
 import MediaGalleryDialog from './MediaGalleryDialog'
+import FaqManagerClient from './FaqManagerClient'
+import AboutUsManager from './AboutUsManager'
 
 // Wraps an EntityManager with a "Bulk Import" panel above it (Chadhava/E-Puja/Products only).
 // EntityManager owns its own fetch internally with no exposed refresh method, so a successful
@@ -93,7 +95,8 @@ const PAGE_OPTIONS = [
   { value: 'kundli', label: 'Kundli' },
   { value: 'ecommerce', label: 'E-commerce' },
   { value: 'yatra', label: 'Yatra Booking' },
-  { value: 'darshan', label: 'Darshan' },
+  { value: 'darshan', label: '3D Darshan' },
+  { value: 'darshan-daily', label: 'Darshan' },
   { value: 'geotag', label: 'Geo-Tagging' },
   { value: 'login', label: 'Login Page' },
   { value: 'register', label: 'Register Page' }
@@ -233,7 +236,9 @@ const productFields: FieldConfig[] = [
     helperText: 'Renames the second tab on the detail page.'
   },
   { key: 'significance', label: 'Certification / Origin details (detail page)', type: 'textarea' },
-  { key: 'benefits', label: 'Benefits (detail page)', type: 'textarea', helperText: 'One benefit per line — shown as a bullet list on the detail page.' }
+  { key: 'benefits', label: 'Benefits (detail page)', type: 'textarea', helperText: 'One benefit per line — shown as a bullet list on the detail page.' },
+  { key: 'specification', label: 'Product Specification (detail page)', type: 'textarea', optional: true, helperText: 'One spec per line, e.g. "Weight: 5g" — shown as a bullet list on the detail page.' },
+  { key: 'howToWear', label: 'How to Wear (detail page)', type: 'textarea', optional: true, helperText: 'Freeform usage/wearing instructions.' }
 ]
 
 const productColumns: ColumnConfig[] = [
@@ -334,6 +339,53 @@ const categoryColumns: ColumnConfig[] = [
 // Bookable slots shown on the consultation form's slot picker (e.g. "9:00 AM - 10:00 AM").
 // Not exclusive — multiple customers can book the same slot, since astrologer availability
 // across slots is coordinated manually by admins rather than enforced here.
+// Consultation types (Kundli Reading, Vastu, Numerology...) — this is what prices a Jyotish
+// booking together with the session duration the visitor picks (Half Hour/1 Hour/1.5 Hours), see
+// ConsultationBooking.category + durationMins. A separate "Purpose" dropdown previously existed
+// on the booking form but was removed since it duplicated this category selection.
+const jyotishCategoryFields: FieldConfig[] = [
+  { key: 'name', label: 'Category name (e.g. Kundli Reading, Vastu Consultation)', type: 'text', required: true },
+  { key: 'price30', label: 'Half Hour price (₹)', type: 'number', required: true },
+  { key: 'offerPrice30', label: 'Half Hour offer price (₹) — optional, charged instead when lower', type: 'number', optional: true },
+  { key: 'price60', label: '1 Hour price (₹)', type: 'number', required: true },
+  { key: 'offerPrice60', label: '1 Hour offer price (₹) — optional, charged instead when lower', type: 'number', optional: true },
+  { key: 'price90', label: '1.5 Hours price (₹)', type: 'number', required: true },
+  { key: 'offerPrice90', label: '1.5 Hours offer price (₹) — optional, charged instead when lower', type: 'number', optional: true },
+  { key: 'gstPercentage', label: 'GST %', type: 'number', optional: true, defaultValue: 0 },
+  { key: 'gstInclusive', label: 'Price is inclusive of GST', type: 'boolean', defaultValue: true },
+  { key: 'active', label: 'Active (shown on the booking form)', type: 'boolean', defaultValue: true }
+]
+
+const jyotishCategoryTierCell = (item: Record<string, any>) => {
+  const tier = (price: number, offerPrice: number | null, label: string) => (
+    <span key={label} style={{ marginRight: 10 }}>
+      {label}:{' '}
+      {offerPrice && offerPrice > 0 && offerPrice < price ? (
+        <>
+          <span style={{ textDecoration: 'line-through', opacity: 0.6, marginRight: 4 }}>₹{price}</span>
+          <strong>₹{offerPrice}</strong>
+        </>
+      ) : (
+        `₹${price}`
+      )}
+    </span>
+  )
+
+  return (
+    <>
+      {tier(item.price30, item.offerPrice30, '30m')}
+      {tier(item.price60, item.offerPrice60, '1h')}
+      {tier(item.price90, item.offerPrice90, '1.5h')}
+    </>
+  )
+}
+
+const jyotishCategoryColumns: ColumnConfig[] = [
+  { key: 'name', label: 'Category' },
+  { key: 'price30', label: 'Pricing by Duration', render: jyotishCategoryTierCell },
+  { key: 'active', label: 'Active', render: item => <Chip size='small' label={item.active ? 'Yes' : 'No'} color={item.active ? 'success' : 'default'} /> }
+]
+
 const timeSlotFields: FieldConfig[] = [
   { key: 'label', label: 'Slot label (shown to customers)', type: 'text', required: true, helperText: 'e.g. "9:00 AM - 10:00 AM"' },
   { key: 'startTime', label: 'Start time (24-hour HH:mm)', type: 'text', required: true, helperText: 'e.g. 09:00' },
@@ -363,7 +415,15 @@ const kundliFields: FieldConfig[] = [
     helperText: 'Leave blank for no discount. If set and lower than sale price, sale price is shown crossed out.'
   },
   { key: 'gstPercentage', label: 'GST %', type: 'number', optional: true, defaultValue: 0 },
-  { key: 'gstInclusive', label: 'Price is inclusive of GST', type: 'boolean', defaultValue: true }
+  { key: 'gstInclusive', label: 'Price is inclusive of GST', type: 'boolean', defaultValue: true },
+  {
+    key: 'secondaryTabLabel',
+    label: 'Detail page tab label (defaults to "Details")',
+    type: 'text',
+    optional: true
+  },
+  { key: 'significance', label: 'About / Significance (detail page)', type: 'textarea', helperText: 'Longer descriptive text shown under the tab above.' },
+  { key: 'benefits', label: 'Benefits (detail page)', type: 'textarea', helperText: 'One benefit per line — shown as a bullet list on the detail page.' }
 ]
 
 const kundliColumns: ColumnConfig[] = [
@@ -373,10 +433,10 @@ const kundliColumns: ColumnConfig[] = [
   { key: 'price', label: 'Price', render: priceCell }
 ]
 
-// -- Darshan Temples ------------------------------------------------------
+// -- 3D Darshan (temple banner + QR code -> external 3D/AR experience) ----
 const darshanFields: FieldConfig[] = [
   { key: 'name', label: 'Temple name', type: 'text', required: true },
-  { key: 'location', label: 'Location', type: 'text', helperText: 'e.g. "Ayodhya, UP" — shown as a badge on the Darshan page.' },
+  { key: 'location', label: 'Location', type: 'text', helperText: 'e.g. "Ayodhya, UP" — shown as a badge on the 3D Darshan page.' },
   { key: 'description', label: 'Description', type: 'textarea' },
   { key: 'image', label: 'Banner image', type: 'image', required: true, uploadType: 'darshan' },
   { key: 'qrCodeUrl', label: 'QR code image', type: 'image', required: true, uploadType: 'qr' },
@@ -395,22 +455,41 @@ const darshanColumns: ColumnConfig[] = [
   { key: 'model3dUrl', label: '3D URL' }
 ]
 
+// -- Darshan (day-wise deity image + bhajan for the interactive Darshan page) --
+const DAY_OF_WEEK_OPTIONS = [
+  { value: '0', label: 'Sunday' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' }
+]
+
+const darshanDailyFields: FieldConfig[] = [
+  {
+    key: 'dayOfWeek',
+    label: 'Day of week',
+    type: 'select',
+    required: true,
+    options: DAY_OF_WEEK_OPTIONS,
+    helperText: 'One entry per day — this deity/bhajan shows automatically when that day comes around.'
+  },
+  { key: 'deityName', label: 'Deity name', type: 'text', required: true, helperText: 'e.g. "Lord Shiva" — shown as the caption under the image.' },
+  { key: 'image', label: 'Deity image', type: 'image', required: true, uploadType: 'darshan-daily', helperText: 'A clear, portrait-orientation photo/artwork of the deity — this is what visitors see and offer flowers to.' },
+  { key: 'bhajanTitle', label: 'Bhajan title', type: 'text', helperText: 'e.g. "Om Namah Shivaya Dhun" — shown next to the play button.' },
+  { key: 'bhajanUrl', label: 'Bhajan audio', type: 'audio', uploadType: 'bhajan', helperText: 'MP3 audio that plays when a visitor taps play on this day.' },
+  { key: 'description', label: 'Description', type: 'textarea', helperText: 'Optional — a short line about this deity/day shown on the page.' }
+]
+
+const darshanDailyColumns: ColumnConfig[] = [
+  { key: 'image', label: '', render: thumb },
+  { key: 'dayOfWeek', label: 'Day', render: item => DAY_OF_WEEK_OPTIONS.find(d => Number(d.value) === item.dayOfWeek)?.label ?? item.dayOfWeek },
+  { key: 'deityName', label: 'Deity' },
+  { key: 'bhajanTitle', label: 'Bhajan' }
+]
+
 // -- FAQs -------------------------------------------------------------------
-const faqFields: FieldConfig[] = [
-  { key: 'page', label: 'Page', type: 'select', required: true, options: PAGE_OPTIONS },
-  { key: 'question', label: 'Question', type: 'text', required: true },
-  { key: 'answer', label: 'Answer', type: 'textarea', required: true },
-  { key: 'order', label: 'Display order', type: 'number', defaultValue: 0 },
-  { key: 'active', label: 'Active', type: 'boolean', defaultValue: true }
-]
-
-const faqColumns: ColumnConfig[] = [
-  { key: 'page', label: 'Page' },
-  { key: 'question', label: 'Question' },
-  { key: 'order', label: 'Order' },
-  { key: 'active', label: 'Active', render: item => <Chip size='small' label={item.active ? 'Yes' : 'No'} color={item.active ? 'success' : 'default'} /> }
-]
-
 // -- How It Works Steps ------------------------------------------------------
 // Each row is one step of a page's "How It Works" section. Admins add/remove steps by
 // adding/deleting rows here — no separate list editor needed. See HowItWorksSection.tsx.
@@ -562,8 +641,35 @@ const TABS = [
       />
     )
   },
-  { label: 'Kundli Listings', Component: () => <EntityManager title='Kundli Listing' listUrl='/api/kundli/listings' itemUrl={(id: string) => `/api/kundli/listings/${id}`} fields={kundliFields} columns={kundliColumns} /> },
+  {
+    label: 'Kundli Listings',
+    Component: () => (
+      <EntityManager
+        title='Kundli Listing'
+        listUrl='/api/kundli/listings'
+        itemUrl={(id: string) => `/api/kundli/listings/${id}`}
+        fields={kundliFields}
+        columns={kundliColumns}
+        extraRowActions={(item, refresh) => (
+          <MediaGalleryDialog item={item} titleKey='title' patchUrl={`/api/kundli/listings/${item.id}`} uploadType='kundli' onSaved={refresh} />
+        )}
+      />
+    )
+  },
   { label: 'Astrologers', Component: () => <EntityManager title='Astrologer' listUrl='/api/jyotish/astrologers' itemUrl={(id: string) => `/api/jyotish/astrologers/${id}`} fields={astrologerFields} columns={astrologerColumns} /> },
+  {
+    label: 'Jyotish Categories',
+    Component: () => (
+      <EntityManager
+        title='Jyotish Category'
+        listUrl='/api/jyotish/categories?all=1'
+        itemUrl={(id: string) => `/api/jyotish/categories/${id}`}
+        fields={jyotishCategoryFields}
+        columns={jyotishCategoryColumns}
+        emptyMessage='No consultation categories yet — add at least one (e.g. "Kundli Reading") so visitors can book and pay on the Jyotish page.'
+      />
+    )
+  },
   {
     label: 'Jyotish Time Slots',
     Component: () => (
@@ -577,8 +683,21 @@ const TABS = [
       />
     )
   },
-  { label: 'Darshan Temples', Component: () => <EntityManager title='Darshan Temple' listUrl='/api/darshan' itemUrl={(id: string) => `/api/darshan/${id}`} fields={darshanFields} columns={darshanColumns} /> },
-  { label: 'FAQs', Component: () => <EntityManager title='FAQ' listUrl='/api/faqs?all=1' itemUrl={(id: string) => `/api/faqs/${id}`} fields={faqFields} columns={faqColumns} emptyMessage='No FAQs configured yet — pages fall back to their built-in defaults.' /> },
+  {
+    label: 'Darshan',
+    Component: () => (
+      <EntityManager
+        title='Darshan Day'
+        listUrl='/api/darshan-daily'
+        itemUrl={(id: string) => `/api/darshan-daily/${id}`}
+        fields={darshanDailyFields}
+        columns={darshanDailyColumns}
+        emptyMessage="No days configured yet — add all 7 so the Darshan page always has today's deity and bhajan ready."
+      />
+    )
+  },
+  { label: '3D Darshan', Component: () => <EntityManager title='3D Darshan Temple' listUrl='/api/darshan' itemUrl={(id: string) => `/api/darshan/${id}`} fields={darshanFields} columns={darshanColumns} /> },
+  { label: 'FAQs', Component: () => <FaqManagerClient /> },
   {
     label: 'How It Works',
     Component: () => (
@@ -617,7 +736,8 @@ const TABS = [
         emptyMessage='No Contact Us submissions yet.'
       />
     )
-  }
+  },
+  { label: 'About Us', Component: () => <AboutUsManager /> }
 ]
 
 // Must stay 1:1 with the TABS array above (same order, same count) — a mismatch here silently
@@ -632,12 +752,15 @@ const SLUG_TO_INDEX: Record<string, number> = {
   'categories': 5,
   'kundli-listings': 6,
   'astrologers': 7,
-  'jyotish-time-slots': 8,
-  'darshan-temples': 9,
-  'faqs': 10,
-  'how-it-works': 11,
-  'reviews': 12,
-  'contact-messages': 13
+  'jyotish-categories': 8,
+  'jyotish-time-slots': 9,
+  'darshan-daily': 10,
+  'darshan-temples': 11,
+  'faqs': 12,
+  'how-it-works': 13,
+  'reviews': 14,
+  'contact-messages': 15,
+  'about-us': 16
 }
 
 const ContentManagementClient = ({ slug }: { slug: string }) => {

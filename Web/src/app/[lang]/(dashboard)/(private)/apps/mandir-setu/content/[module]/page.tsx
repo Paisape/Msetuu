@@ -23,11 +23,15 @@ const VALID_MODULES = [
   'categories',
   'kundli-listings',
   'astrologers',
+  'jyotish-categories',
   'jyotish-time-slots',
+  'darshan-daily',
   'darshan-temples',
   'faqs',
   'how-it-works',
-  'reviews'
+  'reviews',
+  'contact-messages',
+  'about-us'
 ]
 
 const ContentManagementModulePage = async (props: Props) => {

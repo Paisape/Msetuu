@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/libs/prisma'
+import { enforceRateLimit } from '@/libs/rateLimit'
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,10 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json({ error: 'Email, OTP, and new password are required' }, { status: 400 })
     }
+
+    const rateLimited = enforceRateLimit(req, 'reset-password', { limit: 10, windowMs: 10 * 60 * 1000, identifier: email })
+
+    if (rateLimited) return rateLimited
 
     if (newPassword.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters long.' }, { status: 400 })

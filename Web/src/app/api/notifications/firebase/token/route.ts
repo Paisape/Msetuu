@@ -1,30 +1,28 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+
 import prisma from '@/libs/prisma'
-import { authOptions } from '@/libs/auth'
+import { requireUser, handleApiError } from '@/libs/api-auth'
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    // Always resolve the caller from their verified session/bearer token — never from a
+    // client-supplied `email` field, which would let anyone overwrite another user's push
+    // token (and hijack delivery of that account's notifications) just by knowing their email.
+    const user = await requireUser()
     const body = await req.json()
-    const { fcmToken, email } = body
+    const { fcmToken } = body
 
-    if (!fcmToken) {
+    if (typeof fcmToken !== 'string' || !fcmToken) {
       return NextResponse.json({ error: 'fcmToken is required.' }, { status: 400 })
     }
 
-    const userEmail = session?.user?.email || email
-
-    if (userEmail) {
-      await prisma.user.updateMany({
-        where: { email: userEmail.trim().toLowerCase() },
-        data: { fcmToken }
-      })
-    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { fcmToken }
+    })
 
     return NextResponse.json({ success: true, message: 'FCM Token registered successfully.' })
   } catch (err: any) {
-    console.error('[api/notifications/firebase/token] Error:', err)
-    return NextResponse.json({ error: 'Failed to register FCM token.' }, { status: 500 })
+    return handleApiError(err)
   }
 }

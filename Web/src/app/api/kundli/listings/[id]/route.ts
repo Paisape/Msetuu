@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { sanitizeMediaGallery } from '@/libs/mediaGallery'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -24,7 +25,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const { id } = await params
     const body = await req.json()
-    const { title, description, delivery, image, price, offerPrice, gstPercentage, gstInclusive } = body
+    const { title, description, delivery, image, price, offerPrice, gstPercentage, gstInclusive, significance, benefits, secondaryTabLabel, media } = body
 
     const data: Record<string, unknown> = {}
 
@@ -34,6 +35,10 @@ export async function PATCH(req: Request, { params }: Params) {
     if (image !== undefined) data.image = image
     if (gstPercentage !== undefined) data.gstPercentage = gstPercentage === null ? 0 : Number(gstPercentage)
     if (gstInclusive !== undefined) data.gstInclusive = Boolean(gstInclusive)
+    if (significance !== undefined) data.significance = significance || null
+    if (benefits !== undefined) data.benefits = benefits || null
+    if (secondaryTabLabel !== undefined) data.secondaryTabLabel = secondaryTabLabel || null
+    if (media !== undefined) data.media = sanitizeMediaGallery(media)
 
     if (offerPrice !== undefined) {
       if (offerPrice !== null && (typeof offerPrice !== 'number' || offerPrice <= 0)) {

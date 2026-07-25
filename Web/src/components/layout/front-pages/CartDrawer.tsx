@@ -24,6 +24,13 @@ import { useCart } from '@/contexts/CartContext'
 
 import classnames from 'classnames'
 
+type SavedAddress = {
+  id: string
+  label: string | null
+  fullAddress: string
+  isDefault: boolean
+}
+
 const CartDrawer = () => {
   const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart, checkout } = useCart()
   const { data: session } = useSession()
@@ -31,14 +38,18 @@ const CartDrawer = () => {
   const router = useRouter()
 
   const [shippingAddress, setShippingAddress] = useState('')
-  const [savedAddresses, setSavedAddresses] = useState<string[]>([])
-  const [selectedAddressIndex, setSelectedAddressIndex] = useState<number | 'new'>('new')
+  const [saveNewAddress, setSaveNewAddress] = useState(true)
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new')
   const [loadingAddresses, setLoadingAddresses] = useState(false)
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [checkoutErrors, setCheckoutErrors] = useState<string[] | null>(null)
   const [successOrderIds, setSuccessOrderIds] = useState<string[] | null>(null)
   const [checkoutStep, setCheckoutStep] = useState<1 | 2>(1)
+  const [termsText, setTermsText] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   // Auto open cart if url has openCart=1
   useEffect(() => {
@@ -50,12 +61,21 @@ const CartDrawer = () => {
     }
   }, [searchParams, setCartOpen])
 
+  useEffect(() => {
+    fetch('/api/legal/terms')
+      .then(res => res.json())
+      .then(data => {
+        if (data.text) setTermsText(data.text)
+      })
+      .catch(() => {})
+  }, [])
+
   // Reset states when drawer opens
   useEffect(() => {
     if (cartOpen) {
       setCheckoutStep(1)
       setCheckoutErrors(null)
-      setSelectedAddressIndex('new')
+      setSelectedAddressId('new')
       if (session) {
         fetchSavedAddresses()
       }
@@ -65,21 +85,55 @@ const CartDrawer = () => {
   const fetchSavedAddresses = async () => {
     setLoadingAddresses(true)
     try {
-      const res = await fetch('/api/my-orders/addresses')
+      const res = await fetch('/api/addresses')
       const data = await res.json()
       if (Array.isArray(data) && data.length > 0) {
         setSavedAddresses(data)
-        setSelectedAddressIndex(0)
-        setShippingAddress(data[0])
+        const preferred = data.find((a: SavedAddress) => a.isDefault) || data[0]
+        setSelectedAddressId(preferred.id)
+        setShippingAddress(preferred.fullAddress)
       } else {
         setSavedAddresses([])
-        setSelectedAddressIndex('new')
+        setSelectedAddressId('new')
         setShippingAddress('')
       }
     } catch (e) {
       console.error('Failed to load saved addresses', e)
     } finally {
       setLoadingAddresses(false)
+    }
+  }
+
+  const handleDeleteAddress = async (e: React.MouseEvent, addressId: string) => {
+    e.stopPropagation()
+    setDeletingAddressId(addressId)
+    try {
+      const res = await fetch(`/api/addresses/${addressId}`, { method: 'DELETE' })
+      if (res.ok) {
+        const deletedWasDefault = savedAddresses.find(a => a.id === addressId)?.isDefault
+        const remaining = savedAddresses.filter(a => a.id !== addressId)
+
+        // Mirror the server's promotion (most-recently-updated remaining address becomes
+        // default) so the badge doesn't go stale until the next fetch — `remaining` is still
+        // sorted [isDefault desc, updatedAt desc] from the original fetch, so remaining[0] is
+        // exactly the address the server just promoted.
+        if (deletedWasDefault && remaining.length > 0) remaining[0] = { ...remaining[0], isDefault: true }
+
+        setSavedAddresses(remaining)
+        if (selectedAddressId === addressId) {
+          if (remaining.length > 0) {
+            setSelectedAddressId(remaining[0].id)
+            setShippingAddress(remaining[0].fullAddress)
+          } else {
+            setSelectedAddressId('new')
+            setShippingAddress('')
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to delete address', e)
+    } finally {
+      setDeletingAddressId(null)
     }
   }
 
@@ -100,18 +154,29 @@ const CartDrawer = () => {
     if (!result.success && result.errors) {
       setCheckoutErrors(result.errors)
     } else if (result.success) {
+      // Best-effort — save a freshly-typed address to the user's address book for next time.
+      // Never blocks or fails the checkout that already succeeded.
+      if (selectedAddressId === 'new' && saveNewAddress && finalAddress.trim().length >= 5) {
+        fetch('/api/addresses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullAddress: finalAddress })
+        }).catch(() => {})
+      }
+
       setSuccessOrderIds(result.orderIds || [])
       setShippingAddress('')
       setCheckoutStep(1)
     }
   }
 
-  const handleAddressSelect = (index: number | 'new') => {
-    setSelectedAddressIndex(index)
-    if (index === 'new') {
+  const handleAddressSelect = (id: string | 'new') => {
+    setSelectedAddressId(id)
+    if (id === 'new') {
       setShippingAddress('')
     } else {
-      setShippingAddress(savedAddresses[index])
+      const match = savedAddresses.find(a => a.id === id)
+      setShippingAddress(match?.fullAddress || '')
     }
   }
 
@@ -233,44 +298,56 @@ const CartDrawer = () => {
             ) : (
               <FormControl component='fieldset' className='w-full mb-4'>
                 <RadioGroup
-                  value={selectedAddressIndex}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    handleAddressSelect(val === 'new' ? 'new' : Number(val))
-                  }}
+                  value={selectedAddressId}
+                  onChange={(e) => handleAddressSelect(e.target.value)}
                   className='flex flex-col gap-2'
                 >
-                  {savedAddresses.map((addr, idx) => (
-                    <Box 
-                      key={idx} 
+                  {savedAddresses.map((addr) => (
+                    <Box
+                      key={addr.id}
                       className={classnames(
                         'border rounded-xl p-3 flex items-start gap-2 cursor-pointer transition-all',
-                        selectedAddressIndex === idx ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:bg-slate-50'
+                        selectedAddressId === addr.id ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:bg-slate-50'
                       )}
-                      onClick={() => handleAddressSelect(idx)}
+                      onClick={() => handleAddressSelect(addr.id)}
                     >
-                      <Radio 
-                        value={idx} 
-                        checked={selectedAddressIndex === idx}
-                        sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }} 
+                      <Radio
+                        value={addr.id}
+                        checked={selectedAddressId === addr.id}
+                        sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }}
                       />
-                      <Typography variant='body2' className='text-slate-700 text-left font-medium line-clamp-3'>
-                        {addr}
-                      </Typography>
+                      <Box className='flex-1 text-left'>
+                        {addr.label && (
+                          <Typography variant='caption' className='text-emerald-700 font-bold block'>
+                            {addr.label}{addr.isDefault ? ' • Default' : ''}
+                          </Typography>
+                        )}
+                        <Typography variant='body2' className='text-slate-700 font-medium line-clamp-3'>
+                          {addr.fullAddress}
+                        </Typography>
+                      </Box>
+                      <IconButton
+                        size='small'
+                        disabled={deletingAddressId === addr.id}
+                        onClick={e => handleDeleteAddress(e, addr.id)}
+                        className='text-slate-400 hover:text-rose-600'
+                      >
+                        <i className='tabler-trash text-sm' />
+                      </IconButton>
                     </Box>
                   ))}
-                  
-                  <Box 
+
+                  <Box
                     className={classnames(
                       'border rounded-xl p-3 flex items-start gap-2 cursor-pointer transition-all',
-                      selectedAddressIndex === 'new' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:bg-slate-50'
+                      selectedAddressId === 'new' ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:bg-slate-50'
                     )}
                     onClick={() => handleAddressSelect('new')}
                   >
-                    <Radio 
-                      value='new' 
-                      checked={selectedAddressIndex === 'new'}
-                      sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }} 
+                    <Radio
+                      value='new'
+                      checked={selectedAddressId === 'new'}
+                      sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }}
                     />
                     <Box className='text-left'>
                       <Typography variant='body2' className='text-slate-800 font-bold'>
@@ -282,26 +359,40 @@ const CartDrawer = () => {
               </FormControl>
             )}
 
-            {selectedAddressIndex === 'new' && (
-              <TextField
-                size='small'
-                fullWidth
-                multiline
-                rows={3}
-                label='New Shipping Address'
-                placeholder='House No, Street, City, State, Pin code'
-                value={shippingAddress}
-                onChange={e => setShippingAddress(e.target.value)}
-                sx={{
-                  mt: 1,
-                  '& .MuiInputLabel-root': { color: '#64748b' },
-                  '& .MuiOutlinedInput-root': { 
-                    color: '#1e293b', 
-                    '& fieldset': { borderColor: 'rgba(16,185,129,0.3)' },
-                    '&:hover fieldset': { borderColor: '#10b981' }
+            {selectedAddressId === 'new' && (
+              <>
+                <TextField
+                  size='small'
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label='New Shipping Address'
+                  placeholder='House No, Street, City, State, Pin code'
+                  value={shippingAddress}
+                  onChange={e => setShippingAddress(e.target.value)}
+                  sx={{
+                    mt: 1,
+                    '& .MuiInputLabel-root': { color: '#64748b' },
+                    '& .MuiOutlinedInput-root': {
+                      color: '#1e293b',
+                      '& fieldset': { borderColor: 'rgba(16,185,129,0.3)' },
+                      '&:hover fieldset': { borderColor: '#10b981' }
+                    }
+                  }}
+                />
+                <FormControlLabel
+                  className='mt-1'
+                  control={
+                    <input
+                      type='checkbox'
+                      checked={saveNewAddress}
+                      onChange={e => setSaveNewAddress(e.target.checked)}
+                      className='mr-2 accent-emerald-600'
+                    />
                   }
-                }}
-              />
+                  label={<Typography variant='caption' className='text-slate-600'>Save this address for future orders</Typography>}
+                />
+              </>
             )}
           </Box>
         ) : (
@@ -321,13 +412,37 @@ const CartDrawer = () => {
             ₹{totalAmount}
           </Typography>
         </div>
+        {termsText && (
+          <Box className='mb-4'>
+            <Typography variant='subtitle2' className='font-bold text-white bg-blue-600 px-2 py-0.5 inline-block mb-3'>
+              Terms & Conditions
+            </Typography>
+            <Box className='border border-slate-200 rounded-lg p-3 max-h-40 overflow-y-auto mb-3 bg-slate-50'>
+              <Typography variant='body2' className='text-slate-600 whitespace-pre-wrap text-sm'>
+                {termsText}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <input
+                  type='checkbox'
+                  checked={termsAccepted}
+                  onChange={e => setTermsAccepted(e.target.checked)}
+                  className='mr-2 w-4 h-4 accent-blue-600'
+                />
+              }
+              label={<Typography variant='body2' className='text-slate-700'>I have read and agree to the Terms & Conditions</Typography>}
+              className='mb-0 ml-0'
+            />
+          </Box>
+        )}
         <Button
           onClick={handleCheckout}
-          disabled={submitting || (needsShippingAddress && shippingAddress.trim().length < 5)}
-          className='w-full font-bold py-3 text-md text-white bg-emerald-600 hover:bg-emerald-700'
-          style={{ borderRadius: '12px' }}
+          disabled={submitting || (needsShippingAddress && shippingAddress.trim().length < 5) || (Boolean(termsText) && !termsAccepted)}
+          className='w-full font-bold py-3 text-lg text-white capitalize'
+          style={{ borderRadius: '8px', background: '#0ea5e9' }}
         >
-          {submitting ? <CircularProgress size={20} className='text-white' /> : 'Proceed to Payment'}
+          {submitting ? <CircularProgress size={20} className='text-white' /> : <><i className='tabler-credit-card mr-2' /> Proceed to Pay — ₹{totalAmount}</>}
         </Button>
       </Box>
     </Box>

@@ -10,6 +10,8 @@ import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import Dialog from '@mui/material/Dialog'
+import IconButton from '@mui/material/IconButton'
 
 import ReviewsSection from '@/components/ReviewsSection'
 import RelatedListings from '@/components/RelatedListings'
@@ -44,6 +46,8 @@ const EpujaDetailPage = () => {
   const [listing, setListing] = useState<PujaListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [activeMedia, setActiveMedia] = useState<MediaGalleryItem | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -94,8 +98,21 @@ const EpujaDetailPage = () => {
     ? listing.packages.reduce((min, pkg) => (effectivePrice(pkg) < effectivePrice(min) ? pkg : min), listing.packages[0])
     : null
 
+  const currentMedia = activeMedia || { url: listing.image, type: 'image' }
+
   return (
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
+      <Dialog open={lightboxOpen} onClose={() => setLightboxOpen(false)} maxWidth='lg'>
+        <div className='relative bg-black/90 p-2'>
+          <img src={currentMedia.url} alt={listing.title} className='w-full max-h-[90vh] object-contain' />
+          <IconButton 
+            onClick={() => setLightboxOpen(false)} 
+            style={{ position: 'absolute', top: 10, right: 10, color: 'white', background: 'rgba(0,0,0,0.5)' }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </div>
+      </Dialog>
       <div className='max-w-6xl mx-auto'>
         <Button component={Link} href='/front-pages/epuja' className='mb-6 font-semibold' style={{ color: '#006241' }}>
           &larr; Back to all E-Pujas
@@ -107,19 +124,30 @@ const EpujaDetailPage = () => {
             
             {/* LEFT SIDE: HERO PUJA IMAGE & MEDIA CAROUSEL */}
             <div className='md:col-span-5 space-y-4'>
-              <div className='relative h-72 md:h-96 w-full rounded-xl overflow-hidden shadow-lg border border-emerald-500/20'>
-                <img src={listing.image} alt={listing.title} className='w-full h-full object-cover' />
+              <div 
+                className='relative w-full rounded-xl overflow-hidden shadow-lg border border-emerald-500/20 cursor-pointer bg-emerald-50/5'
+                onClick={() => { if (currentMedia.type === 'image') setLightboxOpen(true) }}
+              >
+                {currentMedia.type === 'video' ? (
+                  <video src={currentMedia.url} className='w-full h-auto max-h-[600px] object-contain' controls playsInline autoPlay />
+                ) : (
+                  <img src={currentMedia.url} alt={listing.title} className='w-full h-auto max-h-[600px] object-contain hover:scale-105 transition-transform duration-500' />
+                )}
                 {listing.category && (
                   <div className='absolute top-3 right-3 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                     {listing.category}
                   </div>
                 )}
               </div>
-              <MediaCarousel media={listing.media} title='More Glimpses' />
+              <MediaCarousel 
+                media={[{ url: listing.image, type: 'image' } as MediaGalleryItem, ...(listing.media || [])]} 
+                title='More Glimpses' 
+                onItemClick={(item) => setActiveMedia(item)} 
+              />
             </div>
 
             {/* RIGHT SIDE: TITLE, TEMPLE INFO, PRICE & ACTION CTAs */}
-            <div className='md:col-span-7 flex flex-col justify-between h-full space-y-6'>
+            <div className='md:col-span-7 flex flex-col justify-start h-full space-y-6'>
               <div>
                 <Typography variant='h3' className='font-bold' style={{ color: '#ffffff', fontFamily: 'Cinzel, Georgia, serif' }}>
                   {listing.title}
@@ -130,6 +158,34 @@ const EpujaDetailPage = () => {
                     🛕 {listing.templeName} {listing.templeLocation ? `(${listing.templeLocation})` : ''}
                   </Typography>
                 )}
+              </div>
+              
+              <div className='space-y-4'>
+                <Typography variant='body1' style={{ color: '#d1d5db' }} className='leading-relaxed'>
+                  {listing.description}
+                </Typography>
+                
+                {benefitLines.length > 0 && (
+                  <div className='flex flex-col gap-2 bg-emerald-950/20 p-4 rounded-xl border border-emerald-500/10'>
+                    <Typography variant='subtitle2' className='font-bold' style={{ color: '#a7f3d0' }}>Key Benefits</Typography>
+                    {benefitLines.slice(0, 4).map((benefit, idx) => (
+                      <div key={idx} className='flex items-start gap-2'>
+                        <span style={{ color: '#10b981', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
+                        <Typography variant='body2' style={{ color: '#d1d5db' }}>{benefit}</Typography>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className='w-full mt-2 mb-6 pt-4 border-t border-emerald-500/10'>
+                <HowItWorksSection
+                  page='epuja'
+                  items={DEFAULT_HOW_IT_WORKS_STEPS}
+                  title='How Booking Works'
+                  subtitle=''
+                  layout='vertical'
+                />
               </div>
 
               {/* Price & Buy Block */}
@@ -221,11 +277,6 @@ const EpujaDetailPage = () => {
                 )
               },
               {
-                key: 'process',
-                label: 'Process',
-                content: <HowItWorksSection page='epuja' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Booking Works' />
-              },
-              {
                 key: 'packages',
                 label: 'Packages',
                 content: (
@@ -271,6 +322,7 @@ const EpujaDetailPage = () => {
                 content: (
                   <ServiceFaq
                     page='epuja'
+                    listingId={listing.id}
                     title='Frequently Asked Questions'
                     items={[
                       {

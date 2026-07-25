@@ -24,12 +24,12 @@ export async function GET() {
     ])
 
     const orders = [
-      ...chadhava.map(o => ({ type: 'CHADHAVA', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.chadhavaListingId as string | null })),
-      ...epuja.map(o => ({ type: 'EPUJA', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.pujaListingId as string | null })),
-      ...jyotish.map(o => ({ type: 'JYOTISH', id: o.id, label: `${o.category} consultation`, amount: null, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.astrologerId as string | null })),
-      ...kundli.map(o => ({ type: 'KUNDLI', id: o.id, label: o.kundliType, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.kundliListingId as string | null })),
-      ...ecommerce.map(o => ({ type: 'ECOMMERCE', id: o.id, label: o.product.name, amount: o.totalAmount, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.productId as string | null })),
-      ...yatra.map(o => ({ type: 'YATRA', id: o.id, label: o.yatraDestination, amount: null, status: o.status, paymentStatus: null, createdAt: o.createdAt, targetId: null as string | null }))
+      ...chadhava.map((o: any) => ({ type: 'CHADHAVA', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.chadhavaListingId as string | null })),
+      ...epuja.map((o: any) => ({ type: 'EPUJA', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.pujaListingId as string | null })),
+      ...jyotish.map((o: any) => ({ type: 'JYOTISH', id: o.id, label: `${o.category} consultation`, amount: null, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.astrologerId as string | null })),
+      ...kundli.map((o: any) => ({ type: 'KUNDLI', id: o.id, label: o.kundliType, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.kundliListingId as string | null })),
+      ...ecommerce.map((o: any) => ({ type: 'ECOMMERCE', id: o.id, label: o.product.name, amount: o.totalAmount, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.productId as string | null })),
+      ...yatra.map((o: any) => ({ type: 'YATRA', id: o.id, label: o.yatraDestination, amount: null, status: o.status, paymentStatus: null, createdAt: o.createdAt, targetId: null as string | null }))
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json(orders)

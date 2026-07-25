@@ -56,11 +56,11 @@ export const ORDER_MODULES: Record<string, OrderModuleConfig> = {
     columns: [
       { key: 'user.name', label: 'Customer' },
       { key: 'category', label: 'Category' },
-      { key: 'durationMins', label: 'Duration', render: item => `${item.durationMins} min` },
+      { key: 'durationMins', label: 'Duration', render: item => item.durationMins ? `${item.durationMins} min` : '—' },
       { key: 'astrologer.name', label: 'Astrologer', render: item => item.astrologer?.name || 'Unassigned' },
       { key: 'amountPaid', label: 'Amount', render: item => money(item.amountPaid) },
       { key: 'paymentStatus', label: 'Payment' },
-      { key: 'slotTime', label: 'Slot', render: item => date(item.slotTime) }
+      { key: 'createdAt', label: 'Booked', render: item => date(item.createdAt) }
     ]
   },
   kundli: {

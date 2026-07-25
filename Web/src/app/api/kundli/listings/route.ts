@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { notifyNewListing } from '@/libs/notifyEvent'
+import { sanitizeMediaGallery } from '@/libs/mediaGallery'
 
 // GET /api/kundli/listings — public catalog of handcrafted Kundli types (Premium Janam Kundli, etc.)
 export async function GET() {
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
     await requireAdmin()
 
     const body = await req.json()
-    const { title, description, delivery, image, price, offerPrice, gstPercentage, gstInclusive } = body
+    const { title, description, delivery, image, price, offerPrice, gstPercentage, gstInclusive, significance, benefits, secondaryTabLabel, media } = body
 
     if (!title || !description || !delivery || !image || typeof price !== 'number' || price <= 0) {
       return NextResponse.json(
@@ -42,9 +44,15 @@ export async function POST(req: Request) {
         price,
         offerPrice: offerPrice !== undefined && offerPrice !== null ? Number(offerPrice) : null,
         gstPercentage: gstPercentage !== undefined && gstPercentage !== null ? Number(gstPercentage) : 0,
-        gstInclusive: gstInclusive !== undefined ? Boolean(gstInclusive) : true
+        gstInclusive: gstInclusive !== undefined ? Boolean(gstInclusive) : true,
+        significance: significance || null,
+        benefits: benefits || null,
+        secondaryTabLabel: secondaryTabLabel || null,
+        media: media !== undefined ? (sanitizeMediaGallery(media) as any) : undefined
       }
     })
+
+    notifyNewListing('Kundli', listing.title, `/front-pages/kundli/${listing.id}`)
 
     return NextResponse.json(listing, { status: 201 })
   } catch (err) {

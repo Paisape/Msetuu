@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
   basePath: process.env.BASEPATH,
 
   // These three entry points are served via rewrite (not redirect) so the browser's address
@@ -13,7 +12,10 @@ const nextConfig: NextConfig = {
       { source: '/', destination: '/front-pages/landing-page' },
       { source: '/login', destination: '/en/login' },
       { source: '/MsetuAdmin', destination: '/en/apps/mandir-setu' },
-      { source: '/:lang(en|fr|ar)/MsetuAdmin', destination: '/:lang/apps/mandir-setu' }
+      { source: '/:lang(en|fr|ar)/MsetuAdmin', destination: '/:lang/apps/mandir-setu' },
+      // Force any localized upload paths back to the public/uploads directory
+      // to bypass any permanently cached 308 redirects from earlier bugs.
+      { source: '/:lang(en|fr|ar)/uploads/:path*', destination: '/uploads/:path*' }
     ]
   },
   redirects: async () => {
@@ -25,7 +27,7 @@ const nextConfig: NextConfig = {
         locale: false
       },
       {
-        source: '/:path((?!en|fr|ar|front-pages|images|api|favicon.ico|login).*)*',
+        source: '/:path((?!en|fr|ar|front-pages|images|uploads|audio|api|favicon.ico|login|next.svg|vercel.svg).*)*',
         destination: '/en/:path*',
         permanent: true,
         locale: false

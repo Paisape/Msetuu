@@ -47,7 +47,12 @@ export async function POST(req: Request) {
     }
 
     let buffer = Buffer.from(await file.arrayBuffer())
-    let extension = path.extname(file.name).toLowerCase().replace(/[^a-z0-9.]/g, '') || guessExtension(file.type)
+
+    // Extension comes only from the validated MIME type, never the client-supplied filename —
+    // otherwise an allowed Content-Type (e.g. video/mp4) paired with a filename like "x.html"
+    // could land an attacker-controlled file with an executable extension under the publicly
+    // served /public/uploads directory.
+    let extension = guessExtension(file.type)
 
     if (isImage) {
       buffer = await sharp(buffer)

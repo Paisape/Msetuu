@@ -18,36 +18,26 @@ import HowItWorksSection, { DEFAULT_HOW_IT_WORKS_STEPS } from '@/components/HowI
 import PageBanner from '@/components/PageBanner'
 import { effectivePrice, hasOfferDiscount, gstLabel } from '@/libs/pricing'
 
-type Astrologer = {
+type JyotishCategory = {
   id: string
   name: string
   price30: number
   offerPrice30?: number | null
+  price60: number
+  offerPrice60?: number | null
+  price90: number
+  offerPrice90?: number | null
   gstPercentage?: number | null
   gstInclusive?: boolean
 }
 
-type TimeSlot = {
-  id: string
-  label: string
-  startTime: string // 24-hour "HH:mm"
-}
-
-// Flat consultation fee shown until the real astrologer list loads (admin manages this via
-// Content Management > Astrologers — the first active entry is used as the flat-fee source).
-const FALLBACK_ASTROLOGER: Astrologer = { id: '', name: 'Mandirsetuu Astrologer', price30: 999 }
-
-const CATEGORIES = [
-  'Love & Relationship',
-  'Education & Study',
-  'Career & Promotion',
-  'Marriage & Matchmaking',
-  'Health & Longevity',
-  'Wealth & Finance',
-  'Legal & Property',
-  'Remedies & Vastu',
-  'General Guidance'
-]
+// Session-length options — price for each comes from the selected category's matching
+// price30/price60/price90 (+ offer) pair, see JyotishCategory above.
+const DURATIONS = [
+  { mins: 30, label: 'Half Hour' },
+  { mins: 60, label: '1 Hour' },
+  { mins: 90, label: '1.5 Hours' }
+] as const
 
 const fieldSx = {
   '& .MuiInputLabel-root': { color: '#6b7280' },
@@ -66,19 +56,15 @@ const emptyForm = () => ({
   dob: '',
   timeOfBirth: '',
   placeOfBirth: '',
-  category: CATEGORIES[0],
-  preferredDate: '',
-  slotId: '',
-  slotTime: '', // fallback free-text datetime, only used while no admin slots are configured yet
-  purpose: ''
+  categoryName: '',
+  durationMins: DURATIONS[1].mins as number,
+  problem: ''
 })
-
-const todayIso = () => new Date().toISOString().slice(0, 10)
 
 const JyotishPage = () => {
   const { data: session } = useSession()
-  const [astrologer, setAstrologer] = useState<Astrologer>(FALLBACK_ASTROLOGER)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+  const [categories, setCategories] = useState<JyotishCategory[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [formData, setFormData] = useState(emptyForm())
   const [success, setSuccess] = useState(false)
   const [bookedId, setBookedId] = useState('')
@@ -86,23 +72,18 @@ const JyotishPage = () => {
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
-    fetch('/api/jyotish/astrologers')
+    fetch('/api/jyotish/categories')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setAstrologer(data[0])
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data)
+          setFormData(prev => ({ ...prev, categoryName: prev.categoryName || data[0].name }))
+        }
       })
       .catch(() => {
-        // Keep the fallback flat fee on error
+        // Empty list — the fee box shows a "not available yet" message and submit stays disabled
       })
-
-    fetch('/api/jyotish/time-slots')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setTimeSlots(data)
-      })
-      .catch(() => {
-        // Falls back to a free-form date/time field below when no slots are available
-      })
+      .finally(() => setCategoriesLoading(false))
   }, [])
 
   useEffect(() => {
@@ -115,57 +96,49 @@ const JyotishPage = () => {
     }
   }, [session])
 
-  const priced = useMemo(
-    () => ({ price: astrologer.price30, offerPrice: astrologer.offerPrice30, gstPercentage: astrologer.gstPercentage, gstInclusive: astrologer.gstInclusive }),
-    [astrologer]
-  )
+  const category = useMemo(() => categories.find(c => c.name === formData.categoryName) ?? null, [categories, formData.categoryName])
+
+  // Price depends on category AND the chosen duration tier — e.g. Kundli Reading is priced
+  // differently at 30/60/90 minutes.
+  const priced = useMemo(() => {
+    if (!category) return { price: 0, offerPrice: null, gstPercentage: null, gstInclusive: true }
+
+    const tier =
+      formData.durationMins === 30
+        ? { price: category.price30, offerPrice: category.offerPrice30 }
+        : formData.durationMins === 60
+          ? { price: category.price60, offerPrice: category.offerPrice60 }
+          : { price: category.price90, offerPrice: category.offerPrice90 }
+
+    return { ...tier, gstPercentage: category.gstPercentage, gstInclusive: category.gstInclusive }
+  }, [category, formData.durationMins])
 
   const fee = effectivePrice(priced)
-  const purposeWordCount = formData.purpose.trim() ? formData.purpose.trim().split(/\s+/).filter(Boolean).length : 0
+  const problemWordCount = formData.problem.trim() ? formData.problem.trim().split(/\s+/).filter(Boolean).length : 0
 
   const updateField = (key: keyof ReturnType<typeof emptyForm>, value: string) =>
     setFormData(prev => ({ ...prev, [key]: value }))
 
-  // When admin-defined slots exist, the actual booking slotTime is the chosen date combined
-  // with that slot's start time; otherwise fall back to the free-text datetime field so booking
-  // still works before any slots are configured.
-  const resolveSlotTime = (): string | null => {
-    if (timeSlots.length > 0) {
-      const slot = timeSlots.find(s => s.id === formData.slotId)
-
-      if (!formData.preferredDate || !slot) return null
-
-      const [hours, minutes] = slot.startTime.split(':').map(Number)
-      const combined = new Date(`${formData.preferredDate}T00:00:00`)
-
-      combined.setHours(hours, minutes, 0, 0)
-
-      return combined.toISOString()
-    }
-
-    return formData.slotTime ? new Date(formData.slotTime).toISOString() : null
-  }
+  const updateDuration = (mins: number) => setFormData(prev => ({ ...prev, durationMins: mins }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
 
-    if (purposeWordCount < 10) {
-      setErrorMsg('Please describe the purpose of your consultation in at least 10 words.')
+    if (!category) {
+      setErrorMsg('Please select a consultation category to continue.')
+
+      return
+    }
+
+    if (problemWordCount < 10) {
+      setErrorMsg('Please describe your problem in at least 10 words.')
 
       return
     }
 
     if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
       setErrorMsg('Please enter a valid 10-digit mobile number.')
-
-      return
-    }
-
-    const resolvedSlotTime = resolveSlotTime()
-
-    if (!resolvedSlotTime) {
-      setErrorMsg('Please choose a preferred date and time slot.')
 
       return
     }
@@ -177,11 +150,9 @@ const JyotishPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          astrologerId: astrologer.id || undefined,
-          duration: 30,
-          category: formData.category,
-          slotTime: resolvedSlotTime,
-          comment: formData.purpose,
+          category: category.name,
+          durationMins: formData.durationMins,
+          comment: formData.problem,
           name: formData.name,
           email: formData.email,
           phone: `+91${formData.phone.trim()}`,
@@ -265,32 +236,20 @@ const JyotishPage = () => {
   }
 
   return (
-    <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
-      <div className='max-w-4xl mx-auto'>
+    <div className='min-h-screen py-24 px-6' style={{ background: '#f8fafc' }}>
+      <div className='max-w-3xl mx-auto'>
         <PageBanner
           page='jyotish'
           defaultTitle='Jyotish Astrology Consultation'
           defaultSubtitle="Get immediate answers to life's uncertainties. Book a personal consultation with our verified Vedic Astrologers."
         />
 
-        <div className='flex flex-wrap justify-center gap-3 mb-12'>
-          {CATEGORIES.map((cat, idx) => (
-            <span
-              key={idx}
-              className='px-4 py-2 rounded-full text-sm font-semibold border'
-              style={{ borderColor: 'rgba(16, 185, 129, 0.25)', backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#006241' }}
-            >
-              {cat}
-            </span>
-          ))}
-        </div>
-
-        <Card className='galaxy-card p-6 md:p-10'>
+        <Card className='p-6 md:p-10 border border-slate-200/60'>
           {success ? (
             <Alert severity='success'>
               Your consultation request has been booked successfully! <strong>Booking ID: {bookedId}</strong>.
-              A confirmation email with your booking details has been sent to you.
-              Our astrologer will connect with you at your preferred slot.
+              A confirmation email with your booking details has been sent to you. Our astrologer will connect with
+              you shortly.
             </Alert>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -298,7 +257,7 @@ const JyotishPage = () => {
                 Book Your Consultation
               </Typography>
               <Typography variant='body2' className='mb-6' style={{ color: '#6b7280' }}>
-                Fill in your details below and our astrologer will get in touch at your chosen time.
+                Fill in your details below — our astrologer will get in touch with you after payment.
               </Typography>
 
               {errorMsg && (
@@ -313,7 +272,7 @@ const JyotishPage = () => {
                   <i className='tabler-user' /> 1. Devotee Details
                 </Typography>
                 <Grid container spacing={4}>
-                  <Grid size={{ xs: 12, sm: 6 }}  >
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       required
                       label='Full Name'
@@ -323,7 +282,7 @@ const JyotishPage = () => {
                       sx={fieldSx}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}  >
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       required
                       type='email'
@@ -334,7 +293,7 @@ const JyotishPage = () => {
                       sx={fieldSx}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12 }} >
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       required
                       label='Mobile Number'
@@ -354,7 +313,7 @@ const JyotishPage = () => {
                   <i className='tabler-moon-stars' /> 2. Horoscope & Birth Details
                 </Typography>
                 <Grid container spacing={4}>
-                  <Grid size={{ xs: 12, sm: 4 }}  >
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       required
                       label='Date of Birth'
@@ -366,7 +325,7 @@ const JyotishPage = () => {
                       sx={fieldSx}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}  >
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       required
                       label='Time of Birth'
@@ -378,7 +337,7 @@ const JyotishPage = () => {
                       sx={fieldSx}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}  >
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                       required
                       label='Place of Birth'
@@ -392,77 +351,60 @@ const JyotishPage = () => {
                 </Grid>
               </Box>
 
-              {/* SECTION 3: Consultation settings */}
+              {/* SECTION 3: Consultation Details */}
               <Box className='mb-6 p-4 rounded-xl' style={{ background: 'rgba(16, 185, 129, 0.02)', border: '1px dashed rgba(16, 185, 129, 0.15)' }}>
                 <Typography variant='subtitle1' className='font-bold mb-4 flex items-center gap-2' style={{ color: '#006241' }}>
-                  <i className='tabler-calendar-event' /> 3. Consultation Slots
+                  <i className='tabler-calendar-event' /> 3. Consultation Details
                 </Typography>
                 <Grid container spacing={4}>
-                  <Grid size={{ xs: 12, sm: 6 }}  >
+                  <Grid size={{ xs: 12, sm: 7 }}>
                     <TextField
                       select
                       required
-                      label='Purpose Category'
+                      label='Consultation Category'
                       fullWidth
-                      value={formData.category}
-                      onChange={e => updateField('category', e.target.value)}
+                      value={formData.categoryName}
+                      onChange={e => updateField('categoryName', e.target.value)}
                       sx={fieldSx}
+                      disabled={categoriesLoading || categories.length === 0}
+                      helperText={
+                        categoriesLoading
+                          ? 'Loading categories…'
+                          : categories.length === 0
+                            ? 'No categories are available yet — please check back soon.'
+                            : undefined
+                      }
                     >
-                      {CATEGORIES.map(c => (
-                        <MenuItem key={c} value={c}>
-                          {c}
+                      {categories.map(c => (
+                        <MenuItem key={c.id} value={c.name}>
+                          {c.name}
                         </MenuItem>
                       ))}
                     </TextField>
                   </Grid>
-                  {timeSlots.length > 0 ? (
-                    <>
-                      <Grid size={{ xs: 12, sm: 3 }}  >
-                        <TextField
-                          required
-                          label='Preferred Date'
-                          type='date'
-                          fullWidth
-                          InputLabelProps={{ shrink: true }}
-                          inputProps={{ min: todayIso() }}
-                          value={formData.preferredDate}
-                          onChange={e => updateField('preferredDate', e.target.value)}
-                          sx={fieldSx}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 3 }}  >
-                        <TextField
-                          select
-                          required
-                          label='Preferred Time Slot'
-                          fullWidth
-                          value={formData.slotId}
-                          onChange={e => updateField('slotId', e.target.value)}
-                          sx={fieldSx}
-                        >
-                          {timeSlots.map(slot => (
-                            <MenuItem key={slot.id} value={slot.id}>
-                              {slot.label}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Grid>
-                    </>
-                  ) : (
-                    <Grid size={{ xs: 12, sm: 6 }}  >
-                      <TextField
-                        required
-                        label='Preferred Date & Time'
-                        type='datetime-local'
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                        value={formData.slotTime}
-                        onChange={e => updateField('slotTime', e.target.value)}
-                        sx={fieldSx}
-                      />
-                    </Grid>
-                  )}
-                  <Grid size={{ xs: 12 }} >
+                  <Grid size={{ xs: 12, sm: 5 }}>
+                    <TextField
+                      select
+                      required
+                      label='Session Duration'
+                      fullWidth
+                      value={formData.durationMins}
+                      onChange={e => updateDuration(Number(e.target.value))}
+                      sx={fieldSx}
+                      disabled={!category}
+                    >
+                      {DURATIONS.map(d => {
+                        const tierPrice = d.mins === 30 ? category?.price30 : d.mins === 60 ? category?.price60 : category?.price90
+
+                        return (
+                          <MenuItem key={d.mins} value={d.mins}>
+                            {d.label}{category && tierPrice !== undefined ? ` — ₹${tierPrice}` : ''}
+                          </MenuItem>
+                        )
+                      })}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       required
                       label='Describe Your Problem'
@@ -470,9 +412,9 @@ const JyotishPage = () => {
                       multiline
                       rows={4}
                       fullWidth
-                      value={formData.purpose}
-                      onChange={e => updateField('purpose', e.target.value)}
-                      helperText={`${purposeWordCount} word${purposeWordCount === 1 ? '' : 's'} (minimum 10 required)`}
+                      value={formData.problem}
+                      onChange={e => updateField('problem', e.target.value)}
+                      helperText={`${problemWordCount} word${problemWordCount === 1 ? '' : 's'} (minimum 10 required)`}
                       sx={fieldSx}
                     />
                   </Grid>
@@ -480,7 +422,7 @@ const JyotishPage = () => {
               </Box>
 
               <Grid container spacing={4}>
-                <Grid size={{ xs: 12 }} >
+                <Grid size={{ xs: 12 }}>
                   <Box
                     className='flex justify-between items-center p-4 rounded-lg'
                     style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
@@ -506,8 +448,14 @@ const JyotishPage = () => {
                   </Box>
                 </Grid>
 
-                <Grid size={{ xs: 12 }}  className='flex justify-end'>
-                  <Button type='submit' className='galaxy-glow-btn font-bold px-8' disabled={submitting}>
+                <Grid size={{ xs: 12 }} className='flex justify-end'>
+                  <Button
+                    type='submit'
+                    variant='contained'
+                    className='font-bold px-8'
+                    style={{ textTransform: 'none' }}
+                    disabled={submitting || !category}
+                  >
                     {submitting ? 'Processing Payment...' : 'Pay & Book Consultation'}
                   </Button>
                 </Grid>
@@ -527,12 +475,7 @@ const JyotishPage = () => {
               {
                 question: 'How do I connect with my Astrologer?',
                 answer:
-                  'Our astrologer will connect with you via voice call, WhatsApp, or Google Meet at the exact date and time slot you choose during booking. Link/connection details are shared via email.'
-              },
-              {
-                question: 'Can I reschedule my booked consultation?',
-                answer:
-                  'Yes, you can reschedule your booking free of charge up to 4 hours before the scheduled time slot — just contact support with your booking ID.'
+                  'Once your payment is confirmed, our team assigns the right astrologer for your category and connects with you via voice call, WhatsApp, or Google Meet. Details are shared via email.'
               },
               {
                 question: 'Can I get a written summary report after the call?',
@@ -543,6 +486,11 @@ const JyotishPage = () => {
                 question: 'Are my personal birth details and discussions private?',
                 answer:
                   'Absolutely. We enforce strict confidentiality. Your birth details (date, time, place) and consultation notes are visible only to you and your assigned astrologer.'
+              },
+              {
+                question: 'How is the consultation fee decided?',
+                answer:
+                  'The fee depends on both your chosen category (e.g. Kundli Reading, Vastu Consultation) and the session duration — Half Hour, 1 Hour, or 1.5 Hours. The exact price for each duration is shown once you select a category above.'
               }
             ]}
           />

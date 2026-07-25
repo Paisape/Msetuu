@@ -39,7 +39,7 @@ export async function sendEmailNotification(toEmail: string, title: string, mess
       </div>
     </div>
   `
-  return sendEmail({ to: toEmail, subject: title, html })
+  return sendEmail({ to: toEmail, subject: title, html, category: 'NOTIFICATION_EMAIL' })
 }
 
 // 2. SMS Channel Dispatcher (MSG91 / Twilio / Custom HTTP)
@@ -147,7 +147,70 @@ export async function sendFirebasePushNotification(fcmToken: string, title: stri
   }
 }
 
-// 5. Combined Multi-Channel Dispatcher
+// 5. Single-Recipient Dispatcher — for event-driven notifications tied to a specific user (order
+// accepted, video uploaded, welcome message) where the recipient is already known by ID, unlike
+// the broadcast tool's 'SPECIFIC' target which looks a user up by email/phone. Best-effort: never
+// throws, so a notification failure can never break the order/registration flow that triggered it.
+export async function notifyUser(
+  userId: string,
+  title: string,
+  message: string,
+  channels: NotificationChannel[],
+  actionUrl?: string
+) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, phone: true, fcmToken: true }
+    })
+
+    if (!user) return { success: false, reason: 'User not found.' }
+
+    let emailSent = false
+    let smsSent = false
+    let whatsappSent = false
+    let firebaseSent = false
+
+    if (channels.includes('email') && user.email) {
+      emailSent = !!(await sendEmailNotification(user.email, title, message, actionUrl).catch(() => false))
+    }
+
+    if (channels.includes('sms') && user.phone) {
+      smsSent = await sendSmsNotification(user.phone, title, message).catch(() => false)
+    }
+
+    if (channels.includes('whatsapp') && user.phone) {
+      whatsappSent = await sendWhatsAppNotification(user.phone, title, message, actionUrl).catch(() => false)
+    }
+
+    if (channels.includes('firebase') && user.fcmToken) {
+      firebaseSent = await sendFirebasePushNotification(user.fcmToken, title, message, actionUrl).catch(() => false)
+    }
+
+    const stats = { emailSent: emailSent ? 1 : 0, smsSent: smsSent ? 1 : 0, whatsappSent: whatsappSent ? 1 : 0, firebaseSent: firebaseSent ? 1 : 0, totalRecipients: 1 }
+
+    await prisma.notificationLog.create({
+      data: {
+        title,
+        message,
+        actionUrl: actionUrl || null,
+        targetAudience: 'SPECIFIC',
+        targetEmail: user.email || null,
+        channels: JSON.stringify(channels),
+        status: 'SENT',
+        stats: JSON.stringify(stats)
+      }
+    })
+
+    return { success: true, stats }
+  } catch (err) {
+    console.error('[NotificationSystem notifyUser] Error:', err)
+
+    return { success: false, reason: err instanceof Error ? err.message : 'Unknown error.' }
+  }
+}
+
+// 6. Combined Multi-Channel Dispatcher
 export async function dispatchNotificationBroadcast(options: SendNotificationOptions) {
   const { title, message, actionUrl, targetAudience, targetEmail, channels, sentById } = options
 

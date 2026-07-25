@@ -3,7 +3,7 @@ import { getSettingsForCategory, setSettings } from '@/libs/appSettings'
 // Shared field catalogue + redaction logic for the Config > PG/Email/SMS admin forms. Centralised
 // here so every settings route (GET redact, POST save) enforces the exact same allow-list of keys
 // per category — a route can never read/write a key that isn't declared below.
-export type SettingsCategory = 'PG' | 'EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE' | 'WHATSAPP' | 'FIREBASE'
+export type SettingsCategory = 'PG' | 'EMAIL' | 'NOTIFICATION_EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE' | 'WHATSAPP' | 'FIREBASE' | 'LEGAL'
 
 type FieldDef = { key: string; secret: boolean; label: string }
 
@@ -37,6 +37,20 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
     { key: 'SMTP_FROM_NAME', secret: false, label: 'From Name' },
     { key: 'SMTP_FROM_EMAIL', secret: false, label: 'From Email' }
   ],
+  // Separate SMTP account used only for the notification system (manual admin broadcasts + the
+  // automatic new-listing/welcome/order-accepted/video-uploaded triggers) — kept independent of
+  // the main EMAIL config above, which continues to handle OTP, password reset, receipts, etc.
+  // Falls back to the main EMAIL config (see mailer.ts) until this is explicitly set up, so
+  // notification emails keep working before an admin configures a dedicated account.
+  NOTIFICATION_EMAIL: [
+    { key: 'SMTP_HOST', secret: false, label: 'SMTP Host' },
+    { key: 'SMTP_PORT', secret: false, label: 'SMTP Port' },
+    { key: 'SMTP_SECURE', secret: false, label: 'Use SSL' },
+    { key: 'SMTP_USER', secret: false, label: 'SMTP Username' },
+    { key: 'SMTP_PASSWORD', secret: true, label: 'SMTP Password' },
+    { key: 'SMTP_FROM_NAME', secret: false, label: 'From Name' },
+    { key: 'SMTP_FROM_EMAIL', secret: false, label: 'From Email' }
+  ],
   SMS: [
     { key: 'SMS_PROVIDER', secret: false, label: 'SMS Provider' },
     { key: 'SMS_API_KEY', secret: true, label: 'SMS API Key' },
@@ -51,6 +65,9 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   FIREBASE: [
     { key: 'FIREBASE_PROJECT_ID', secret: false, label: 'Firebase Project ID' },
     { key: 'FIREBASE_SERVER_KEY', secret: true, label: 'Firebase Server Key (FCM Cloud Messaging)' }
+  ],
+  LEGAL: [
+    { key: 'TERMS_AND_CONDITIONS', secret: false, label: 'Terms and Conditions (Checkout)' }
   ]
 }
 

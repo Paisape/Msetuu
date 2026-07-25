@@ -66,6 +66,57 @@ model User {
   videoUploadBatches VideoUploadBatch[]
   reviews            Review[]
   offerOrders        OfferOrder[]
+  refreshTokens      RefreshToken[]
+
+  // Geotag rewards — cached running balance (source of truth is the sum of
+  // PointsTransaction rows below; this column is updated atomically alongside every
+  // transaction so reads don't need to sum the ledger every time).
+  points              Int                 @default(0)
+  pointsTransactions  PointsTransaction[]
+  redemptionRequests  RedemptionRequest[]
+
+  addresses Address[]
+}
+
+// Mobile app auth: short-lived JWT access tokens (minted on the fly, never stored) paired with
+// a long-lived, device-bound refresh token persisted here so it can be listed and revoked. Only
+// a SHA-256 hash of the refresh token is stored — never the raw value — so a database leak
+// alone can't be used to mint sessions.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  tokenHash    String    @unique
+  deviceId     String? // Client-generated opaque device identifier, sent at login
+  deviceName   String? // e.g. "Pixel 8" or "iPhone 15 Pro" — for the "manage devices" screen
+  os           String? // e.g. "Android 14", "iOS 17"
+  createdAt    DateTime  @default(now())
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A user's saved shipping addresses (address book) — shown as a picker at Ecommerce checkout
+// so returning customers don't have to retype their address every order. `fullAddress` is kept
+// as one free-text field (not split into line1/city/pincode columns) to match the existing
+// convention used everywhere else in this app (see ProductOrder.shippingAddress). Only one
+// address per user may have `isDefault: true` at a time — enforced in the API layer via a
+// transaction, not in the schema.
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  label       String? // Optional nickname, e.g. "Home", "Work"
+  fullAddress String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -214,6 +265,26 @@ model PujaOrder {
   pujaPackage PujaPackage @relation(fields: [pujaPackageId], references: [id], onDelete: Cascade)
 }
 
+// Admin-managed consultation types (Kundli Reading, Vastu, Numerology...) — this is what prices
+// a Jyotish booking (see ConsultationBooking.category + durationMins). Price depends on both the
+// category AND the session duration the visitor picks (Half Hour/1 Hour/1.5 Hours) — e.g. Kundli
+// Reading might be ₹500/₹1000/₹1500 while Vastu Consultation charges a different rate per tier.
+// Same three-tier shape as Astrologer.price30/price60 below, extended with a 90-minute tier.
+model JyotishCategory {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  price30       Float // Half Hour (30 min)
+  offerPrice30  Float?
+  price60       Float // 1 Hour (60 min)
+  offerPrice60  Float?
+  price90       Float // 1.5 Hours (90 min)
+  offerPrice90  Float?
+  gstPercentage Float?   @default(0)
+  gstInclusive  Boolean  @default(true)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
 model Astrologer {
   id          String   @id @default(cuid())
   name        String
@@ -246,9 +317,19 @@ model ConsultationBooking {
   dob          DateTime?
   timeOfBirth  String?
   placeOfBirth String?
-  category     String      // Love, Education, Career, Marriage, Health, Wealth, Legal, Finance, Remedies, Parents
-  durationMins Int         // 30, 60
-  slotTime     DateTime
+  // `category` drives the life-area classification — Kundli Reading, Vastu Consultation,
+  // Numerology, etc. A separate `purpose` field previously existed for this but was removed
+  // since it duplicated `category`. Price is driven by `category` + `durationMins` together —
+  // see JyotishCategory.price30/price60/price90.
+  category     String
+  // Required on the public form again (session-length tier — Half Hour/1 Hour/1.5 Hours — is
+  // what durationMins selects). Kept nullable in the schema, not enforced with a hard NOT NULL,
+  // so the handful of rows created while this was briefly uncollected still read back fine;
+  // enforced as required by the API instead.
+  durationMins Int?
+  // Still not collected on the public form — admin assigns the actual calendar date/time after
+  // payment. This is separate from durationMins (session length), which the visitor does pick.
+  slotTime     DateTime?
   paymentStatus String     @default("PENDING")
   status       String      @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
   comment      String?
@@ -324,6 +405,14 @@ model KundliListing {
   gstInclusive  Boolean  @default(true)
   createdAt     DateTime @default(now())
   orders        KundliOrder[]
+
+  // Detail-page content — brings Kundli to parity with Chadhava/E-Puja/Product's tabbed detail
+  // page (About/Benefits/Process/Pricing/Reviews/FAQ). All optional so existing rows read back
+  // fine; the detail page hides any tab left empty.
+  significance      String? // Longer About/significance text shown under the secondary tab
+  benefits          String? // One benefit per line, rendered as a bullet list
+  secondaryTabLabel String? // Defaults to "Details" when unset
+  media             Json? // Ordered image/video gallery — see ChadhavaListing.media for shape/notes
 }
 
 model KundliOrder {
@@ -372,6 +461,7 @@ model Product {
   reviewsCount  Int?     @default(0)
   createdAt     DateTime @default(now())
   orders        ProductOrder[]
+  redemptionSlabs RedemptionSlab[]
 
   // Extra detail-page content for the tabbed detail-page layout (see DetailPageTabs) — all
   // optional. sourceName/sourceLocation are the Product equivalent of PujaListing's
@@ -383,6 +473,11 @@ model Product {
   secondaryTabLabel String? // Defaults to "Source & Certification" when unset
   // Ordered image/video gallery — see ChadhavaListing.media for shape/notes.
   media             Json?
+
+  // Product-specific detail tabs (not applicable to temple/puja offerings, so kept only here
+  // rather than on the shared pattern above).
+  specification String? // One spec per line, e.g. "Weight: 5g" — rendered as a bullet list
+  howToWear     String? // Freeform usage/wearing instructions paragraph
 }
 
 // Curated "Shop by Purpose" tiles on the homepage and ecommerce page.
@@ -471,6 +566,9 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 }
 
+// The original "3D Darshan" experience — a temple banner + QR code linking out to an
+// externally-hosted 3D/AR model. Kept as-is; only display labels were renamed to "3D Darshan"
+// to make room for the newer, separate DailyDarshan feature below.
 model DarshanTemple {
   id          String   @id @default(cuid())
   name        String
@@ -482,15 +580,118 @@ model DarshanTemple {
   createdAt   DateTime @default(now())
 }
 
+// The interactive "Darshan" feature: one deity image + bhajan per day of the week, shown in a
+// virtual temple frame where a visitor can offer a flower, ring the bell, light a deepak/
+// agarbati, and sound the conch. `dayOfWeek` follows JS `Date#getDay()` (0 = Sunday ... 6 =
+// Saturday) so the frontend can look up "today's" entry with zero conversion. Unique per day —
+// admin edits the existing row for a day rather than creating duplicates.
+model DailyDarshan {
+  id          String   @id @default(cuid())
+  dayOfWeek   Int      @unique // 0=Sunday, 1=Monday, ... 6=Saturday
+  deityName   String
+  image       String
+  bhajanTitle String?
+  bhajanUrl   String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// A visitor's temple selfie + location. Starts PENDING; an admin reviews it (photo genuinely
+// looks like it was taken at a temple, location is plausible) and either APPROVEs it — which
+// awards points and puts the pin on the public map — or REJECTs it, which awards nothing.
 model GeoTagPhoto {
   id        String   @id @default(cuid())
   userId    String
   imageUrl  String
   latitude  Float?
   longitude Float?
-  createdAt DateTime @default(now())
+
+  // The name shown to the visitor as "you're at <name>" is always system-suggested from
+  // GeotagTemple coordinate matching, never free-typed — templeName only differs from
+  // suggestedTempleName when no known temple was within range and the visitor typed their own.
+  templeName          String?
+  suggestedTempleName String?
+
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  pointsAwarded Int? // Snapshot of GeotagSettings.pointsPerTag at approval time — later changes
+  // to the site-wide point value must not retroactively change what an already-approved tag paid out.
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+// Admin-curated list of known temple coordinates, used to auto-suggest a name when a visitor's
+// selfie location falls within `radiusMeters` of one — this is what "system detects the mandir"
+// means in practice; there's no live reverse-geocoding API involved, just distance matching
+// against temples the admin has entered.
+model GeotagTemple {
+  id           String   @id @default(cuid())
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Float    @default(500)
+  createdAt    DateTime @default(now())
+}
+
+// Single-row settings table (id is always "singleton") for the admin-configurable "how many
+// points does one approved tag earn" value.
+model GeotagSettings {
+  id           String   @id @default("singleton")
+  pointsPerTag Int      @default(10)
+  updatedAt    DateTime @updatedAt
+}
+
+// Append-only ledger — the audit trail behind User.points. Every earn (tag approved) and every
+// spend (redemption requested/refunded) gets a row here, so a support agent can always answer
+// "why does this user have X points" without guessing.
+model PointsTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Int // positive = earned, negative = spent
+  reason       String
+  geoTagId     String?
+  redemptionId String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Admin-defined reward tiers — "reach N points, redeem this product." A user can hold multiple
+// slabs' worth of points but each redemption spends exactly one slab's pointsRequired.
+model RedemptionSlab {
+  id             String   @id @default(cuid())
+  pointsRequired Int
+  productId      String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  product     Product              @relation(fields: [productId], references: [id])
+  redemptions RedemptionRequest[]
+
+  @@index([pointsRequired])
+}
+
+// A user's request to cash in points for a slab's product. Points are deducted atomically the
+// moment the request is created (not on admin approval) so two concurrent requests can't both
+// spend the same points — if an admin later REJECTs the request, the points are refunded.
+model RedemptionRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  slabId          String
+  pointsSpent     Int
+  status          String    @default("PENDING") // PENDING, FULFILLED, REJECTED
+  shippingAddress String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slab RedemptionSlab @relation(fields: [slabId], references: [id])
 }
 
 // GST invoice, auto-generated whenever an order's payment succeeds. `orderType`+`orderId`
@@ -541,13 +742,19 @@ model Refund {
 model Faq {
   id        String   @id @default(cuid())
   page      String
+  // Optional — scopes this FAQ to one specific listing within `page` (e.g. one Chadhava
+  // offering) rather than the whole module. Loosely typed like Review.targetId (no hard
+  // relation, since it can point at a ChadhavaListing/PujaListing/KundliListing/Product
+  // depending on `page`) — null means "applies to every listing under this page" and is how
+  // module-wide FAQs (and all non-listing pages like home/login/jyotish) keep working.
+  listingId String?
   question  String
   answer    String
   order     Int      @default(0)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  @@index([page])
+  @@index([page, listingId])
 }
 
 // Admin-editable "How It Works" steps, scoped per frontend page (same `page` convention as

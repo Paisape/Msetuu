@@ -47,6 +47,19 @@ const EMAIL_FIELDS: FieldMeta[] = [
   { key: 'SMTP_FROM_EMAIL', label: 'From Email', secret: false, placeholder: 'admin@mandirsetuu.com' }
 ]
 
+// Separate SMTP account used only by the notification system (manual admin broadcasts + the
+// automatic new-listing/welcome/order-accepted/video-uploaded triggers) — kept independent of the
+// main Email tab above. Falls back to that main account until this is explicitly configured.
+const NOTIFICATION_EMAIL_FIELDS: FieldMeta[] = [
+  { key: 'SMTP_HOST', label: 'SMTP Host', secret: false, placeholder: 'smtp.zoho.in' },
+  { key: 'SMTP_PORT', label: 'SMTP Port', secret: false, placeholder: '465' },
+  { key: 'SMTP_SECURE', label: 'Use SSL (true / false)', secret: false, placeholder: 'true' },
+  { key: 'SMTP_USER', label: 'SMTP Username', secret: false, placeholder: 'notifications@mandirsetuu.com' },
+  { key: 'SMTP_PASSWORD', label: 'SMTP Password', secret: true },
+  { key: 'SMTP_FROM_NAME', label: 'From Name', secret: false, placeholder: 'Mandirsetuu Notifications' },
+  { key: 'SMTP_FROM_EMAIL', label: 'From Email', secret: false, placeholder: 'notifications@mandirsetuu.com' }
+]
+
 const SMS_FIELDS: FieldMeta[] = [
   { key: 'SMS_PROVIDER', label: 'SMS Provider', secret: false, placeholder: 'e.g. MSG91, Twilio' },
   { key: 'SMS_API_KEY', label: 'SMS API Key', secret: true },
@@ -81,6 +94,10 @@ const WHATSAPP_FIELDS: FieldMeta[] = [
 const FIREBASE_FIELDS: FieldMeta[] = [
   { key: 'FIREBASE_PROJECT_ID', label: 'Firebase Project ID', secret: false, placeholder: 'mandirsetuu-app' },
   { key: 'FIREBASE_SERVER_KEY', label: 'Firebase FCM Server Key', secret: true }
+]
+
+const LEGAL_FIELDS: FieldMeta[] = [
+  { key: 'TERMS_AND_CONDITIONS', label: 'Terms and Conditions (Checkout)', secret: false }
 ]
 
 type FieldEntry = { value: string; configured: boolean; source: 'db' | 'env' | 'none' }
@@ -209,6 +226,8 @@ const SettingsPanel = ({
             fullWidth
             size='small'
             autoComplete='new-password'
+            multiline={f.key.includes('TERMS')}
+            minRows={f.key.includes('TERMS') ? 10 : undefined}
           />
         )
       })}
@@ -223,7 +242,7 @@ const SettingsPanel = ({
   )
 }
 
-const EmailTestButton = () => {
+const EmailTestButton = ({ endpoint = '/api/secure-config/settings/email/test' }: { endpoint?: string }) => {
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -232,7 +251,7 @@ const EmailTestButton = () => {
     setResult(null)
 
     try {
-      const res = await fetch('/api/secure-config/settings/email/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       const data = await res.json().catch(() => null)
 
       if (!res.ok) throw new Error(data?.error || 'Failed to send test email.')
@@ -395,22 +414,23 @@ const ConfigClient = () => {
         login. This password must be rotated every 15 days via an OTP emailed to the recovery address.
       </Typography>
 
-      <Card className='mb-6'>
-        <CardHeader
-          title='Admin Login Credentials'
-          subheader='Change your active Admin Email Address and Admin Password.'
-        />
-        <CardContent>
-          <AdminCredentialsPanel />
-        </CardContent>
-      </Card>
-
       {statusLoading ? (
         <div className='p-6 text-center'>
           <CircularProgress size={22} />
         </div>
       ) : status?.unlocked ? (
-        <Card>
+        <>
+          <Card className='mb-6'>
+            <CardHeader
+              title='Admin Login Credentials'
+              subheader='Change your active Admin Email Address and Admin Password.'
+            />
+            <CardContent>
+              <AdminCredentialsPanel />
+            </CardContent>
+          </Card>
+          <Card>
+
           <CardHeader
             title='PG · Email · SMS'
             subheader={`Config session active — ${status.daysSinceChange} day(s) since the password was last changed.`}
@@ -419,11 +439,13 @@ const ConfigClient = () => {
             <Tabs value={tabIndex} onChange={(_, val) => setTabIndex(val)}>
               <Tab label='PG' />
               <Tab label='Email' />
+              <Tab label='Notification Email' />
               <Tab label='SMS' />
               <Tab label='Astrology' />
               <Tab label='Google AdSense' />
               <Tab label='WhatsApp' />
               <Tab label='Firebase Push' />
+              <Tab label='Legal & Terms' />
             </Tabs>
           </Box>
           <CardContent>
@@ -451,36 +473,57 @@ const ConfigClient = () => {
             )}
             {tabIndex === 2 && (
               <>
+                <Chip
+                  size='small'
+                  label='Used only by the notification system (broadcasts + new-listing/welcome/order-accepted/video-uploaded alerts). Falls back to the Email tab above if left unset.'
+                  className='mb-4'
+                />
+                <SettingsPanel
+                  endpoint='/api/secure-config/settings/notification-email'
+                  fields={NOTIFICATION_EMAIL_FIELDS}
+                  extra={<EmailTestButton endpoint='/api/secure-config/settings/notification-email/test' />}
+                />
+              </>
+            )}
+            {tabIndex === 3 && (
+              <>
                 <Chip size='small' label='No SMS provider is wired up yet — this only saves the config.' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/sms' fields={SMS_FIELDS} />
               </>
             )}
-            {tabIndex === 3 && (
+            {tabIndex === 4 && (
               <>
                 <Chip size='small' label='Panchang: freeastrologyapi.com — Rashifal: astrologyapi.com (separate providers)' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/astrology' fields={ASTROLOGY_FIELDS} />
               </>
             )}
-            {tabIndex === 4 && (
+            {tabIndex === 5 && (
               <>
                 <Chip size='small' label='Monetize VR Experiences & Mandirsetuu Pages with Google AdSense Auto-Ads & Banner Ad Units' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/adsense' fields={ADSENSE_FIELDS} />
               </>
             )}
-            {tabIndex === 5 && (
+            {tabIndex === 6 && (
               <>
                 <Chip size='small' label='Configure Meta WhatsApp Cloud API, Interakt, or AiSensy for instant WhatsApp notifications' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/whatsapp' fields={WHATSAPP_FIELDS} />
               </>
             )}
-            {tabIndex === 6 && (
+            {tabIndex === 7 && (
               <>
                 <Chip size='small' label='Configure Firebase Cloud Messaging (FCM) Server Key for mobile & web push notifications' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/firebase' fields={FIREBASE_FIELDS} />
               </>
             )}
+            {tabIndex === 8 && (
+              <>
+                <Chip size='small' label='Manage Terms and Conditions presented to users at checkout' className='mb-4' />
+                <SettingsPanel endpoint='/api/secure-config/settings/legal' fields={LEGAL_FIELDS} />
+              </>
+            )}
           </CardContent>
         </Card>
+        </>
       ) : phase === 'rotate' ? (
         <Card>
           <CardHeader

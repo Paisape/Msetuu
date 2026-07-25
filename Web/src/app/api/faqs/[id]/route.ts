@@ -11,11 +11,12 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const { id } = await params
     const body = await req.json()
-    const { page, question, answer, order, active } = body
+    const { page, listingId, question, answer, order, active } = body
 
     const data: Record<string, unknown> = {}
 
     if (page !== undefined) data.page = page
+    if (listingId !== undefined) data.listingId = typeof listingId === 'string' && listingId ? listingId : null
     if (question !== undefined) data.question = question
     if (answer !== undefined) data.answer = answer
     if (order !== undefined) data.order = Number(order)

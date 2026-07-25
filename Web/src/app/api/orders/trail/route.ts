@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
     const isAdmin = user.role === 'ADMIN'
 
-    const shaped = trail.map(t => ({
+    const shaped = trail.map((t: any) => ({
       id: t.id,
       status: t.status,
       note: t.note,

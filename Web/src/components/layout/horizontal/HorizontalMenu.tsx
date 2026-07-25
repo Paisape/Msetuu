@@ -130,11 +130,14 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
             <MenuItem href={`/${locale}/apps/mandir-setu/content/categories`}>Categories</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/kundli-listings`}>Kundli Listings</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/astrologers`}>Astrologers</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-categories`}>Jyotish Categories</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-time-slots`}>Jyotish Time Slots</MenuItem>
-            <MenuItem href={`/${locale}/apps/mandir-setu/content/darshan-temples`}>Darshan Temples</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/darshan-daily`}>Darshan</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/darshan-temples`}>3D Darshan</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/faqs`}>FAQs</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/how-it-works`}>How It Works</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/reviews`}>Reviews</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/contact-messages`}>Contact Messages</MenuItem>
           </SubMenu>
           <MenuItem href={`/${locale}/apps/mandir-setu/config`} icon={<i className='tabler-settings' />}>
             Settings

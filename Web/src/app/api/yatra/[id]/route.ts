@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireUser, requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
+import { notifyOrderAccepted } from '@/libs/notifyEvent'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -41,9 +42,17 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: `status must be one of ${[...VALID_STATUSES].join(', ')}` }, { status: 400 })
     }
 
+    const before = await prisma.yatraBooking.findUnique({ where: { id }, select: { status: true, userId: true } })
+
+    if (!before) return NextResponse.json({ error: 'Booking not found.' }, { status: 404 })
+
     const booking = await prisma.yatraBooking.update({ where: { id }, data: { status } })
 
     await logOrderTrail({ orderType: 'YATRA', orderId: id, status, actorId: admin.id, actorRole: 'ADMIN', req })
+
+    if (before.status === 'PENDING' && status !== 'PENDING' && status !== 'CANCELLED') {
+      notifyOrderAccepted(before.userId, 'Yatra', id)
+    }
 
     return NextResponse.json(booking)
   } catch (err) {

@@ -50,6 +50,7 @@ const TARGET_DIMENSIONS: Record<string, { width: number; height: number; fit: 'c
   product: { width: 800, height: 800, fit: 'cover' },
   astrologer: { width: 500, height: 500, fit: 'cover' },
   darshan: { width: 800, height: 600, fit: 'cover' },
+  'darshan-daily': { width: 900, height: 1200, fit: 'cover' },
   qr: { width: 600, height: 600, fit: 'inside' },
   proof: { width: 1400, height: 1400, fit: 'inside' },
   scan: { width: 2000, height: 2600, fit: 'inside' },
@@ -78,7 +79,12 @@ export async function POST(req: Request) {
 
     const originalSizeBytes = file.size
     let buffer = Buffer.from(await file.arrayBuffer())
-    let extension = path.extname(file.name).toLowerCase().replace(/[^a-z0-9.]/g, '') || guessExtension(file.type)
+
+    // The extension written to disk must come only from the validated MIME type, never from the
+    // client-supplied filename — otherwise a request with an allowed Content-Type (e.g. video/mp4)
+    // but a filename like "x.html" could land an attacker-controlled file with an executable
+    // extension in the publicly-served /public/uploads directory.
+    let extension = guessExtension(file.type)
 
     if (IMAGE_MIME_TYPES.has(file.type)) {
       const target = TARGET_DIMENSIONS[uploadType] || TARGET_DIMENSIONS.default
@@ -88,6 +94,19 @@ export async function POST(req: Request) {
         withoutEnlargement: true,
         position: 'centre'
       })
+
+      if (uploadType !== 'qr' && uploadType !== 'proof' && uploadType !== 'scan') {
+        const watermarkSvg = `
+          <svg width="${target.width}" height="${target.height}">
+            <rect x="${target.width - 220}" y="${target.height - 60}" width="200" height="40" fill="black" opacity="0.4" rx="5" />
+            <text x="${target.width - 120}" y="${target.height - 32}" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Mandirsetuu</text>
+          </svg>
+        `
+        pipeline.composite([{
+          input: Buffer.from(watermarkSvg),
+          gravity: 'southeast'
+        }])
+      }
 
       // QR codes need crisp edges to stay scannable — lossless PNG instead of lossy WebP.
       if (uploadType === 'qr') {

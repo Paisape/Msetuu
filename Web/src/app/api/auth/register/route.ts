@@ -6,6 +6,7 @@ import prisma from '@/libs/prisma'
 import { sendEmail } from '@/libs/email'
 import { welcomeVerificationEmail } from '@/libs/emailTemplates'
 import { logActivity } from '@/libs/activityLog'
+import { enforceRateLimit } from '@/libs/rateLimit'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -16,6 +17,10 @@ export async function POST(req: Request) {
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : undefined
+
+    const rateLimited = enforceRateLimit(req, 'register', { limit: 6, windowMs: 60 * 60 * 1000, identifier: email || undefined })
+
+    if (rateLimited) return rateLimited
 
     if (!name || name.length > 100) {
       return NextResponse.json({ error: 'Please provide a valid name.' }, { status: 400 })

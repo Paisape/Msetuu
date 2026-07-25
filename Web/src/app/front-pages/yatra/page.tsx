@@ -5,7 +5,6 @@ import { useState } from 'react'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
@@ -75,76 +74,6 @@ const YatraPage = () => {
           defaultTitle='Spiritual Yatra Booking'
           defaultSubtitle='Join our guided, worry-free holy pilgrim yatras with premium transport, accommodations, and VIP temple darshans.'
         />
-
-        {/* Featured Tours Grid */}
-        <Typography variant='h4' className='font-bold mb-6 galaxy-glow-text text-center'>
-          🌅 Popular Holy Yatra Packages
-        </Typography>
-        <Grid container spacing={6} className='mb-16'>
-          {[
-            {
-              title: 'Char Dham Yatra',
-              duration: '11 Days / 10 Nights',
-              desc: 'Sacred trip covering Yamunotri, Gangotri, Kedarnath, and Badrinath shrines with premium transport.',
-              image: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7',
-              price: '₹28,500/person',
-              formVal: 'Char Dham Yatra (Yamunotri, Gangotri, Kedarnath, Badrinath)'
-            },
-            {
-              title: 'Kashi & Ayodhya Tour',
-              duration: '6 Days / 5 Nights',
-              desc: 'Ganga Aarti boat rides in Varanasi, and VIP Darshans at Ayodhya Ram Mandir and Prayagraj Triveni Sangam.',
-              image: 'https://images.unsplash.com/photo-1627664813831-299f2b80a656',
-              price: '₹14,999/person',
-              formVal: 'Kashi Vishwanath & Ayodhya Ram Mandir Tour'
-            },
-            {
-              title: 'Rameshwaram & South India',
-              duration: '8 Days / 7 Nights',
-              desc: 'Sacred trip to Rameshwaram Jyotirlinga, Madurai Meenakshi, and Kanyakumari temple shrines.',
-              image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa',
-              price: '₹18,200/person',
-              formVal: 'Rameshwaram & South India Temples Tour'
-            }
-          ].map((tour, idx) => (
-            <Grid size={{ xs: 12, md: 4 }} key={idx}>
-              <Card className='galaxy-card h-full flex flex-col justify-between overflow-hidden relative'>
-                <div>
-                  <div className='relative h-56 w-full overflow-hidden'>
-                    <img src={tour.image} alt={tour.title} className='w-full h-full object-cover' />
-                    <div className='absolute bottom-4 right-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
-                      {tour.duration}
-                    </div>
-                  </div>
-                  <CardContent className='p-6'>
-                    <Typography variant='h5' className='font-bold mb-3' style={{ color: '#047857' }}>
-                      {tour.title}
-                    </Typography>
-                    <Typography variant='body2' style={{ color: '#4b5563' }} className='leading-relaxed mb-4'>
-                      {tour.desc}
-                    </Typography>
-                  </CardContent>
-                </div>
-                <CardContent className='p-6 pt-0 mt-auto border-t flex justify-between items-center' style={{ borderColor: 'rgba(16, 185, 129, 0.15)' }}>
-                  <Typography className='font-bold text-lg' style={{ color: '#006241' }}>
-                    {tour.price}
-                  </Typography>
-                  <Button
-                    variant='outlined'
-                    size='small'
-                    style={{ borderColor: '#10b981', color: '#006241' }}
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, destination: tour.formVal }))
-                      document.getElementById('yatra-form-card')?.scrollIntoView({ behavior: 'smooth' })
-                    }}
-                  >
-                    Select Package
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
 
         {/* Booking Form Card */}
         <Card id='yatra-form-card' className='galaxy-card p-6 md:p-10 max-w-4xl mx-auto'>

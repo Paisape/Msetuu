@@ -51,7 +51,6 @@ const Layout = async ({ children }: ChildrenType) => {
             <IntersectionProvider>
               <FrontLayout>
                 {children}
-                <DevotionalMusic />
                 <ScrollToTop className='mui-fixed'>
                   <Button
                     variant='contained'

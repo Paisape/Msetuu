@@ -21,17 +21,27 @@ type Props = {
   // FAQs exist for this page, they replace `items` entirely; otherwise `items` (the page's
   // built-in defaults) is shown so the section never renders empty before content is configured.
   page?: string
+
+  // Optional — the specific listing this FAQ section belongs to (e.g. one Chadhava offering).
+  // When set, the backend merges that listing's own FAQs with the module-wide ones (general
+  // refund/booking questions), so a listing shows both without admin duplicating the general
+  // ones onto every item.
+  listingId?: string
   items?: FaqItem[]
 }
 
-export default function ServiceFaq({ title = 'Frequently Asked Questions', subtitle = 'Got questions? We have got answers.', page, items = [] }: Props) {
+export default function ServiceFaq({ title = 'Frequently Asked Questions', subtitle = 'Got questions? We have got answers.', page, listingId, items = [] }: Props) {
   const [expanded, setExpanded] = useState<number | false>(0)
   const [displayItems, setDisplayItems] = useState<FaqItem[]>(items)
 
   useEffect(() => {
     if (!page) return
 
-    fetch(`/api/faqs?page=${encodeURIComponent(page)}`)
+    const query = new URLSearchParams({ page })
+
+    if (listingId) query.set('listingId', listingId)
+
+    fetch(`/api/faqs?${query.toString()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -42,7 +52,7 @@ export default function ServiceFaq({ title = 'Frequently Asked Questions', subti
         // Keep the built-in default items on error
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [page, listingId])
 
   const handleChange = (panel: number) => (_: React.SyntheticEvent, isExpanded: boolean) => {
     setExpanded(isExpanded ? panel : false)

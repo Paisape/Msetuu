@@ -166,10 +166,11 @@ const BestSellers = () => {
                 <Button
                   onClick={() => handleBuyNow(p)}
                   disabled={buyingId === p.id}
+                  variant='contained'
                   fullWidth
                   size='small'
                   className='font-bold'
-                  style={{ backgroundColor: '#006241', color: '#fff', textTransform: 'none' }}
+                  style={{ textTransform: 'none' }}
                 >
                   {buyingId === p.id ? 'Processing…' : 'Buy Now'}
                 </Button>

@@ -45,7 +45,9 @@ export async function PATCH(req: Request, { params }: Params) {
       significance,
       benefits,
       secondaryTabLabel,
-      media
+      media,
+      specification,
+      howToWear
     } = body
 
     const data: Record<string, unknown> = {}
@@ -67,6 +69,8 @@ export async function PATCH(req: Request, { params }: Params) {
     if (benefits !== undefined) data.benefits = benefits || null
     if (secondaryTabLabel !== undefined) data.secondaryTabLabel = secondaryTabLabel || null
     if (media !== undefined) data.media = sanitizeMediaGallery(media)
+    if (specification !== undefined) data.specification = specification || null
+    if (howToWear !== undefined) data.howToWear = howToWear || null
 
     if (offerPrice !== undefined) {
       if (offerPrice !== null && (typeof offerPrice !== 'number' || offerPrice <= 0)) {

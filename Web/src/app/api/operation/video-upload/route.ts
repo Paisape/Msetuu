@@ -6,6 +6,7 @@ import { logOrderTrail } from '@/libs/orderTrail'
 import { isValidDriveLink, parseDriveFolder } from '@/libs/videoUpload'
 import { sendEmail } from '@/libs/email'
 import { videoReadyEmail } from '@/libs/emailTemplates'
+import { notifyUser } from '@/libs/notificationSystem'
 
 type BatchItemInput = { orderType: 'CHADHAVA' | 'EPUJA'; orderId: string; driveLink: string }
 
@@ -149,6 +150,15 @@ export async function POST(req: Request) {
 
           await sendEmail({ to: order.user.email, subject, html })
         }
+
+        // Email already sent above via the dedicated video-ready template — only push/WhatsApp
+        // here to avoid a duplicate email through the notification system.
+        notifyUser(
+          order.userId,
+          `Your ${itemLabel || 'Puja'} Video Is Ready`,
+          `The video of your ${itemLabel || 'offering'} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`,
+          ['firebase', 'whatsapp']
+        )
 
         results.push({ orderType, orderId, driveLink, status: 'SUCCESS' })
       } catch (err) {

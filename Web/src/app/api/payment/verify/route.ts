@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       order = await model.findUnique({ where: { id: orderId }, include: { astrologer: true, user: { select: { name: true, email: true } } } })
       if (!order) return NextResponse.json({ error: 'Jyotish consultation not found.' }, { status: 404 })
       amountCharged = order.amountPaid || 0
-      itemLabel = `Jyotish Consultation — ${order.astrologer?.name} (${order.durationMins} min, ${order.category})`
+      itemLabel = `Jyotish Consultation — ${order.category}${order.durationMins ? ` (${order.durationMins} min)` : ''}${order.astrologer?.name ? ` — ${order.astrologer.name}` : ''}`
     } else if (orderType === 'KUNDLI') {
       model = prisma.kundliOrder
       order = await model.findUnique({ where: { id: orderId }, include: { kundliListing: true, user: { select: { name: true, email: true } } } })

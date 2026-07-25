@@ -181,7 +181,7 @@ async function generateIconsCSS() {
       })
 
       // Validate, clean up, fix palette, etc.
-      await iconSet.forEach(async (name, type) => {
+      await iconSet.forEach(async (name: string, type: any) => {
         if (type !== 'icon') return
 
         // Get SVG instance for parsing
@@ -204,7 +204,7 @@ async function generateIconsCSS() {
             // If icon is not monotone, remove this code
             await parseColors(svg, {
               defaultColor: 'currentColor',
-              callback: (attr, colorStr, color) => {
+              callback: (attr: any, colorStr: any, color: any) => {
                 return !color || isEmptyColor(color) ? colorStr : 'currentColor'
               }
             })

@@ -10,6 +10,8 @@ import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import Dialog from '@mui/material/Dialog'
+import IconButton from '@mui/material/IconButton'
 
 import { useCart } from '@/contexts/CartContext'
 import ReviewsSection from '@/components/ReviewsSection'
@@ -34,6 +36,8 @@ type Product = Priced & {
   benefits?: string | null
   secondaryTabLabel?: string | null
   media?: MediaGalleryItem[] | null
+  specification?: string | null
+  howToWear?: string | null
 }
 
 const EcommerceDetailPage = () => {
@@ -42,6 +46,8 @@ const EcommerceDetailPage = () => {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [activeMedia, setActiveMedia] = useState<MediaGalleryItem | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -88,8 +94,27 @@ const EcommerceDetailPage = () => {
   const hasSourceInfo = Boolean(product.sourceName || product.sourceLocation || product.significance)
   const secondaryTabLabel = product.secondaryTabLabel || 'Source & Certification'
 
+  // Specification is stored one line per spec, same convention as Benefits.
+  const specificationLines = (product.specification || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+
+  const currentMedia = activeMedia || { url: product.image, type: 'image' }
+
   return (
     <div className='galaxy-bg stars-overlay min-h-screen py-24 px-6'>
+      <Dialog open={lightboxOpen} onClose={() => setLightboxOpen(false)} maxWidth='lg'>
+        <div className='relative bg-black/90 p-2'>
+          <img src={currentMedia.url} alt={product.name} className='w-full max-h-[90vh] object-contain' />
+          <IconButton 
+            onClick={() => setLightboxOpen(false)} 
+            style={{ position: 'absolute', top: 10, right: 10, color: 'white', background: 'rgba(0,0,0,0.5)' }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </div>
+      </Dialog>
       <div className='max-w-6xl mx-auto'>
         <Button component={Link} href='/front-pages/ecommerce' className='mb-6 font-semibold' style={{ color: '#006241' }}>
           &larr; Back to the store
@@ -101,19 +126,30 @@ const EcommerceDetailPage = () => {
             
             {/* LEFT SIDE: PRODUCT IMAGE & MEDIA CAROUSEL */}
             <div className='md:col-span-5 space-y-4'>
-              <div className='relative h-72 md:h-96 w-full rounded-xl overflow-hidden shadow-lg border border-emerald-500/20'>
-                <img src={product.image} alt={product.name} className='w-full h-full object-cover' />
+              <div 
+                className='relative w-full rounded-xl overflow-hidden shadow-lg border border-emerald-500/20 cursor-pointer bg-emerald-50/5'
+                onClick={() => { if (currentMedia.type === 'image') setLightboxOpen(true) }}
+              >
+                {currentMedia.type === 'video' ? (
+                  <video src={currentMedia.url} className='w-full h-auto max-h-[600px] object-contain' controls playsInline autoPlay />
+                ) : (
+                  <img src={currentMedia.url} alt={product.name} className='w-full h-auto max-h-[600px] object-contain hover:scale-105 transition-transform duration-500' />
+                )}
                 {product.planet && (
                   <div className='absolute top-3 right-3 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                     {product.planet}
                   </div>
                 )}
               </div>
-              <MediaCarousel media={product.media} title='More Glimpses' />
+              <MediaCarousel 
+                media={[{ url: product.image, type: 'image' } as MediaGalleryItem, ...(product.media || [])]} 
+                title='More Glimpses' 
+                onItemClick={(item) => setActiveMedia(item)} 
+              />
             </div>
 
             {/* RIGHT SIDE: PRODUCT TITLE, PRICE, SPECS & ACTION CTAs */}
-            <div className='md:col-span-7 flex flex-col justify-between h-full space-y-6'>
+            <div className='md:col-span-7 flex flex-col justify-start h-full space-y-6'>
               <div>
                 <Typography variant='h3' className='font-bold' style={{ color: '#ffffff', fontFamily: 'Cinzel, Georgia, serif' }}>
                   {product.name}
@@ -128,6 +164,34 @@ const EcommerceDetailPage = () => {
                 <div className='mt-2 inline-block bg-emerald-950/60 text-emerald-300 text-xs px-3 py-1 rounded-md border border-emerald-500/30 font-medium'>
                   Category: {product.category}
                 </div>
+              </div>
+              
+              <div className='space-y-4'>
+                <Typography variant='body1' style={{ color: '#d1d5db' }} className='leading-relaxed'>
+                  {product.description}
+                </Typography>
+                
+                {benefitLines.length > 0 && (
+                  <div className='flex flex-col gap-2 bg-emerald-950/20 p-4 rounded-xl border border-emerald-500/10'>
+                    <Typography variant='subtitle2' className='font-bold' style={{ color: '#a7f3d0' }}>Key Benefits</Typography>
+                    {benefitLines.slice(0, 4).map((benefit, idx) => (
+                      <div key={idx} className='flex items-start gap-2'>
+                        <span style={{ color: '#10b981', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
+                        <Typography variant='body2' style={{ color: '#d1d5db' }}>{benefit}</Typography>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className='w-full mt-2 mb-6 pt-4 border-t border-emerald-500/10'>
+                <HowItWorksSection
+                  page='ecommerce'
+                  items={DEFAULT_HOW_IT_WORKS_STEPS}
+                  title='How Ordering Works'
+                  subtitle=''
+                  layout='vertical'
+                />
               </div>
 
               {/* Price Block & Action Buttons */}
@@ -231,9 +295,29 @@ const EcommerceDetailPage = () => {
                 )
               },
               {
-                key: 'process',
-                label: 'Process',
-                content: <HowItWorksSection page='ecommerce' items={DEFAULT_HOW_IT_WORKS_STEPS} title='How Ordering Works' />
+                key: 'specification',
+                label: 'Product Specification',
+                hidden: specificationLines.length === 0,
+                content: (
+                  <div className='flex flex-col gap-2'>
+                    {specificationLines.map((spec, idx) => (
+                      <div key={idx} className='flex items-start gap-2'>
+                        <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>•</span>
+                        <Typography variant='body2' style={{ color: '#374151' }}>{spec}</Typography>
+                      </div>
+                    ))}
+                  </div>
+                )
+              },
+              {
+                key: 'howToWear',
+                label: 'How to Wear',
+                hidden: !product.howToWear,
+                content: (
+                  <Typography variant='body2' className='leading-relaxed' style={{ color: '#4b5563', whiteSpace: 'pre-line' }}>
+                    {product.howToWear}
+                  </Typography>
+                )
               },
               {
                 key: 'pricing',
@@ -286,6 +370,7 @@ const EcommerceDetailPage = () => {
                 content: (
                   <ServiceFaq
                     page='ecommerce'
+                    listingId={product.id}
                     title='Frequently Asked Questions'
                     items={[
                       {

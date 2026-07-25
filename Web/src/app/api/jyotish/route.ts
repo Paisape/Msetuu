@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireUser, handleApiError } from '@/libs/api-auth'
+import { enforceRateLimit } from '@/libs/rateLimit'
 import { getRequestInfo } from '@/libs/request-info'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { effectivePrice } from '@/libs/pricing'
 import { createRazorpayOrder, isRazorpayConfigured, getRazorpayKeyId } from '@/libs/razorpay'
-
-const VALID_DURATIONS = new Set([30, 60])
 
 // GET /api/jyotish — logged-in user's own consultation requests, or ?all=1 for admins
 export async function GET(req: Request) {
@@ -27,24 +26,38 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/jyotish — user submits a consultation request (problem category + preferred slot).
-// If the user booked from a specific astrologer's card, astrologerId is sent and priced
-// immediately (duration-based price snapshot, PAID + GST invoice — same pattern as every other
-// module). If astrologerId is omitted, the booking falls back to the legacy "admin assigns an
-// astrologer later" flow with no price yet.
+// Session length options the booking form offers — price is looked up from the matching
+// JyotishCategory.price{30,60,90}/offerPrice{30,60,90} pair below.
+const DURATION_OPTIONS = [30, 60, 90] as const
+
+// POST /api/jyotish — user submits a consultation request via the single booking form
+// (gemsmantra.com/pages/consultation style — no astrologer browsing, no calendar slot picker).
+// `category` (e.g. "Kundli Reading", "Vastu Consultation") must match an active JyotishCategory;
+// `durationMins` (30/60/90) selects which of that category's three price tiers applies. A
+// separate `purpose` field previously existed for life-area classification but was removed since
+// it duplicated category. An admin assigns an astrologer and the actual calendar slot after
+// payment — never chosen by the visitor.
 export async function POST(req: Request) {
   try {
     const user = await requireUser()
 
-    const body = await req.json()
-    const { category, duration, slotTime, comment, astrologerId, name, email, phone, dob, timeOfBirth, placeOfBirth } = body
+    const rateLimited = enforceRateLimit(req, 'order-create', { limit: 20, windowMs: 60 * 60 * 1000, identifier: user.id, skipIp: true })
 
-    if (!category || !slotTime) {
-      return NextResponse.json({ error: 'category and slotTime are required.' }, { status: 400 })
+    if (rateLimited) return rateLimited
+
+    const body = await req.json()
+    const { category, durationMins, comment, name, email, phone, dob, timeOfBirth, placeOfBirth } = body
+
+    if (!category || typeof category !== 'string') {
+      return NextResponse.json({ error: 'category is required.' }, { status: 400 })
     }
 
-    // The consultation form (replacing the old astrologer-browsing list) always collects these —
-    // required for every booking now, not just the legacy admin-assigned flow.
+    const parsedDuration = Number(durationMins)
+
+    if (!DURATION_OPTIONS.includes(parsedDuration as (typeof DURATION_OPTIONS)[number])) {
+      return NextResponse.json({ error: 'durationMins is required and must be 30, 60 or 90.' }, { status: 400 })
+    }
+
     if (!name || !email || !phone || !dob || !timeOfBirth || !placeOfBirth) {
       return NextResponse.json(
         { error: 'name, email, phone, dob, timeOfBirth and placeOfBirth are required.' },
@@ -52,11 +65,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const purpose = typeof comment === 'string' ? comment.trim() : ''
-    const wordCount = purpose ? purpose.split(/\s+/).filter(Boolean).length : 0
+    const problemDescription = typeof comment === 'string' ? comment.trim() : ''
+    const wordCount = problemDescription ? problemDescription.split(/\s+/).filter(Boolean).length : 0
 
     if (wordCount < 10) {
-      return NextResponse.json({ error: 'Purpose of consultation must be at least 10 words.' }, { status: 400 })
+      return NextResponse.json({ error: 'Please describe your problem in at least 10 words.' }, { status: 400 })
     }
 
     const parsedDob = new Date(dob)
@@ -65,71 +78,48 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'dob must be a valid date.' }, { status: 400 })
     }
 
-    const durationMins = Number(duration)
+    const jyotishCategory = await prisma.jyotishCategory.findFirst({ where: { name: category, active: true } })
 
-    if (!VALID_DURATIONS.has(durationMins)) {
-      return NextResponse.json({ error: 'duration must be 30 or 60 (minutes).' }, { status: 400 })
+    if (!jyotishCategory) {
+      return NextResponse.json({ error: 'Selected category is not available. Please choose another.' }, { status: 404 })
     }
 
-    const parsedSlot = new Date(slotTime)
-
-    if (Number.isNaN(parsedSlot.getTime()) || parsedSlot.getTime() < Date.now()) {
-      return NextResponse.json({ error: 'slotTime must be a valid future date/time.' }, { status: 400 })
-    }
-
-    if (astrologerId && !(await isRazorpayConfigured())) {
+    if (!(await isRazorpayConfigured())) {
       return NextResponse.json({ error: 'Online payments are not configured yet. Please contact support.' }, { status: 503 })
-    }
-
-    let astrologer = null as Awaited<ReturnType<typeof prisma.astrologer.findUnique>> | null
-
-    if (astrologerId) {
-      astrologer = await prisma.astrologer.findUnique({ where: { id: astrologerId } })
-
-      if (!astrologer) {
-        return NextResponse.json({ error: 'Selected astrologer does not exist.' }, { status: 404 })
-      }
     }
 
     const { ip, userAgent } = getRequestInfo(req)
 
-    const priced = astrologer
-      ? {
-          price: durationMins === 60 ? astrologer.price60 : astrologer.price30,
-          offerPrice: durationMins === 60 ? astrologer.offerPrice60 : astrologer.offerPrice30,
-          gstPercentage: astrologer.gstPercentage,
-          gstInclusive: astrologer.gstInclusive
-        }
-      : null
-
-    const amountPaid = priced ? effectivePrice(priced) : null
-    let rzpOrderId: string | null = null
-    let razorpayKeyId: string | undefined
-
-    if (amountPaid !== null) {
-      rzpOrderId = await createRazorpayOrder(amountPaid, `jyotish_receipt_${Date.now()}`)
-      razorpayKeyId = await getRazorpayKeyId()
+    // Pick the price/offerPrice pair matching the chosen duration tier — same category, three
+    // different rates, e.g. Kundli Reading: 30min=₹500, 60min=₹1000, 90min=₹1500.
+    const priced = {
+      price: parsedDuration === 30 ? jyotishCategory.price30 : parsedDuration === 60 ? jyotishCategory.price60 : jyotishCategory.price90,
+      offerPrice: parsedDuration === 30 ? jyotishCategory.offerPrice30 : parsedDuration === 60 ? jyotishCategory.offerPrice60 : jyotishCategory.offerPrice90,
+      gstPercentage: jyotishCategory.gstPercentage,
+      gstInclusive: jyotishCategory.gstInclusive
     }
+
+    const amountPaid = effectivePrice(priced)
+    const rzpOrderId = await createRazorpayOrder(amountPaid, `jyotish_receipt_${Date.now()}`)
+    const razorpayKeyId = await getRazorpayKeyId()
 
     const booking = await prisma.consultationBooking.create({
       data: {
         userId: user.id,
-        astrologerId: astrologer?.id,
         name: String(name).trim(),
         email: String(email).trim(),
         phone: String(phone).trim(),
         dob: parsedDob,
         timeOfBirth: String(timeOfBirth).trim(),
         placeOfBirth: String(placeOfBirth).trim(),
-        category,
-        durationMins,
-        slotTime: parsedSlot,
-        comment: purpose,
+        category: jyotishCategory.name,
+        durationMins: parsedDuration,
+        comment: problemDescription,
         paymentStatus: 'PENDING',
         status: 'PENDING',
         amountPaid,
-        gstPercentage: astrologer?.gstPercentage,
-        gstInclusive: astrologer?.gstInclusive,
+        gstPercentage: jyotishCategory.gstPercentage,
+        gstInclusive: jyotishCategory.gstInclusive,
         ipAddress: ip,
         userAgent,
         razorpayOrderId: rzpOrderId
@@ -141,9 +131,7 @@ export async function POST(req: Request) {
       orderType: 'JYOTISH',
       orderId: booking.id,
       status: 'PENDING',
-      note: astrologer
-        ? 'Consultation booking created — awaiting Razorpay payment verification'
-        : 'Consultation requested — awaiting astrologer assignment',
+      note: 'Consultation booking created — awaiting Razorpay payment verification',
       actorId: user.id,
       actorRole: 'USER',
       req
@@ -151,12 +139,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       booking,
-      razorpayOrder: rzpOrderId ? {
+      razorpayOrder: {
         id: rzpOrderId,
-        amount: Math.round((amountPaid || 0) * 100),
+        amount: Math.round(amountPaid * 100),
         currency: 'INR',
         key: razorpayKeyId
-      } : null
+      }
     }, { status: 201 })
   } catch (err) {
     return handleApiError(err)

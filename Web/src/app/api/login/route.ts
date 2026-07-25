@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 
 import prisma from '@/libs/prisma'
 import { logActivity } from '@/libs/activityLog'
+import { enforceRateLimit } from '@/libs/rateLimit'
 
 export async function POST(req: Request) {
   try {
@@ -17,48 +18,17 @@ export async function POST(req: Request) {
       )
     }
 
+    // This route is also called server-to-server (NextAuth's authorize() and
+    // /api/mobile/login both proxy through it without forwarding the real caller's IP), so
+    // IP-based limiting is skipped here — the per-account identifier bucket is enough to stop
+    // credential-stuffing against one target, and the real edge endpoints (login-precheck,
+    // mobile/login) already apply IP-based limiting too.
+    const rateLimited = enforceRateLimit(req, 'login', { limit: 10, windowMs: 10 * 60 * 1000, identifier: email, skipIp: true })
+
+    if (rateLimited) return rateLimited
+
     const trimmedEmail = email.trim().toLowerCase()
-    let user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
-
-    // Self-healing migration for admin email variation (admin@mandirsetu.com vs admin@mandirsetuu.com)
-    if (!user && (trimmedEmail === 'admin@mandirsetuu.com' || trimmedEmail === 'admin@mandirsetu.com')) {
-      user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: 'admin@mandirsetuu.com' },
-            { email: 'admin@mandirsetu.com' },
-            { role: 'ADMIN' }
-          ]
-        }
-      })
-
-      if (user) {
-        const hashedPassword = await bcrypt.hash('Admin@12345', 12)
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            email: 'admin@mandirsetuu.com',
-            emailVerified: user.emailVerified || new Date(),
-            password: (password === 'Admin@12345') ? hashedPassword : user.password
-          }
-        })
-      }
-    }
-
-    // Auto-verify and update password if default admin credential used
-    if (user && user.role === 'ADMIN' && password === 'Admin@12345') {
-      const isPassValid = await bcrypt.compare(password, user.password || '')
-      if (!isPassValid) {
-        const hashedPassword = await bcrypt.hash('Admin@12345', 12)
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            password: hashedPassword,
-            emailVerified: new Date()
-          }
-        })
-      }
-    }
+    const user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
 
     // User may not exist, or may have registered via Google OAuth (no password set)
     if (!user || !user.password) {
@@ -86,51 +56,57 @@ export async function POST(req: Request) {
 
     // Admin requires OTP verification
     if (user.role === 'ADMIN') {
-      if (!otp) {
-        return NextResponse.json(
-          { message: ['Admin login verification code required.'] },
-          { status: 401, statusText: 'Unauthorized Access' }
-        )
-      }
+      const { getSetting } = require('@/libs/appSettings')
+      const otpSetting = await getSetting('SECURITY', 'ADMIN_LOGIN_OTP_ENABLED')
+      const requireOtp = otpSetting === 'true'
 
-      if (!user.verificationOtp || !user.verificationOtpExpires) {
-        return NextResponse.json(
-          { message: ['Verification session expired. Please request a new code.'] },
-          { status: 401, statusText: 'Unauthorized Access' }
-        )
-      }
-
-      if (new Date() > user.verificationOtpExpires) {
-        return NextResponse.json(
-          { message: ['Verification code expired. Please request a new code.'] },
-          { status: 401, statusText: 'Unauthorized Access' }
-        )
-      }
-
-      const isOtpValid = await bcrypt.compare(otp, user.verificationOtp)
-
-      if (!isOtpValid) {
-        await logActivity({
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          action: 'FAILED_ADMIN_LOGIN_OTP',
-          details: 'Incorrect OTP submitted for admin login verification.'
-        })
-        return NextResponse.json(
-          { message: ['Invalid verification code.'] },
-          { status: 401, statusText: 'Unauthorized Access' }
-        )
-      }
-
-      // Clear code on success
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationOtp: null,
-          verificationOtpExpires: null
+      if (requireOtp) {
+        if (!otp) {
+          return NextResponse.json(
+            { message: ['Admin login verification code required.'] },
+            { status: 401, statusText: 'Unauthorized Access' }
+          )
         }
-      })
+
+        if (!user.verificationOtp || !user.verificationOtpExpires) {
+          return NextResponse.json(
+            { message: ['Verification session expired. Please request a new code.'] },
+            { status: 401, statusText: 'Unauthorized Access' }
+          )
+        }
+
+        if (new Date() > user.verificationOtpExpires) {
+          return NextResponse.json(
+            { message: ['Verification code expired. Please request a new code.'] },
+            { status: 401, statusText: 'Unauthorized Access' }
+          )
+        }
+
+        const isOtpValid = await bcrypt.compare(otp, user.verificationOtp)
+
+        if (!isOtpValid) {
+          await logActivity({
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+            action: 'FAILED_ADMIN_LOGIN_OTP',
+            details: 'Incorrect OTP submitted for admin login verification.'
+          })
+          return NextResponse.json(
+            { message: ['Invalid verification code.'] },
+            { status: 401, statusText: 'Unauthorized Access' }
+          )
+        }
+
+        // Clear code on success
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            verificationOtp: null,
+            verificationOtpExpires: null
+          }
+        })
+      }
     }
 
     // Successful login telemetry log

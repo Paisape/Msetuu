@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/libs/prisma'
+import { enforceRateLimit } from '@/libs/rateLimit'
+import { notifyUserWelcome } from '@/libs/notifyEvent'
 
 export async function POST(req: Request) {
   try {
@@ -11,6 +13,10 @@ export async function POST(req: Request) {
     if (typeof email !== 'string' || typeof otp !== 'string' || !email || !otp) {
       return NextResponse.json({ error: 'Email and OTP are required' }, { status: 400 })
     }
+
+    const rateLimited = enforceRateLimit(req, 'verify-email', { limit: 10, windowMs: 10 * 60 * 1000, identifier: email })
+
+    if (rateLimited) return rateLimited
 
     const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
 
@@ -44,6 +50,8 @@ export async function POST(req: Request) {
         verificationOtpExpires: null
       }
     })
+
+    notifyUserWelcome(user.id, user.name || undefined)
 
     return NextResponse.json({ success: true, message: 'Email verified successfully' }, { status: 200 })
   } catch (err: any) {

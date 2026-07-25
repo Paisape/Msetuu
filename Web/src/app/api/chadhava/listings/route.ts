@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { sanitizeMediaGallery } from '@/libs/mediaGallery'
+import { notifyNewListing } from '@/libs/notifyEvent'
 
 // GET /api/chadhava/listings — public catalog of available Chadhava offerings
 export async function GET() {
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
         media: media !== undefined ? (sanitizeMediaGallery(media) as any) : undefined
       }
     })
+
+    notifyNewListing('Chadhava', listing.title, `/front-pages/chadhava/${listing.id}`)
 
     return NextResponse.json(listing, { status: 201 })
   } catch (err) {

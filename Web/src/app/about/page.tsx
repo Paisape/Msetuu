@@ -1,4 +1,7 @@
-import AboutUsPage from '@/app/[lang]/(blank-layout-pages)/about/page'
+import { redirect } from 'next/navigation'
 
-export { metadata } from '@/app/[lang]/(blank-layout-pages)/about/page'
-export default AboutUsPage
+// Moved to front-pages/about so it renders with the real site Header/Footer/FrontMenu. Kept as
+// a redirect so any bookmarked /about link still works.
+export default function AboutRedirect() {
+  redirect('/front-pages/about')
+}

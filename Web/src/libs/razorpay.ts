@@ -49,10 +49,34 @@ async function getClient(): Promise<Razorpay> {
   return new Razorpay({ key_id: keyId, key_secret: keySecret })
 }
 
+// The Razorpay SDK's HTTP client (axios under the hood) has no default timeout — a stalled or
+// unreachable Razorpay endpoint would otherwise hang this call indefinitely, tying up the
+// request (and whatever's waiting on it) for as long as the socket stays open. Under real order
+// volume that's how one slow upstream call turns into a pile of stuck requests. This wraps any
+// promise with a hard deadline so a hung call always fails fast with a clear error instead.
+const RAZORPAY_TIMEOUT_MS = 8_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms.`)), ms)
+
+    promise
+      .then(value => {
+        clearTimeout(timer)
+        resolve(value)
+      })
+      .catch(err => {
+        clearTimeout(timer)
+        reject(err)
+      })
+  })
+}
+
 // Creates a Razorpay order for the given amount (rupees) and returns its order id. This must
 // be called with a price we computed ourselves from the database — never a value sent by the
 // client — so the amount the customer is shown at Razorpay Checkout is provably correct.
-// Throws on any failure; callers must not catch this and substitute a fake order id.
+// Throws on any failure (including a timeout); callers must not catch this and substitute a
+// fake order id.
 export async function createRazorpayOrder(amountRupees: number, receipt: string): Promise<string> {
   const amountPaise = Math.round(amountRupees * 100)
 
@@ -62,12 +86,16 @@ export async function createRazorpayOrder(amountRupees: number, receipt: string)
 
   const client = await getClient()
 
-  const order = await client.orders.create({
-    amount: amountPaise,
-    currency: 'INR',
-    receipt,
-    payment_capture: true
-  })
+  const order = await withTimeout(
+    client.orders.create({
+      amount: amountPaise,
+      currency: 'INR',
+      receipt,
+      payment_capture: true
+    }),
+    RAZORPAY_TIMEOUT_MS,
+    'Razorpay order creation'
+  )
 
   return order.id
 }

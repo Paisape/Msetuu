@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/libs/prisma'
 import { sendEmail } from '@/libs/email'
 import { passwordResetOtpEmail } from '@/libs/emailTemplates'
+import { enforceRateLimit } from '@/libs/rateLimit'
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,10 @@ export async function POST(req: Request) {
     if (typeof email !== 'string' || !email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
+
+    const rateLimited = enforceRateLimit(req, 'forgot-password', { limit: 5, windowMs: 60 * 60 * 1000, identifier: email })
+
+    if (rateLimited) return rateLimited
 
     const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
 

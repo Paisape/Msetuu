@@ -31,15 +31,15 @@ export async function GET(_req: Request, { params }: Params) {
     ])
 
     const orders = [
-      ...chadhava.map(o => ({ type: 'chadhava', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
-      ...epuja.map(o => ({ type: 'epuja', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
-      ...jyotish.map(o => ({ type: 'jyotish', id: o.id, label: `${o.category} consultation`, amount: null, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
-      ...kundli.map(o => ({ type: 'kundli', id: o.id, label: o.kundliType, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
-      ...ecommerce.map(o => ({ type: 'ecommerce', id: o.id, label: o.product.name, amount: o.totalAmount, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
-      ...yatra.map(o => ({ type: 'yatra', id: o.id, label: o.yatraDestination, amount: null, status: o.status, paymentStatus: null, createdAt: o.createdAt }))
+      ...chadhava.map((o: any) => ({ type: 'chadhava', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
+      ...epuja.map((o: any) => ({ type: 'epuja', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
+      ...jyotish.map((o: any) => ({ type: 'jyotish', id: o.id, label: `${o.category} consultation`, amount: null, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
+      ...kundli.map((o: any) => ({ type: 'kundli', id: o.id, label: o.kundliType, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
+      ...ecommerce.map((o: any) => ({ type: 'ecommerce', id: o.id, label: o.product.name, amount: o.totalAmount, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt })),
+      ...yatra.map((o: any) => ({ type: 'yatra', id: o.id, label: o.yatraDestination, amount: null, status: o.status, paymentStatus: null, createdAt: o.createdAt }))
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-    const totalSpend = invoices.filter(i => i.status === 'PAID').reduce((sum, i) => sum + i.total, 0)
+    const totalSpend = invoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, i: any) => sum + i.total, 0)
 
     return NextResponse.json({ user, orders, invoices, totalSpend, orderCount: orders.length })
   } catch (err) {

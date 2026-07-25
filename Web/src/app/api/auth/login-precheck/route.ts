@@ -4,6 +4,7 @@ import prisma from '@/libs/prisma'
 import { sendEmail } from '@/libs/email'
 import { adminLoginOtpEmail } from '@/libs/emailTemplates'
 import { logActivity } from '@/libs/activityLog'
+import { enforceRateLimit } from '@/libs/rateLimit'
 
 export async function POST(req: Request) {
   try {
@@ -13,48 +14,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
     }
 
+    const rateLimited = enforceRateLimit(req, 'login-precheck', { limit: 10, windowMs: 10 * 60 * 1000, identifier: email })
+
+    if (rateLimited) return rateLimited
+
     const trimmedEmail = email.trim().toLowerCase()
-    let user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
-
-    // Self-healing migration for admin email variation (admin@mandirsetu.com vs admin@mandirsetuu.com)
-    if (!user && (trimmedEmail === 'admin@mandirsetuu.com' || trimmedEmail === 'admin@mandirsetu.com')) {
-      user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: 'admin@mandirsetuu.com' },
-            { email: 'admin@mandirsetu.com' },
-            { role: 'ADMIN' }
-          ]
-        }
-      })
-
-      if (user) {
-        const hashedPassword = await bcrypt.hash('Admin@12345', 12)
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            email: 'admin@mandirsetuu.com',
-            emailVerified: user.emailVerified || new Date(),
-            password: (password === 'Admin@12345') ? hashedPassword : user.password
-          }
-        })
-      }
-    }
-
-    // Auto-verify and update password if default admin credential used
-    if (user && user.role === 'ADMIN' && password === 'Admin@12345') {
-      const isPassValid = await bcrypt.compare(password, user.password || '')
-      if (!isPassValid) {
-        const hashedPassword = await bcrypt.hash('Admin@12345', 12)
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            password: hashedPassword,
-            emailVerified: new Date()
-          }
-        })
-      }
-    }
+    const user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
 
     if (!user || !user.password) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 })
@@ -78,32 +43,38 @@ export async function POST(req: Request) {
     }
 
     if (user.role === 'ADMIN') {
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
-      const hashedOtp = await bcrypt.hash(otp, 12)
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+      const { getSetting } = require('@/libs/appSettings')
+      const otpSetting = await getSetting('SECURITY', 'ADMIN_LOGIN_OTP_ENABLED')
+      const requireOtp = otpSetting === 'true'
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationOtp: hashedOtp,
-          verificationOtpExpires: otpExpires
-        }
-      })
+      if (requireOtp) {
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        const hashedOtp = await bcrypt.hash(otp, 12)
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
-      // Send the email
-      const { subject, html } = adminLoginOtpEmail({ otp })
-      sendEmail({ to: user.email!, subject, html }).catch(console.error)
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            verificationOtp: hashedOtp,
+            verificationOtpExpires: otpExpires
+          }
+        })
 
-      await logActivity({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        action: 'LOGIN_OTP_SENT',
-        details: 'Admin login initiated, OTP verification code dispatched.',
-      })
+        // Send the email
+        const { subject, html } = adminLoginOtpEmail({ otp })
+        sendEmail({ to: user.email!, subject, html }).catch(console.error)
 
-      return NextResponse.json({ requireOtp: true, email: user.email })
+        await logActivity({
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          action: 'LOGIN_OTP_SENT',
+          details: 'Admin login initiated, OTP verification code dispatched.',
+        })
+
+        return NextResponse.json({ requireOtp: true, email: user.email })
+      }
     }
 
     return NextResponse.json({ requireOtp: false })

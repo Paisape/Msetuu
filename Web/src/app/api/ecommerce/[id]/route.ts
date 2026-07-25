@@ -4,6 +4,7 @@ import prisma from '@/libs/prisma'
 import { requireUser, requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { cancelInvoiceAndRefund } from '@/libs/invoice'
+import { notifyOrderAccepted } from '@/libs/notifyEvent'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -39,6 +40,10 @@ export async function PATCH(req: Request, { params }: Params) {
     const body = await req.json()
     const { status, paymentStatus } = body
 
+    const before = await prisma.productOrder.findUnique({ where: { id }, select: { status: true, userId: true } })
+
+    if (!before) return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+
     const data: Record<string, unknown> = {}
 
     if (status !== undefined) {
@@ -67,6 +72,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
       if (status === 'CANCELLED') {
         await cancelInvoiceAndRefund('ECOMMERCE', id)
+      } else if (before.status === 'PENDING' && status !== 'PENDING') {
+        notifyOrderAccepted(before.userId, 'Product', id)
       }
     }
 

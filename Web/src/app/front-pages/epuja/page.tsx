@@ -21,6 +21,7 @@ import Box from '@mui/material/Box'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import IconButton from '@mui/material/IconButton'
+import Pagination from '@mui/material/Pagination'
 
 import { useCart } from '@/contexts/CartContext'
 import ServiceFaq from '@/components/ServiceFaq'
@@ -59,6 +60,8 @@ const EpujaPage = () => {
   const [selectedPuja, setSelectedPuja] = useState<PujaListing | null>(null)
   const [packageType, setPackageType] = useState<'Single' | 'Couple' | 'Family'>('Single')
   const [listings, setListings] = useState<PujaListing[]>(FALLBACK_LISTINGS)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 9
 
   const [formData, setFormData] = useState({
     name: '',
@@ -130,6 +133,16 @@ const EpujaPage = () => {
   const categories = ['All', ...Array.from(new Set(listings.map(l => l.category))).sort()]
 
   const filteredPujas = activeTab === 'All' ? listings : listings.filter(p => p.category === activeTab)
+
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentListings = filteredPujas.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(filteredPujas.length / itemsPerPage)
+
+  // Reset page when category changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab])
 
   const handleOpenBooking = (item: PujaListing) => {
     setSelectedPuja(item)
@@ -219,17 +232,17 @@ const EpujaPage = () => {
 
         {/* Listings Grid - small cards, 3 per row */}
         <Grid container spacing={6}>
-          {filteredPujas.map((item) => {
+          {currentListings.map((item) => {
             const singlePkg = findPackage(item, 'Single') || item.packages[0]
 
             return (
               <Grid size={{ xs: 12, sm: 4, md: 4 }} key={item.id}>
                 <Card className='galaxy-card flex flex-col justify-between overflow-hidden h-full relative'>
                   <div className='relative h-48 w-full overflow-hidden'>
-                    <img src={item.image} alt={item.title} className='w-full h-full object-cover' />
-                    <div className='absolute top-4 left-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
-                      {item.category}
-                    </div>
+                     <img src={item.image} alt={item.title} className='w-full h-full object-cover' />
+                     <div className='absolute top-4 left-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
+                       {item.category}
+                     </div>
                   </div>
                   <CardContent className='p-5 flex flex-col flex-1'>
                     <Typography variant='h6' className='font-bold mb-2 truncate' style={{ color: '#047857' }}>
@@ -276,6 +289,22 @@ const EpujaPage = () => {
             )
           })}
         </Grid>
+
+        {totalPages > 1 && (
+          <Box className='flex justify-center mt-8'>
+            <Pagination 
+              count={totalPages} 
+              page={currentPage} 
+              onChange={(e, page) => setCurrentPage(page)} 
+              color='primary' 
+              size='large'
+              sx={{
+                '& .MuiPaginationItem-root': { color: '#a7f3d0' },
+                '& .Mui-selected': { backgroundColor: 'rgba(16, 185, 129, 0.2) !important' }
+              }}
+            />
+          </Box>
+        )}
 
         {/* Booking Dialog */}
         <Dialog

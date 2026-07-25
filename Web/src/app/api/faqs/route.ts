@@ -4,11 +4,16 @@ import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
 // GET /api/faqs?page=chadhava — public, active FAQs for a page, ordered for display.
+//   ?page=chadhava&listingId=xyz — merges that specific listing's FAQs with the module-wide ones
+//   (listingId IS NULL) so a listing shows both its own item-specific FAQs and the general ones
+//   (refund policy, how booking works, etc.) without admin having to duplicate the general ones
+//   onto every listing.
 // Pass ?all=1 (admin only) to see inactive entries too, for the management console.
 export async function GET(req: Request) {
   try {
     const params = new URL(req.url).searchParams
     const page = params.get('page')
+    const listingId = params.get('listingId')
     const wantsAll = params.get('all') === '1'
 
     let includeInactive = false
@@ -25,6 +30,7 @@ export async function GET(req: Request) {
     const faqs = await prisma.faq.findMany({
       where: {
         ...(page ? { page } : {}),
+        ...(listingId ? { OR: [{ listingId: null }, { listingId }] } : {}),
         ...(includeInactive ? {} : { active: true })
       },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }]
@@ -36,13 +42,13 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/faqs — admin creates a FAQ entry for a page
+// POST /api/faqs — admin creates a FAQ entry for a page, optionally scoped to one listing
 export async function POST(req: Request) {
   try {
     await requireAdmin()
 
     const body = await req.json()
-    const { page, question, answer, order, active } = body
+    const { page, listingId, question, answer, order, active } = body
 
     if (!page || !question || !answer) {
       return NextResponse.json({ error: 'page, question and answer are required.' }, { status: 400 })
@@ -51,6 +57,7 @@ export async function POST(req: Request) {
     const faq = await prisma.faq.create({
       data: {
         page,
+        listingId: typeof listingId === 'string' && listingId ? listingId : null,
         question,
         answer,
         order: Number.isFinite(Number(order)) ? Number(order) : 0,

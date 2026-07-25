@@ -16,7 +16,7 @@ export async function GET() {
     })
 
     const customers = await Promise.all(
-      users.map(async user => {
+      users.map(async (user: any) => {
         const [chadhava, epuja, jyotish, kundli, ecommerce, yatra, spendAgg] = await Promise.all([
           prisma.chadhavaOrder.count({ where: { userId: user.id } }),
           prisma.pujaOrder.count({ where: { userId: user.id } }),

@@ -1,30 +1,53 @@
 import { NextResponse } from 'next/server'
 
-import { encode } from 'next-auth/jwt'
-
 import prisma from '@/libs/prisma'
-
-const MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days, matches web session maxAge
+import { enforceRateLimit } from '@/libs/rateLimit'
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+  ACCESS_TOKEN_MAX_AGE_SECONDS,
+  REFRESH_TOKEN_MAX_AGE_SECONDS
+} from '@/libs/mobileAuth'
 
 /**
  * Mobile-only login endpoint.
  *
- * The web app authenticates via NextAuth's HttpOnly session cookie, which a React
- * Native client cannot reliably store/replay. This route performs the exact same
- * credential check as /api/login (proxied here to avoid duplicating validation
- * logic) and, on success, returns a signed NextAuth-compatible JWT that the mobile
- * app sends back as `Authorization: Bearer <token>`. src/libs/api-auth.ts decodes
- * this token with the same NEXTAUTH_SECRET, so every existing protected route works
- * unchanged for both web (cookie) and mobile (bearer token) callers.
+ * The web app authenticates via NextAuth's HttpOnly session cookie, which a React Native
+ * client cannot reliably store/replay. This route performs the exact same credential check as
+ * /api/login (proxied here to avoid duplicating validation logic) and, on success, issues:
+ *
+ * - `accessToken` — a short-lived (30 min) signed JWT sent as `Authorization: Bearer <token>`
+ *   on every subsequent request. src/libs/api-auth.ts decodes it with the same
+ *   NEXTAUTH_SECRET, so every existing protected route works unchanged for both web (cookie)
+ *   and mobile (bearer token) callers.
+ * - `refreshToken` — a long-lived (60 day), device-bound opaque token. Exchange it for a new
+ *   accessToken via POST /api/mobile/refresh before the current one expires. It is rotated
+ *   (replaced) on every refresh and can be revoked via POST /api/mobile/logout, or all at once
+ *   via POST /api/mobile/logout-all.
+ *
+ * Optional `deviceId`/`deviceName`/`os` in the request body let the user later see and manage
+ * their logged-in devices via GET /api/mobile/sessions.
  */
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { email, password, otp } = body as { email?: string; password?: string; otp?: string }
+    const { email, password, otp, deviceId, deviceName, os } = body as {
+      email?: string
+      password?: string
+      otp?: string
+      deviceId?: string
+      deviceName?: string
+      os?: string
+    }
 
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
     }
+
+    const rateLimited = enforceRateLimit(req, 'mobile-login', { limit: 10, windowMs: 10 * 60 * 1000, identifier: email })
+
+    if (rateLimited) return rateLimited
 
     const origin = new URL(req.url).origin
 
@@ -42,36 +65,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: message }, { status: loginRes.status || 401 })
     }
 
-    const secret = process.env.NEXTAUTH_SECRET
-
-    if (!secret) {
-      return NextResponse.json({ error: 'Server auth is not configured.' }, { status: 500 })
-    }
-
     const user = await prisma.user.findUnique({
       where: { email: loginData.email },
       select: { id: true, name: true, email: true, role: true, image: true }
     })
 
-    if (!user) {
+    if (!user || !user.email) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 })
     }
 
-    const token = await encode({
-      secret,
-      maxAge: MAX_AGE_SECONDS,
-      token: {
-        sub: user.id,
-        name: user.name,
-        email: user.email,
-        picture: user.image,
-        role: user.role
+    const accessToken = await generateAccessToken({ ...user, email: user.email })
+    const refreshToken = generateRefreshToken()
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashRefreshToken(refreshToken),
+        deviceId: typeof deviceId === 'string' ? deviceId.slice(0, 200) : null,
+        deviceName: typeof deviceName === 'string' ? deviceName.slice(0, 200) : null,
+        os: typeof os === 'string' ? os.slice(0, 100) : null,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_SECONDS * 1000)
       }
     })
 
     return NextResponse.json({
-      token,
-      expiresIn: MAX_AGE_SECONDS,
+      accessToken,
+      expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS,
+      refreshToken,
+      refreshExpiresIn: REFRESH_TOKEN_MAX_AGE_SECONDS,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }
     })
   } catch {

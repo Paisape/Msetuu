@@ -12,14 +12,15 @@ async function main() {
   })
 
   const hashedPassword = await bcrypt.hash(adminPassword, 12)
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } })
 
+  // This seed runs on every container start (see entrypoint.sh). The `update` branch is
+  // intentionally a no-op: it must never touch password/role on an existing account, or a
+  // real admin's password (and any real admin's role, if ever changed) would silently revert
+  // to this hardcoded default on the next deploy/restart. Only first-ever `create` sets it.
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {
-      password: hashedPassword,
-      emailVerified: new Date(),
-      role: 'ADMIN'
-    },
+    update: {},
     create: {
       name: 'Mandirsetuu Admin',
       email: adminEmail,
@@ -29,7 +30,11 @@ async function main() {
     }
   })
 
-  console.log(`Admin user ready: ${admin.email} / ${adminPassword} (change this password after first login)`)
+  if (existingAdmin) {
+    console.log(`Admin user ready: ${admin.email} (existing account — password left untouched)`)
+  } else {
+    console.log(`Admin user created: ${admin.email} / ${adminPassword} — change this password after first login.`)
+  }
 
   await prisma.chadhavaListing.upsert({
     where: { id: 'seed-chadhava-shringar' },
@@ -538,6 +543,80 @@ async function main() {
       viewsCount: 289
     }
   })
+
+  // Seed DailyDarshan entries
+  const dailyDarshans = [
+    {
+      dayOfWeek: 0, // Sunday
+      deityName: 'Gayatri Mata / Surya Dev',
+      image: '/images/devotional/zodiac.jpg',
+      bhajanTitle: 'Gayatri Mantra',
+      bhajanUrl: '/audio/mantras/sounovamusic-gayatri-mantra-493174.mp3',
+      description: 'Chant the holy Gayatri Mantra to seek blessing and divine guidance from Gayatri Devi and Surya Dev.'
+    },
+    {
+      dayOfWeek: 1, // Monday
+      deityName: 'Lord Shiva',
+      image: '/images/devotional/mahakaleshwar.jpg',
+      bhajanTitle: 'Mahamrityunjaya Mantra',
+      bhajanUrl: '/audio/mantras/mahamrityunjaya.mp3',
+      description: 'Chant the Mahamrityunjaya Mantra to invoke the blessings of Lord Shiva for health and longevity.'
+    },
+    {
+      dayOfWeek: 2, // Tuesday
+      deityName: 'Lord Hanuman',
+      image: '/images/devotional/courage.jpg',
+      bhajanTitle: 'Om Hanumate Namaha',
+      bhajanUrl: '/audio/mantras/kalsstockmedia-om-hanumate-namaha-short-audio-447279.mp3',
+      description: 'Offer prayers to Lord Hanuman, the symbol of pure devotion, strength, and courage.'
+    },
+    {
+      dayOfWeek: 3, // Wednesday
+      deityName: 'Lord Ganesha',
+      image: '/images/devotional/siddhivinayak.jpg',
+      bhajanTitle: 'Ganesh Aarti',
+      bhajanUrl: '/audio/mantras/sounovamusic-gayatri-mantra-493174.mp3',
+      description: 'Pray to Lord Ganesha, the remover of all obstacles, to bless your new beginnings.'
+    },
+    {
+      dayOfWeek: 4, // Thursday
+      deityName: 'Lord Vishnu',
+      image: '/images/devotional/protection.jpg',
+      bhajanTitle: 'Vishnu Aarti',
+      bhajanUrl: '/audio/mantras/sounovamusic-gayatri-mantra-493174.mp3',
+      description: 'Pray to Lord Vishnu, the preserver of life and truth, for peace and protection.'
+    },
+    {
+      dayOfWeek: 5, // Friday
+      deityName: 'Goddess Lakshmi',
+      image: '/images/devotional/wealth.jpg',
+      bhajanTitle: 'Lakshmi Aarti',
+      bhajanUrl: '/audio/mantras/sounovamusic-gayatri-mantra-493174.mp3',
+      description: 'Worship Goddess Lakshmi, the deity of prosperity and fortune, to invite abundance into your life.'
+    },
+    {
+      dayOfWeek: 6, // Saturday
+      deityName: 'Shree Khatu Shyam Ji',
+      image: '/images/devotional/shyam.jpg',
+      bhajanTitle: 'Shyam Chalisa',
+      bhajanUrl: '/audio/mantras/kalsstockmedia-om-hanumate-namaha-short-audio-447279.mp3',
+      description: 'Worship Shree Khatu Shyam Ji, the Lord of Kalyug who gives victory to the defeated.'
+    }
+  ]
+
+  for (const dd of dailyDarshans) {
+    await prisma.dailyDarshan.upsert({
+      where: { dayOfWeek: dd.dayOfWeek },
+      update: {
+        deityName: dd.deityName,
+        image: dd.image,
+        bhajanTitle: dd.bhajanTitle,
+        bhajanUrl: dd.bhajanUrl,
+        description: dd.description
+      },
+      create: dd
+    })
+  }
 
   console.log('Seed data ready.')
 }

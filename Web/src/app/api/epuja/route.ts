@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireUser, handleApiError } from '@/libs/api-auth'
+import { enforceRateLimit } from '@/libs/rateLimit'
 import { effectivePrice } from '@/libs/pricing'
 import { getRequestInfo } from '@/libs/request-info'
 import { logOrderTrail } from '@/libs/orderTrail'
@@ -51,6 +52,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const user = await requireUser()
+
+    const rateLimited = enforceRateLimit(req, 'order-create', { limit: 20, windowMs: 60 * 60 * 1000, identifier: user.id, skipIp: true })
+
+    if (rateLimited) return rateLimited
 
     if (!(await isRazorpayConfigured())) {
       return NextResponse.json({ error: 'Online payments are not configured yet. Please contact support.' }, { status: 503 })
