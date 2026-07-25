@@ -97,9 +97,9 @@ export async function POST(req: Request) {
 
       if (uploadType !== 'qr' && uploadType !== 'proof' && uploadType !== 'scan') {
         const watermarkSvg = `
-          <svg width="${target.width}" height="${target.height}">
-            <rect x="${target.width - 220}" y="${target.height - 60}" width="200" height="40" fill="black" opacity="0.4" rx="5" />
-            <text x="${target.width - 120}" y="${target.height - 32}" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Mandirsetuu</text>
+          <svg width="200" height="40">
+            <rect x="0" y="0" width="200" height="40" fill="black" opacity="0.4" rx="5" />
+            <text x="100" y="28" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Mandirsetuu</text>
           </svg>
         `
         pipeline.composite([{
