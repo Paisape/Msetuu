@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   basePath: process.env.BASEPATH,
+  output: "standalone",
 
   // These three entry points are served via rewrite (not redirect) so the browser's address
   // bar stays exactly where the visitor typed/clicked — localhost:3000 shows the landing page
