@@ -19,7 +19,7 @@ COPY Web/ .
 RUN npx prisma generate && npm run build:icons
 
 # Next.js build
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
