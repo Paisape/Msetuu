@@ -55,9 +55,9 @@ const MediaCarousel = ({ media, title = 'Gallery', onItemClick }: Props) => {
               }}
             >
               {item.type === 'video' ? (
-                <video src={item.url} className='w-full h-full object-cover' muted loop playsInline autoPlay />
+                <video src={item.url} className='w-full h-full object-contain bg-white' muted loop playsInline autoPlay />
               ) : (
-                <img src={item.url} alt='' className='w-full h-full object-cover' loading='lazy' />
+                <img src={item.url} alt='' className='w-full h-full object-contain bg-white p-1' loading='lazy' />
               )}
             </Box>
           ))}

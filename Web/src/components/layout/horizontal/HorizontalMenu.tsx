@@ -138,6 +138,7 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
             <MenuItem href={`/${locale}/apps/mandir-setu/content/how-it-works`}>How It Works</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/reviews`}>Reviews</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/contact-messages`}>Contact Messages</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/about-us`}>About Us</MenuItem>
           </SubMenu>
           <MenuItem href={`/${locale}/apps/mandir-setu/config`} icon={<i className='tabler-settings' />}>
             Settings

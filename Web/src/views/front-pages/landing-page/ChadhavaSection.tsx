@@ -53,9 +53,6 @@ const ChadhavaSection = () => {
         >
           Sacred Chadhava Offerings
         </Typography>
-        <Typography variant='body1' style={{ color: '#374151' }} className='max-w-2xl mx-auto'>
-          Offer devotion and seeking blessings by presenting Chadhava at India&apos;s most revered temples from the comfort of your home.
-        </Typography>
       </div>
 
       <Grid container spacing={4}>

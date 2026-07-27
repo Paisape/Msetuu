@@ -61,6 +61,7 @@ const Darshan3DPage = () => {
         <PageBanner
           page='darshan'
           variant='dark'
+          titleColor='#22d3ee'
           defaultTitle='3D Darshan Experience Center'
           defaultSubtitle='Scan the QR codes of our holy temples to load the immersive 3D Darshan models on your mobile phone, or open the experience directly here.'
         />

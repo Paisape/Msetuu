@@ -58,6 +58,7 @@ const EcommercePage = () => {
   const { addToCart } = useCart()
   const searchParams = useSearchParams()
   const purposeParam = searchParams.get('purpose')
+  const searchParam = searchParams.get('search')
   const bookId = searchParams.get('book')
 
   // States
@@ -71,7 +72,7 @@ const EcommercePage = () => {
   const itemsPerPage = 9
 
   // Storefront filters
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchParam || '')
   const [sortBy, setSortBy] = useState<SortOption>('featured')
   const [priceBounds, setPriceBounds] = useState<[number, number]>([0, 5000])
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
@@ -82,7 +83,7 @@ const EcommercePage = () => {
   const [address, setAddress] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const categories = ['All', 'Bracelets', 'Rudraksha', 'Gemstones', 'Pyramids', 'Shree Yantra', 'Brass Idols']
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category))).sort()]
 
   useEffect(() => {
     fetch('/api/ecommerce/products')
@@ -400,8 +401,8 @@ return basePrice * quantity
                 {currentProducts.map((p) => (
             <Grid size={{ xs: 12, sm: 4, md: 4 }} key={p.id}>
               <Card className='galaxy-card h-full flex flex-col justify-between overflow-hidden relative'>
-                <div className='relative h-48 w-full overflow-hidden'>
-                  <img src={p.image} alt={p.name} className='w-full h-full object-cover' />
+                <div className='relative h-48 w-full overflow-hidden bg-white'>
+                  <img src={p.image} alt={p.name} className='w-full h-full object-contain p-2' />
                   {p.planet && (
                     <div className='absolute bottom-4 right-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                       {p.planet}

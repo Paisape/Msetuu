@@ -546,6 +546,7 @@ model YatraBooking {
   totalTravelers   Int
   travelDate       DateTime
   comment          String?
+  images           String[] @default([])
   status           String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
   ipAddress        String?
   userAgent        String?

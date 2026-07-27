@@ -48,7 +48,7 @@ const YatraPage = () => {
       const response = await fetch('/api/yatra', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, totalTravelers: Number(formData.totalTravelers) })
+        body: JSON.stringify(formData)
       })
 
       const data = await response.json().catch(() => null)
@@ -252,6 +252,8 @@ const YatraPage = () => {
                             }}
                           />
                         </Grid>
+
+
                       </Grid>
                     </Box>
                   </Grid>

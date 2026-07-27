@@ -17,6 +17,7 @@ type PageBannerProps = {
   // 'emerald' = light background pages (color #006241 title / #374151 subtitle).
   // 'dark' = dark background pages like Darshan/Geo-tag (text-white / text-slate-400).
   variant?: 'emerald' | 'dark'
+  titleColor?: string
 }
 
 // Renders each service page's centered title + subtitle header, sourced from the
@@ -24,8 +25,9 @@ type PageBannerProps = {
 // page still looks right before any banner is configured for that page. The admin form's
 // buttonText/buttonLink fields apply to every page (not just Home), so they're rendered here
 // too — using the same `galaxy-glow-btn` class as the Home hero CTA, which always paints
+// too — using the same `galaxy-glow-btn` class as the Home hero CTA, which always paints
 // white text regardless of page background.
-const PageBanner = ({ page, defaultTitle, defaultSubtitle, variant = 'emerald' }: PageBannerProps) => {
+const PageBanner = ({ page, defaultTitle, defaultSubtitle, variant = 'emerald', titleColor }: PageBannerProps) => {
   const [banner, setBanner] = useState<{
     title: string
     subtitle?: string | null
@@ -50,8 +52,8 @@ const PageBanner = ({ page, defaultTitle, defaultSubtitle, variant = 'emerald' }
     <div className='text-center mb-16'>
       <Typography
         variant='h2'
-        className={variant === 'dark' ? 'font-bold text-white mb-4 galaxy-glow-text' : 'font-bold mb-4 galaxy-glow-text'}
-        style={variant === 'dark' ? undefined : { color: '#006241' }}
+        className={variant === 'dark' && !titleColor ? 'font-bold text-white mb-4 galaxy-glow-text' : 'font-bold mb-4 galaxy-glow-text'}
+        style={titleColor ? { color: titleColor } : (variant === 'dark' ? undefined : { color: '#006241' })}
       >
         {banner?.title || defaultTitle}
       </Typography>

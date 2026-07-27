@@ -83,7 +83,12 @@ export async function parseUploadedWorkbook(buffer: Buffer, columns: ImportColum
       const colIndex = columnIndexByKey.get(col.key)
       const raw = colIndex ? row.getCell(colIndex).value : undefined
 
-      const cellValue = typeof raw === 'object' && raw !== null && 'result' in (raw as any) ? (raw as any).result : raw
+      let cellValue = typeof raw === 'object' && raw !== null && 'result' in (raw as any) ? (raw as any).result : raw
+
+      // Support Excel hyperlink objects (e.g. pasted image URLs)
+      if (typeof cellValue === 'object' && cellValue !== null && 'hyperlink' in (cellValue as any)) {
+        cellValue = (cellValue as any).hyperlink
+      }
 
       if (cellValue !== null && cellValue !== undefined && cellValue !== '') hasAnyValue = true
       values[col.key] = cellValue
@@ -98,7 +103,27 @@ export async function parseUploadedWorkbook(buffer: Buffer, columns: ImportColum
 export function cellToString(value: unknown): string {
   if (value === null || value === undefined) return ''
 
-  return String(value).trim()
+  let str = String(value).trim()
+
+  // Automatically convert Google Drive share links to direct image links
+  if (str.startsWith('http') && str.includes('drive.google.com')) {
+    try {
+      const parsed = new URL(str)
+      const fileMatch = parsed.pathname.match(/\/file\/d\/([^\/]+)/)
+      if (fileMatch) {
+        str = `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w1000`
+      } else {
+        const idParam = parsed.searchParams.get('id')
+        if (idParam) {
+          str = `https://drive.google.com/thumbnail?id=${idParam}&sz=w1000`
+        }
+      }
+    } catch (e) {
+      // Ignore invalid URLs
+    }
+  }
+
+  return str
 }
 
 export function cellToNumber(value: unknown): number | null {

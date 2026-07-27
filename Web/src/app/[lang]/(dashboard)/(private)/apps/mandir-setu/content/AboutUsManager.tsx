@@ -15,10 +15,34 @@ import Divider from '@mui/material/Divider'
 
 import type { AboutUsData } from '@/app/api/content/about/route'
 
+type UploadResult = { url: string; originalSizeBytes: number; finalSizeBytes: number }
+
+const uploadFile = async (file: File, uploadType: string): Promise<UploadResult> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', uploadType)
+
+  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+  const data = await res.json().catch(() => null)
+
+  if (!res.ok) throw new Error(data?.error || 'Upload failed.')
+
+  return { url: data.url, originalSizeBytes: data.originalSizeBytes ?? file.size, finalSizeBytes: data.finalSizeBytes ?? file.size }
+}
+
+const normalizeImageUrl = (url: string): string => {
+  const trimmed = url.trim()
+  if (!/drive\.google\.com/.test(trimmed)) return trimmed
+  const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+  if (!fileIdMatch) return trimmed
+  return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1000`
+}
+
 export default function AboutUsManager() {
   const [data, setData] = useState<AboutUsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -59,6 +83,19 @@ export default function AboutUsManager() {
     const updated = [...data.team]
     updated[index] = { ...updated[index], [field]: value }
     setData({ ...data, team: updated })
+  }
+
+  const handleFileUpload = async (file: File, type: string, onUploadSuccess: (url: string) => void) => {
+    setUploadingImage(type)
+    setMessage(null)
+    try {
+      const result = await uploadFile(file, type === 'heroImage' ? 'banner' : 'team')
+      onUploadSuccess(result.url)
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Upload failed.' })
+    } finally {
+      setUploadingImage(null)
+    }
   }
 
   const handleSave = async () => {
@@ -130,8 +167,29 @@ export default function AboutUsManager() {
             label='Hero Banner Image URL'
             value={data.heroImage}
             onChange={e => handleChange('heroImage', e.target.value)}
-            helperText='Direct URL to high-resolution temple background image'
+            onBlur={e => {
+              const normalized = normalizeImageUrl(e.target.value)
+              if (normalized !== e.target.value) handleChange('heroImage', normalized)
+            }}
+            helperText='Direct URL or paste a Google Drive link to auto-convert'
           />
+          <div className='flex items-center gap-4'>
+            <Button component='label' variant='outlined' size='small' disabled={uploadingImage === 'heroImage'}>
+              {uploadingImage === 'heroImage' ? <CircularProgress size={16} /> : 'Or Upload Hero Image'}
+              <input
+                type='file'
+                accept='image/*'
+                hidden
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileUpload(file, 'heroImage', url => handleChange('heroImage', url))
+                }}
+              />
+            </Button>
+            {data.heroImage && (
+              <img src={data.heroImage} alt='Hero Preview' className='h-12 w-auto object-cover rounded shadow' />
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -324,7 +382,28 @@ export default function AboutUsManager() {
                   label='Photo URL'
                   value={member.image}
                   onChange={e => handleTeamChange(idx, 'image', e.target.value)}
+                  onBlur={e => {
+                    const normalized = normalizeImageUrl(e.target.value)
+                    if (normalized !== e.target.value) handleTeamChange(idx, 'image', normalized)
+                  }}
                 />
+                <div className='flex items-center gap-4'>
+                  <Button component='label' variant='outlined' size='small' disabled={uploadingImage === `team-${idx}`}>
+                    {uploadingImage === `team-${idx}` ? <CircularProgress size={16} /> : 'Upload Photo'}
+                    <input
+                      type='file'
+                      accept='image/*'
+                      hidden
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (file) handleFileUpload(file, `team-${idx}`, url => handleTeamChange(idx, 'image', url))
+                      }}
+                    />
+                  </Button>
+                  {member.image && (
+                    <img src={member.image} alt='Team Preview' className='h-12 w-12 object-cover rounded-full shadow' />
+                  )}
+                </div>
                 <TextField
                   fullWidth
                   multiline

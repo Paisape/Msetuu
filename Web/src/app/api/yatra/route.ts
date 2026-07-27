@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import sharp from 'sharp'
 
 import prisma from '@/libs/prisma'
 import { requireUser, handleApiError } from '@/libs/api-auth'
@@ -29,8 +33,30 @@ export async function POST(req: Request) {
   try {
     const user = await requireUser()
 
-    const body = await req.json()
-    const { name, contactNumber, cityOfDeparture, destination, totalTravelers, travelDate, comment } = body
+    const contentType = req.headers.get('content-type') || ''
+    let name, contactNumber, cityOfDeparture, destination, totalTravelers, travelDate, comment
+    let imageFiles: File[] = []
+
+    if (contentType.includes('application/json')) {
+      const body = await req.json()
+      name = body.name
+      contactNumber = body.contactNumber
+      cityOfDeparture = body.cityOfDeparture
+      destination = body.destination || body.yatraDestination
+      totalTravelers = body.totalTravelers
+      travelDate = body.travelDate
+      comment = body.comment
+    } else {
+      const formData = await req.formData()
+      name = formData.get('name') as string
+      contactNumber = formData.get('contactNumber') as string
+      cityOfDeparture = formData.get('cityOfDeparture') as string
+      destination = formData.get('destination') as string
+      totalTravelers = formData.get('totalTravelers') as string
+      travelDate = formData.get('travelDate') as string
+      comment = formData.get('comment') as string
+      imageFiles = formData.getAll('images') as File[]
+    }
 
     if (!name || !contactNumber || !cityOfDeparture || !destination || !travelDate) {
       return NextResponse.json(
@@ -45,13 +71,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'totalTravelers must be a positive whole number.' }, { status: 400 })
     }
 
-    const parsedDate = new Date(travelDate)
+    const parsedDate = new Date(travelDate as string)
 
     if (Number.isNaN(parsedDate.getTime())) {
       return NextResponse.json({ error: 'travelDate must be a valid date.' }, { status: 400 })
     }
 
     const { ip, userAgent } = getRequestInfo(req)
+
+    const imageUrls: string[] = []
+
+    for (const file of imageFiles) {
+      if (file instanceof File && file.size > 0) {
+        let buffer = Buffer.from(await file.arrayBuffer())
+        const pipeline = sharp(buffer).resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        buffer = await pipeline.webp({ quality: 80 }).toBuffer()
+
+        const safeFileName = `${randomUUID()}.webp`
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+        await mkdir(uploadsDir, { recursive: true })
+        await writeFile(path.join(uploadsDir, safeFileName), buffer)
+        imageUrls.push(`/uploads/${safeFileName}`)
+      }
+    }
 
     const booking = await prisma.yatraBooking.create({
       data: {
@@ -63,6 +105,7 @@ export async function POST(req: Request) {
         totalTravelers: parsedTravelers,
         travelDate: parsedDate,
         comment,
+        images: imageUrls,
         status: 'PENDING',
         ipAddress: ip,
         userAgent

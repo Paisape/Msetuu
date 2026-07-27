@@ -78,6 +78,31 @@ const withCategorySelect = (fields: FieldConfig[], categoryOptions: { value: str
     ? fields
     : fields.map(f => (f.key === 'category' ? { ...f, type: 'select', options: categoryOptions } : f))
 
+const useShopPurposeOptions = () => {
+  const [options, setOptions] = useState<{ value: string; label: string }[]>([])
+
+  useEffect(() => {
+    fetch(`/api/shop-purposes`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setOptions([
+            { value: '', label: 'None (Do not map)' },
+            ...data.map((c: any) => ({ value: c.label, label: c.label }))
+          ])
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  return options
+}
+
+const withPurposeSelect = (fields: FieldConfig[], purposeOptions: { value: string; label: string }[]): FieldConfig[] =>
+  purposeOptions.length <= 1
+    ? fields
+    : fields.map(f => (f.key === 'purpose' ? { ...f, type: 'select', options: purposeOptions } : f))
+
 const thumb = (item: Record<string, any>) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img src={item.image} alt='' className='w-12 h-12 object-cover rounded' />
@@ -224,7 +249,7 @@ const productFields: FieldConfig[] = [
   { key: 'description', label: 'Description', type: 'textarea', required: true },
   { key: 'isBestSeller', label: 'Show in Best Sellers', type: 'boolean', defaultValue: false },
   { key: 'planet', label: 'Planet (Shop by Planet)', type: 'text' },
-  { key: 'purpose', label: 'Purpose (must match a Shop Purpose label)', type: 'text' },
+  { key: 'purpose', label: 'Shop Purpose (Optional)', type: 'text', optional: true },
   { key: 'rating', label: 'Rating (0-5)', type: 'number', defaultValue: 5 },
   { key: 'reviewsCount', label: 'Reviews count', type: 'number', defaultValue: 0 },
   { key: 'sourceName', label: 'Source / Certification name (detail page)', type: 'text', helperText: 'e.g. "Gemological Institute Certified"' },
@@ -611,13 +636,14 @@ const TABS = [
     label: 'Products',
     Component: () => {
       const categoryOptions = useCategoryOptions('ecommerce')
+      const purposeOptions = useShopPurposeOptions()
 
       return (
         <ImportableEntityManager
           title='Product'
           listUrl='/api/ecommerce/products'
           itemUrl={(id: string) => `/api/ecommerce/products/${id}`}
-          fields={withCategorySelect(productFields, categoryOptions)}
+          fields={withPurposeSelect(withCategorySelect(productFields, categoryOptions), purposeOptions)}
           columns={productColumns}
           extraRowActions={(item, refresh) => (
             <MediaGalleryDialog item={item} titleKey='name' patchUrl={`/api/ecommerce/products/${item.id}`} uploadType='product' onSaved={refresh} />

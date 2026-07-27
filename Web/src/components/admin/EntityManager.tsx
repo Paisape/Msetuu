@@ -93,7 +93,7 @@ const normalizeImageUrl = (url: string): string => {
 
   if (!fileIdMatch) return trimmed
 
-  return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+  return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1000`
 }
 
 const formatBytes = (bytes: number) => {

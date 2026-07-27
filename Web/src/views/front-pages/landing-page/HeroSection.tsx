@@ -132,6 +132,24 @@ const HeroSection = () => {
               </Button>
             )}
           </div>
+
+          <div className='mt-8 w-full max-w-md'>
+            <form action='/front-pages/ecommerce' method='GET' className='relative flex items-center'>
+              <input
+                type='text'
+                name='search'
+                placeholder='Search products, gemstones, rudraksha...'
+                className='w-full pl-5 pr-12 py-3.5 rounded-full border-2 border-emerald-500/30 focus:border-emerald-500 focus:outline-none bg-white shadow-md text-slate-700 placeholder:text-slate-400'
+              />
+              <button
+                type='submit'
+                className='absolute right-2 p-2 bg-emerald-600 hover:bg-emerald-700 rounded-full text-white transition-colors flex items-center justify-center'
+                aria-label='Search'
+              >
+                <i className='tabler-search text-lg' />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </section>

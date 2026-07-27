@@ -20,6 +20,7 @@ import IconButton from '@mui/material/IconButton'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import InputAdornment from '@mui/material/InputAdornment'
+import Button from '@mui/material/Button'
 
 export type OrderColumn = {
   key: string
@@ -130,12 +131,53 @@ const OrderTable = ({ title, listUrl, patchUrl, detailHref, statusOptions, colum
     return result
   }, [items, statusFilter, search, searchFields])
 
+  const handleExportExcel = async () => {
+    try {
+      const ExcelJS = (await import('exceljs')).default
+      const workbook = new ExcelJS.Workbook()
+      const sheet = workbook.addWorksheet('Orders')
+
+      const headerRow = columns.map(col => col.label).concat(['Status'])
+      sheet.addRow(headerRow)
+
+      const header = sheet.getRow(1)
+      header.font = { bold: true }
+
+      filtered.forEach(item => {
+        const row = columns.map(col => {
+          if (col.render) {
+            const rendered = col.render(item)
+            return typeof rendered === 'string' || typeof rendered === 'number' ? rendered : String(getPath(item, col.key) ?? '')
+          }
+          return String(getPath(item, col.key) ?? '')
+        })
+        row.push(item.status || '')
+        sheet.addRow(row)
+      })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${title.replace(/\s+/g, '_')}_Orders.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Failed to export', err)
+      setErrorMsg('Failed to export to Excel.')
+    }
+  }
+
   return (
     <div>
       <div className='flex justify-between items-center mb-4 flex-wrap gap-3'>
         <Typography variant='h4' className='font-bold'>
           {title}
         </Typography>
+        <Button variant='outlined' startIcon={<i className='tabler-download' />} onClick={handleExportExcel} disabled={loading || filtered.length === 0}>
+          Export to Excel
+        </Button>
       </div>
 
       {errorMsg && (
