@@ -71,12 +71,11 @@ const HeroSection = () => {
             'opacity-0 z-0': currentSlide !== index
           })}
         >
-          {/* Overlay gradient */}
-          <div className='absolute inset-0 bg-gradient-to-r from-[#faf7f2] via-[#faf7f2]/80 to-transparent z-20' />
+
           <img
             src={slide.image}
             alt={slide.title}
-            className='w-full h-full object-contain object-right absolute inset-0'
+            className='w-full h-full object-cover absolute inset-0'
           />
         </div>
       ))}
