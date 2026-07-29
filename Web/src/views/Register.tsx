@@ -166,6 +166,13 @@ const Register = ({ mode }: { mode: SystemMode }) => {
       }
 
       if (json?.requireVerification) {
+        // Automatically send the registration OTP
+        await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact: data.email, type: 'EMAIL', purpose: 'REGISTER' })
+        }).catch(() => null)
+
         // Redirect to email verification page with the email in query string
         router.replace(getLocalizedUrl(`/verify-email?email=${encodeURIComponent(data.email)}`, locale as Locale))
       } else {
