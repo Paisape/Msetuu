@@ -51,25 +51,26 @@ export async function POST(req: Request) {
       where: { contact }
     })
 
-    // Find or create the user
-    let user = await prisma.user.findUnique({
-      where: { email: contact }
-    })
+    // Find or create the user based on contact type
+    const isEmail = otpRequest.type === 'EMAIL'
+    
+    let user = isEmail 
+      ? await prisma.user.findUnique({ where: { email: contact } })
+      : await prisma.user.findFirst({ where: { phone: contact } })
 
     if (!user) {
       // Create a new passwordless user
-      // Note: We use the contact (which is an email for now) as the email
-      // We set a random strong password since it's passwordless
       const randomPassword = require('crypto').randomBytes(32).toString('hex')
       const hashedPassword = await bcrypt.hash(randomPassword, 12)
 
       user = await prisma.user.create({
         data: {
-          email: contact,
-          name: contact.split('@')[0], // Extract a default name from email
+          email: isEmail ? contact : null,
+          phone: !isEmail ? contact : null,
+          name: isEmail ? contact.split('@')[0] : 'User',
           password: hashedPassword,
           role: 'USER',
-          emailVerified: new Date()
+          emailVerified: isEmail ? new Date() : null
         }
       })
       
@@ -81,8 +82,8 @@ export async function POST(req: Request) {
         details: 'User registered via passwordless OTP.'
       })
     } else {
-      // If user exists but email not verified, verify it
-      if (!user.emailVerified) {
+      // If user exists but email not verified, verify it (only if it was an email OTP)
+      if (isEmail && !user.emailVerified) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: { emailVerified: new Date() }
@@ -90,8 +91,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Generate mobile tokens
-    const accessToken = await generateAccessToken({ ...user, email: user.email })
+    // Generate mobile tokens (mobileAuth expects a non-null email string, so we provide a fallback if it's phone-only)
+    const tokenEmail = user.email || `${contact}@phone.local`
+    const accessToken = await generateAccessToken({ ...user, email: tokenEmail })
     const refreshToken = generateRefreshToken()
 
     await prisma.refreshToken.create({
