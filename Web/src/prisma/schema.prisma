@@ -866,6 +866,18 @@ model SecureConfigAuth {
   createdAt     DateTime  @default(now())
 }
 
+// Stores generic OTP requests for passwordless auth (Email or SMS)
+model OtpRequest {
+  id        String   @id @default(cuid())
+  contact   String   // Email address or phone number
+  type      String   @default("EMAIL") // "EMAIL" or "SMS"
+  otpHash   String   // Bcrypt hash of the OTP
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([contact])
+}
+
 // Uniform status-change / audit trail across every order type, since the 6 order tables
 // don't share a base type. `orderType` is one of CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE,
 // YATRA and `orderId` points at the row in that module's own order table. ip/userAgent capture
