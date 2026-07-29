@@ -377,7 +377,7 @@ const EntityManager = ({ title, listUrl, itemUrl, fields, columns, emptyMessage,
                     label={field.label}
                     placeholder='https://...'
                     fullWidth
-                    helperText='Pasting a Google Drive share link auto-converts it to a direct image link. The file must be shared as "Anyone with the link".'
+                    helperText={`Pasting a Google Drive share link auto-converts it to a direct image link. ${field.helperText || ''}`}
                     value={value ?? ''}
                     onChange={e => handleFieldChange(field.key, e.target.value)}
                     onBlur={e => {

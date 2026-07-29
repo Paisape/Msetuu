@@ -132,7 +132,7 @@ const bannerFields: FieldConfig[] = [
   { key: 'page', label: 'Page', type: 'select', required: true, options: PAGE_OPTIONS },
   { key: 'title', label: 'Title', type: 'text', required: true },
   { key: 'subtitle', label: 'Subtitle', type: 'textarea' },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'banner' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'banner', helperText: 'Recommended dimensions: 1920x500 pixels (wide banner ratio).' },
   { key: 'buttonText', label: 'Button text (primary)', type: 'text' },
   { key: 'buttonLink', label: 'Button link (primary)', type: 'text' },
   { key: 'buttonText2', label: 'Button text (secondary, optional)', type: 'text', helperText: 'e.g. "Remedial Store" — leave blank to show only the primary button.' },
@@ -152,7 +152,7 @@ const bannerColumns: ColumnConfig[] = [
 // -- Shop Purposes ----------------------------------------------------------
 const purposeFields: FieldConfig[] = [
   { key: 'label', label: 'Label', type: 'text', required: true },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'shop-purpose' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'shop-purpose', helperText: 'Recommended dimensions: 400x400 pixels (1:1 square ratio) for circular icons.' },
   { key: 'order', label: 'Display order', type: 'number', defaultValue: 0 }
 ]
 
@@ -167,7 +167,7 @@ const chadhavaFields: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text', required: true },
   { key: 'description', label: 'Offering description', type: 'textarea', optional: true, helperText: 'Optional — leave blank if this offering doesn\'t need one.' },
   { key: 'location', label: 'Temple location', type: 'text' },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'chadhava' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'chadhava', helperText: 'Recommended dimensions: 800x600 pixels (4:3 standard ratio).' },
   { key: 'price', label: 'Sale price (₹)', type: 'number', required: true },
   {
     key: 'offerPrice',
@@ -210,7 +210,7 @@ const epujaFields: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text', required: true },
   { key: 'category', label: 'Category (e.g. Ganesha, Mahadev)', type: 'text', required: true },
   { key: 'description', label: 'Description', type: 'textarea', required: true },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'epuja' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'epuja', helperText: 'Recommended dimensions: 800x600 pixels (4:3 standard ratio).' },
   { key: 'price', label: 'Base price (₹)', type: 'number', required: true },
   { key: 'templeName', label: 'Temple name (detail page)', type: 'text' },
   { key: 'templeLocation', label: 'Temple location (detail page)', type: 'text' },
@@ -245,7 +245,7 @@ const productFields: FieldConfig[] = [
   },
   { key: 'gstPercentage', label: 'GST %', type: 'number', optional: true, defaultValue: 0 },
   { key: 'gstInclusive', label: 'Price is inclusive of GST', type: 'boolean', defaultValue: true },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'product' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'product', helperText: 'Recommended dimensions: 800x600 pixels (4:3 standard ratio) or 800x800 square.' },
   { key: 'description', label: 'Description', type: 'textarea', required: true },
   { key: 'isBestSeller', label: 'Show in Best Sellers', type: 'boolean', defaultValue: false },
   { key: 'planet', label: 'Planet (Shop by Planet)', type: 'text' },
@@ -430,7 +430,7 @@ const kundliFields: FieldConfig[] = [
   { key: 'title', label: 'Title (e.g. Premium Janam Kundli)', type: 'text', required: true },
   { key: 'description', label: 'Description', type: 'textarea', required: true },
   { key: 'delivery', label: 'Delivery format (e.g. Physical Hardcopy + PDF Scans)', type: 'text', required: true },
-  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'kundli' },
+  { key: 'image', label: 'Image', type: 'image', required: true, uploadType: 'kundli', helperText: 'Recommended dimensions: 800x600 pixels (4:3 standard ratio).' },
   { key: 'price', label: 'Sale price (₹)', type: 'number', required: true },
   {
     key: 'offerPrice',
@@ -463,7 +463,7 @@ const darshanFields: FieldConfig[] = [
   { key: 'name', label: 'Temple name', type: 'text', required: true },
   { key: 'location', label: 'Location', type: 'text', helperText: 'e.g. "Ayodhya, UP" — shown as a badge on the 3D Darshan page.' },
   { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'image', label: 'Banner image', type: 'image', required: true, uploadType: 'darshan' },
+  { key: 'image', label: 'Banner image', type: 'image', required: true, uploadType: 'darshan', helperText: 'Recommended dimensions: 1920x1080 pixels (16:9 ratio).' },
   { key: 'qrCodeUrl', label: 'QR code image', type: 'image', required: true, uploadType: 'qr' },
   {
     key: 'model3dUrl',
@@ -501,7 +501,7 @@ const darshanDailyFields: FieldConfig[] = [
     helperText: 'One entry per day — this deity/bhajan shows automatically when that day comes around.'
   },
   { key: 'deityName', label: 'Deity name', type: 'text', required: true, helperText: 'e.g. "Lord Shiva" — shown as the caption under the image.' },
-  { key: 'image', label: 'Deity image', type: 'image', required: true, uploadType: 'darshan-daily', helperText: 'A clear, portrait-orientation photo/artwork of the deity — this is what visitors see and offer flowers to.' },
+  { key: 'image', label: 'Deity image', type: 'image', required: true, uploadType: 'darshan-daily', helperText: 'Recommended dimensions: 800x1200 pixels (2:3 portrait ratio). A clear, portrait-orientation photo/artwork of the deity — this is what visitors see and offer flowers to.' },
   { key: 'bhajanTitle', label: 'Bhajan title', type: 'text', helperText: 'e.g. "Om Namah Shivaya Dhun" — shown next to the play button.' },
   { key: 'bhajanUrl', label: 'Bhajan audio', type: 'audio', uploadType: 'bhajan', helperText: 'MP3 audio that plays when a visitor taps play on this day.' },
   { key: 'description', label: 'Description', type: 'textarea', helperText: 'Optional — a short line about this deity/day shown on the page.' }
