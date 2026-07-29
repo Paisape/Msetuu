@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ contact: email, otp })
+              body: JSON.stringify({ contact: email, otp, purpose: 'LOGIN' })
             })
 
             const data = await res.json()

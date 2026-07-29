@@ -3,8 +3,6 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/libs/prisma'
-import { sendEmail } from '@/libs/email'
-import { welcomeVerificationEmail } from '@/libs/emailTemplates'
 import { logActivity } from '@/libs/activityLog'
 import { enforceRateLimit } from '@/libs/rateLimit'
 
@@ -42,10 +40,6 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    const otpExpires = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
-
     const user = await prisma.user.create({
       data: {
         name,
@@ -53,16 +47,9 @@ export async function POST(req: Request) {
         phone,
         password: hashedPassword,
         role: 'USER',
-        verificationOtp: await bcrypt.hash(otp, 12),
-        verificationOtpExpires: otpExpires
       },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true }
     })
-
-    // Send the email (don't block the response)
-    const { subject, html } = welcomeVerificationEmail({ customerName: name, otp })
-
-    sendEmail({ to: email, subject, html }).catch(console.error)
 
     await logActivity({
       userId: user.id,

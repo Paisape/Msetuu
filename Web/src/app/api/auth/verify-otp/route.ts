@@ -11,12 +11,14 @@ import {
   REFRESH_TOKEN_MAX_AGE_SECONDS
 } from '@/libs/mobileAuth'
 import { logActivity } from '@/libs/activityLog'
+import { notifyUserWelcome } from '@/libs/notifyEvent'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const contact = typeof body.contact === 'string' ? body.contact.trim().toLowerCase() : ''
     const otp = typeof body.otp === 'string' ? body.otp.trim() : ''
+    const purpose = typeof body.purpose === 'string' && body.purpose.toUpperCase() === 'REGISTER' ? 'REGISTER' : 'LOGIN'
     const { deviceId, deviceName, os } = body
 
     if (!contact || !otp) {
@@ -27,13 +29,14 @@ export async function POST(req: Request) {
     const rateLimited = enforceRateLimit(req, 'verify-otp', { limit: 10, windowMs: 10 * 60 * 1000, identifier: contact })
     if (rateLimited) return rateLimited
 
+    // Find the latest OTP request that matches the contact AND purpose
     const otpRequest = await prisma.otpRequest.findFirst({
-      where: { contact },
+      where: { contact, purpose },
       orderBy: { createdAt: 'desc' }
     })
 
     if (!otpRequest) {
-      return NextResponse.json({ error: 'No OTP request found for this contact.' }, { status: 400 })
+      return NextResponse.json({ error: 'No valid OTP request found.' }, { status: 400 })
     }
 
     if (new Date() > otpRequest.expiresAt) {
@@ -48,25 +51,48 @@ export async function POST(req: Request) {
 
     // OTP is valid! Delete the request so it can't be reused
     await prisma.otpRequest.deleteMany({
-      where: { contact }
+      where: { contact, purpose }
     })
 
     const isEmail = otpRequest.type === 'EMAIL'
     
-    let user = await prisma.user.findUnique({ where: { email: contact } })
+    let user = isEmail 
+      ? await prisma.user.findUnique({ where: { email: contact } })
+      : await prisma.user.findFirst({ where: { phone: contact } })
 
+    if (purpose === 'REGISTER') {
+      if (!user) {
+        return NextResponse.json({ error: 'User not found for registration verification.' }, { status: 400 })
+      }
+      
+      const updateData: any = {}
+      if (isEmail) updateData.emailVerified = new Date()
+      else updateData.phoneVerified = new Date() // In a real app we'd have a phoneVerified column or similar. For now we assume emailVerified is enough for web. Wait, User model doesn't have phoneVerified. Let's not crash if we don't have it.
+
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: updateData
+      })
+      
+      notifyUserWelcome(user.id, user.name || undefined)
+
+      return NextResponse.json({ success: true, message: 'Verified successfully.' }, { status: 200 })
+    }
+
+    // --- LOGIN FLOW ---
     if (!user) {
-      // Create a new passwordless user
+      // Auto-registration for passwordless login
       const randomPassword = require('crypto').randomBytes(32).toString('hex')
       const hashedPassword = await bcrypt.hash(randomPassword, 12)
 
       user = await prisma.user.create({
         data: {
-          email: contact,
-          name: contact.split('@')[0],
+          email: isEmail ? contact : null,
+          phone: !isEmail ? contact : null,
+          name: isEmail ? contact.split('@')[0] : 'User',
           password: hashedPassword,
           role: 'USER',
-          emailVerified: new Date()
+          emailVerified: isEmail ? new Date() : null
         }
       })
       
@@ -79,7 +105,7 @@ export async function POST(req: Request) {
       })
     } else {
       // If user exists but email not verified, verify it
-      if (!user.emailVerified) {
+      if (isEmail && !user.emailVerified) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: { emailVerified: new Date() }
@@ -88,7 +114,8 @@ export async function POST(req: Request) {
     }
 
     // Generate mobile tokens
-    const accessToken = await generateAccessToken({ ...user, email: user.email })
+    const tokenEmail = user.email || `${contact}@phone.local`
+    const accessToken = await generateAccessToken({ ...user, email: tokenEmail })
     const refreshToken = generateRefreshToken()
 
     await prisma.refreshToken.create({

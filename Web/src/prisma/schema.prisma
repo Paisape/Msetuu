@@ -871,6 +871,7 @@ model OtpRequest {
   id        String   @id @default(cuid())
   contact   String   // Email address or phone number
   type      String   @default("EMAIL") // "EMAIL" or "SMS"
+  purpose   String   @default("LOGIN") // "LOGIN", "REGISTER", "FORGOT_PASSWORD"
   otpHash   String   // Bcrypt hash of the OTP
   expiresAt DateTime
   createdAt DateTime @default(now())

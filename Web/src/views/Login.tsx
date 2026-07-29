@@ -164,7 +164,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact: emailVal, type: 'EMAIL' })
+        body: JSON.stringify({ contact: emailVal, type: 'EMAIL', purpose: 'LOGIN' })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP')

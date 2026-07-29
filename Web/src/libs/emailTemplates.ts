@@ -258,4 +258,18 @@ export function adminLoginOtpEmail(opts: { otp: string }): { subject: string; ht
   return { subject, html: renderEmailLayout(body, 'Your admin login verification code.') }
 }
 
+export function passwordlessOtpEmail(opts: { otp: string }): { subject: string; html: string } {
+  const subject = 'Mandirsetuu — Your Login Verification Code'
 
+  const body = `
+    <p>Namaste,</p>
+    <p>A login request was made for your Mandirsetuu account.</p>
+    <p>Please enter this 6-digit one-time code to log in:</p>
+    <div style="text-align:center;margin:24px 0;">
+      <span style="display:inline-block;background:rgba(0,98,65,0.08);border:1px solid rgba(0,98,65,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#006241;">${opts.otp}</span>
+    </div>
+    <p style="color:#ef4444;font-size:13px;">This code expires in 10 minutes. If you did not request this, you can safely ignore this email.</p>
+  `
+
+  return { subject, html: renderEmailLayout(body, 'Your login verification code.') }
+}

@@ -58,10 +58,10 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
     setSubmitting(true)
 
     try {
-      const res = await fetch('/api/auth/verify-email', {
+      const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: data.otp })
+        body: JSON.stringify({ contact: email, otp: data.otp, purpose: 'REGISTER' })
       })
 
       const json = await res.json().catch(() => null)
