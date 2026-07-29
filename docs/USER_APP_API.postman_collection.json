@@ -1,0 +1,3104 @@
+{
+  "info": {
+    "name": "Mandir Setu — User App API",
+    "description": "Customer-facing (devotee) mobile app endpoints only. See USER_APP_API_SPEC.yaml in the same folder for full field docs.\n\nAuth: run 'Login' first — it auto-saves accessToken/refreshToken into collection variables. Every other request sends {{accessToken}} as a Bearer header automatically. When accessToken expires (30 min), run 'Refresh Token' to get a new pair — it auto-saves them too.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://www.mandirsetuu.com/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mobile/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"devotee@example.com\",\n  \"password\": \"changeme\",\n  \"deviceId\": \"postman-test-device\",\n  \"deviceName\": \"Postman\",\n  \"os\": \"N/A\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mobile/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout (this device)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mobile/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "logout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/mobile/logout-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "logout-all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List My Devices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/mobile/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Revoke One Device",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/mobile/sessions/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mobile",
+                "sessions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"email\": \"devotee@example.com\",\n  \"password\": \"changeme123\",\n  \"phone\": \"9999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Email OTP",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"devotee@example.com\",\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Precheck (check OTP requirement)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login-precheck",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login-precheck"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Direct Login (internal — prefer Mobile Login)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"newSecret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Send Passwordless OTP",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact\": \"devotee@example.com\",\n  \"type\": \"EMAIL\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Passwordless OTP",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact\": \"devotee@example.com\",\n  \"otp\": \"123456\",\n  \"deviceId\": \"postman-test-device\",\n  \"deviceName\": \"Postman\",\n  \"os\": \"N/A\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content",
+      "item": [
+        {
+          "name": "Get Banners",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/banners?page=home",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "home"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories?module=ecommerce",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "module",
+                  "value": "ecommerce"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get FAQs",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/faqs?page=chadhava&listingId=<listing-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "faqs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "chadhava"
+                },
+                {
+                  "key": "listingId",
+                  "value": "<listing-id>",
+                  "description": "Optional — merges this listing's own FAQs with module-wide ones."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Mantras",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mantra",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mantra"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Darshan Temples",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/darshan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "darshan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "How It Works Steps",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/how-it-works?page=chadhava",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "how-it-works"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "chadhava"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Browse VR Media",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/vr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vr"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get VR Media by Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/vr/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vr",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "About Us Content",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/content/about",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "content",
+                "about"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Daily Darshan Schedule (all days)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/darshan-daily",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "darshan-daily"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Daily Darshan by Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/darshan-daily/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "darshan-daily",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Darshan Temple by Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/darshan/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "darshan",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Shop by Purpose Tiles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shop-purposes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shop-purposes"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chadhava",
+      "item": [
+        {
+          "name": "Browse Listings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chadhava/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chadhava",
+                "listings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Listing By Id",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chadhava/listings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chadhava",
+                "listings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Chadhava Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/chadhava",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chadhava"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Chadhava",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chadhava",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chadhava"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"gender\": \"Male\",\n  \"dob\": \"1990-01-01\",\n  \"birthPlace\": \"Varanasi\",\n  \"comment\": \"\",\n  \"chadhavaListingId\": \"<listing-id>\",\n  \"persons\": [\n    { \"name\": \"Devotee Name\", \"gotra\": \"Kashyap\" }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Chadhava Order",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/chadhava/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chadhava",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "E-Puja",
+      "item": [
+        {
+          "name": "Browse Listings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/epuja/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "epuja",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Listing By Id",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/epuja/listings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "epuja",
+                "listings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Puja Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/epuja",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "epuja"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Puja",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/epuja",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "epuja"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"gender\": \"Male\",\n  \"dob\": \"1990-01-01\",\n  \"birthPlace\": \"Varanasi\",\n  \"comment\": \"\",\n  \"pujaListingId\": \"<listing-id>\",\n  \"pujaPackageId\": \"<package-id>\",\n  \"devotees\": [\n    { \"name\": \"Devotee Name\", \"gotra\": \"Kashyap\" }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Puja Order",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/epuja/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "epuja",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kundli",
+      "item": [
+        {
+          "name": "Browse Listings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/kundli/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kundli",
+                "listings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Kundli Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/kundli",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kundli"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order Kundli",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kundli",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kundli"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"gender\": \"Male\",\n  \"dob\": \"1990-01-01\",\n  \"timeOfBirth\": \"08:30\",\n  \"birthPlace\": \"Varanasi\",\n  \"comment\": \"\",\n  \"kundliListingId\": \"<listing-id>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Kundli Listing by Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/kundli/listings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kundli",
+                "listings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get My Kundli Order",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/kundli/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kundli",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jyotish",
+      "item": [
+        {
+          "name": "Browse Consultation Categories",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jyotish/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish",
+                "categories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse Astrologers",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jyotish/astrologers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish",
+                "astrologers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Astrologer By Id",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jyotish/astrologers/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish",
+                "astrologers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Consultation Bookings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/jyotish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Consultation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jyotish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Kundli Reading\",\n  \"durationMins\": 60,\n  \"comment\": \"Need guidance on a job change I am considering this year.\",\n  \"name\": \"Devotee Name\",\n  \"email\": \"devotee@example.com\",\n  \"phone\": \"9999999999\",\n  \"dob\": \"1990-01-01\",\n  \"timeOfBirth\": \"08:30\",\n  \"placeOfBirth\": \"Varanasi\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Browse Jyotish Time Slots",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/jyotish/time-slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish",
+                "time-slots"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get My Consultation Booking",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/jyotish/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jyotish",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ecommerce",
+      "item": [
+        {
+          "name": "Browse Products",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ecommerce/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ecommerce",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "purpose",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "planet",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "bestseller",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Product Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ecommerce",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ecommerce"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Place Product Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ecommerce",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ecommerce"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"<product-id>\",\n  \"quantity\": 1,\n  \"carat\": null,\n  \"address\": \"123 Example Street, City, State, 400001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Product Order",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ecommerce/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ecommerce",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "My Orders (All Modules)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/my-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Address Book",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"fullAddress\": \"123 Example Street, City, State, 400001\",\n  \"isDefault\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Work\",\n  \"fullAddress\": \"456 Example Avenue, City, State, 400002\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Past Shipping Addresses (legacy autofill list — superseded by Get My Address Book)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/my-orders/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-orders",
+                "addresses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ECOMMERCE\",\n  \"orderId\": \"<order-id>\",\n  \"razorpayPaymentId\": \"<pay-id>\",\n  \"razorpayOrderId\": \"<rzp-order-id>\",\n  \"razorpaySignature\": \"<signature>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Invoices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Invoice by Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/invoices/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order Status Trail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders/trail?type=CHADHAVA&id=<order-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "trail"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "CHADHAVA"
+                },
+                {
+                  "key": "id",
+                  "value": "<order-id>"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Yatra",
+      "item": [
+        {
+          "name": "My Yatra Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/yatra",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "yatra"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Yatra Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/yatra",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "yatra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"contactNumber\": \"9999999999\",\n  \"cityOfDeparture\": \"Mumbai\",\n  \"destination\": \"Kedarnath\",\n  \"totalTravelers\": 2,\n  \"travelDate\": \"2026-09-15\",\n  \"comment\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Yatra Booking",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/yatra/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "yatra",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geotag",
+      "item": [
+        {
+          "name": "My Geotag Photos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Share Geotag Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/geotag",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrl\": \"/uploads/reviews/example.webp\",\n  \"latitude\": 25.3176,\n  \"longitude\": 82.9739\n}"
+            }
+          }
+        },
+        {
+          "name": "Upload Media (Image/Video)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/upload/review-media",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "upload",
+                "review-media"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Find Nearest Temple",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/nearest?lat=25.3176&lng=83.0068",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "nearest"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "25.3176"
+                },
+                {
+                  "key": "lng",
+                  "value": "83.0068"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Points-Per-Tag Setting",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "settings"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get My Points Balance & Ledger",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/points",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "points"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse Redemption Slabs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redemption-slabs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redemption-slabs"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Redeem Points",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redeem",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redeem"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slabId\": \"<slab-id>\",\n  \"shippingAddress\": \"123 Example Street, City, State, 400001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Redemption Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redemptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redemptions"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Get Public Reviews For A Target",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews?orderType=ECOMMERCE&targetId=<product-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "orderType",
+                  "value": "ECOMMERCE"
+                },
+                {
+                  "key": "targetId",
+                  "value": "<product-id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Review For An Order",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews?orderType=ECOMMERCE&orderId=<order-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "orderType",
+                  "value": "ECOMMERCE"
+                },
+                {
+                  "key": "orderId",
+                  "value": "<order-id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ECOMMERCE\",\n  \"orderId\": \"<order-id>\",\n  \"rating\": 5,\n  \"comment\": \"Great experience.\",\n  \"media\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews?orderType=ECOMMERCE&targetId=<product-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "orderType",
+                  "value": "ECOMMERCE"
+                },
+                {
+                  "key": "targetId",
+                  "value": "<product-id>"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Add Review",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ECOMMERCE\",\n  \"targetId\": \"<product-id>\",\n  \"rating\": 5,\n  \"reviewText\": \"Great product!\",\n  \"mediaUrls\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Review Media (Presigned URL)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/upload/review-media",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "upload",
+                "review-media"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"photo.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"size\": 102400\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Register Push Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/firebase/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "firebase",
+                "token"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"<device-fcm-token>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register FCM Token",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/notifications/firebase/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "firebase",
+                "token"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<fcm-token>\",\n  \"deviceId\": \"<device-id>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "My Notifications History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/notifications/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "history"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "Submit Contact Message",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"email\": \"devotee@example.com\",\n  \"message\": \"Hello, I have a question about...\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Astrology",
+      "item": [
+        {
+          "name": "Panchang (Astrology)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/panchang",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "panchang"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Vimshottari Dasha",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/dasha?date=1990-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "dasha"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "1990-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Planetary Positions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/planets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "planets"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Zodiac Horoscope (Astrology)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/horoscope?sign=Aries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "horoscope"
+              ],
+              "query": [
+                {
+                  "key": "sign",
+                  "value": "Aries"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Ashtakoot Match Making",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/match-making",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "match-making"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"boy\": {\n    \"date\": \"1990-01-01\"\n  },\n  \"girl\": {\n    \"date\": \"1992-05-15\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Geo Location Lookup",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/geo-location?place=Varanasi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "geo-location"
+              ],
+              "query": [
+                {
+                  "key": "place",
+                  "value": "Varanasi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Timezone Lookup",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/timezone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "timezone"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Panchang (Simplified)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/panchang",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "panchang"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Choghadiya",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/choghadiya",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "choghadiya"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Muhurat",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/muhurat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "muhurat"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Rashi Horoscope",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/horoscope?rashi=mesha",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "horoscope"
+              ],
+              "query": [
+                {
+                  "key": "rashi",
+                  "value": "mesha"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Numerology Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/numerology?name=Devotee Name&dob=1990-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "numerology"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Devotee Name"
+                },
+                {
+                  "key": "dob",
+                  "value": "1990-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Match Making",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/match-making",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "match-making"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"boy_dob\": \"1990-01-01\",\n  \"girl_dob\": \"1992-01-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Panchang",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/panchang",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "panchang"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Horoscope",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/horoscope?sign=Aries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "horoscope"
+              ],
+              "query": [
+                {
+                  "key": "sign",
+                  "value": "Aries"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Planets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/planets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "planets"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Dasha",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/dasha?date=1990-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "dasha"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "1990-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Timezone",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/timezone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "timezone"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Search Geo Location",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/astrology/geo-location?place=Varanasi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "astrology",
+                "geo-location"
+              ],
+              "query": [
+                {
+                  "key": "place",
+                  "value": "Varanasi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offers",
+      "item": [
+        {
+          "name": "Get Offer Landing Page",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/offer/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "offer",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Record Offer Visit",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/offer/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "offer",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Place Offer Order (guest checkout allowed)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/offer/:slug/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "offer",
+                ":slug",
+                "order"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"email\": \"devotee@example.com\",\n  \"phone\": \"9999999999\",\n  \"comment\": \"\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses",
+      "item": [
+        {
+          "name": "List Addresses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Home\",\n  \"addressLine1\": \"123 Main St\",\n  \"city\": \"Varanasi\",\n  \"state\": \"UP\",\n  \"pinCode\": \"221001\",\n  \"country\": \"India\",\n  \"phone\": \"9999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"New City\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geotag Rewards",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Temples",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/temples",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "temples"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Nearest Temple",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/nearest?lat=25.3176&lng=83.0068",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "nearest"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "25.3176"
+                },
+                {
+                  "key": "lng",
+                  "value": "83.0068"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Check-in (Add Points)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/geotag",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templeId\": \"<temple-id>\",\n  \"lat\": 25.3176,\n  \"lng\": 83.0068\n}"
+            }
+          }
+        },
+        {
+          "name": "My Point History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/points",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "points"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Redemption Slabs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redemption-slabs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redemption-slabs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Redeem Points",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redeem",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redeem"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slabId\": \"<slab-id>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "My Redemptions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/geotag/redemptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "geotag",
+                "redemptions"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders & Invoices",
+      "item": [
+        {
+          "name": "My Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/my-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Order Addresses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/my-orders/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "my-orders",
+                "addresses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order Audit Trail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders/trail?type=ECOMMERCE&id=<order-id>",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "trail"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "ECOMMERCE"
+                },
+                {
+                  "key": "id",
+                  "value": "<order-id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Invoices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/invoices/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Refunds",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/refunds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "refunds"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legal & Contact",
+      "item": [
+        {
+          "name": "Terms and Conditions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/legal/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal",
+                "terms"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Submit Contact Inquiry",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"subject\": \"Help\",\n  \"message\": \"I need assistance\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
