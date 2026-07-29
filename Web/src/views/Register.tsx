@@ -36,6 +36,7 @@ import type { Locale } from '@configs/i18n'
 // Component Imports
 import Logo from '@components/layout/shared/Logo'
 import CustomTextField from '@core/components/mui/TextField'
+import AuthIllustration from '@/components/AuthIllustration'
 
 // Hook Imports
 import { useImageVariant } from '@core/hooks/useImageVariant'
@@ -194,7 +195,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
           }
         )}
       >
-        <RegisterIllustration src={characterIllustration} alt='character-illustration' />
+        <AuthIllustration />
         {!hidden && <MaskImg alt='mask' src={authBackground} />}
       </div>
       <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
