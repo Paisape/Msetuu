@@ -28,7 +28,7 @@ const AuthIllustration = () => {
   return (
     <Box className='flex flex-col items-center justify-center p-8 lg:p-12 max-w-2xl text-center z-10 w-full'>
       <Typography variant='h3' color='primary.main' className='mb-8 font-bold'>
-        How Mandir Setu Works
+        How Mandir setuu Works
       </Typography>
       
       <Box className='flex flex-col gap-6 w-full'>
