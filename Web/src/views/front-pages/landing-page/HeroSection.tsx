@@ -17,6 +17,7 @@ type Slide = {
   title: string
   subtitle: string
   image: string
+  textColor?: string
   buttonText?: string
   buttonLink?: string
   buttonText2?: string
@@ -98,13 +99,20 @@ const HeroSection = () => {
           </div>
 
           <Typography
-            className='font-extrabold sm:text-[48px] text-3xl mbe-4 leading-[54px] text-slate-900 galaxy-glow-text transition-all duration-500 transform translate-y-0'
-            style={{ textShadow: '0px 0px 10px rgba(2, 132, 199, 0.15)' }}
+            className={classnames('font-extrabold sm:text-[48px] text-3xl mbe-4 leading-[54px] galaxy-glow-text transition-all duration-500 transform translate-y-0', {
+              'text-slate-900': activeSlide.textColor !== 'light',
+              'text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]': activeSlide.textColor === 'light'
+            })}
+            style={{ textShadow: activeSlide.textColor === 'light' ? '2px 2px 8px rgba(0,0,0,0.9)' : '0px 0px 10px rgba(2, 132, 199, 0.15)' }}
           >
             {activeSlide.title}
           </Typography>
 
-          <Typography className='font-medium text-slate-700 text-lg mb-8 leading-relaxed max-w-xl'>
+          <Typography className={classnames('font-medium text-lg mb-8 leading-relaxed max-w-xl', {
+              'text-slate-700': activeSlide.textColor !== 'light',
+              'text-slate-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]': activeSlide.textColor === 'light'
+          })}
+          style={{ textShadow: activeSlide.textColor === 'light' ? '1px 1px 4px rgba(0,0,0,0.8)' : 'none' }}>
             {activeSlide.subtitle}
           </Typography>
 

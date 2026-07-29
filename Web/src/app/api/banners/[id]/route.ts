@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const { id } = await params
     const body = await req.json()
-    const { page, title, subtitle, image, buttonText, buttonLink, buttonText2, buttonLink2, order, active } = body
+    const { page, title, subtitle, image, buttonText, buttonLink, buttonText2, buttonLink2, textColor, order, active } = body
 
     const data: Record<string, unknown> = {}
 
@@ -23,6 +23,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (buttonLink !== undefined) data.buttonLink = buttonLink
     if (buttonText2 !== undefined) data.buttonText2 = buttonText2 || null
     if (buttonLink2 !== undefined) data.buttonLink2 = buttonLink2 || null
+    if (textColor !== undefined) data.textColor = textColor
     if (order !== undefined) data.order = Number(order)
     if (active !== undefined) data.active = Boolean(active)
 

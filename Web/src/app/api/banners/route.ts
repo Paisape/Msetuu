@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     await requireAdmin()
 
     const body = await req.json()
-    const { page, title, subtitle, image, buttonText, buttonLink, buttonText2, buttonLink2, order, active } = body
+    const { page, title, subtitle, image, buttonText, buttonLink, buttonText2, buttonLink2, textColor, order, active } = body
 
     if (!page || !title || !image) {
       return NextResponse.json({ error: 'page, title and image are required.' }, { status: 400 })
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         buttonLink,
         buttonText2: buttonText2 || null,
         buttonLink2: buttonLink2 || null,
+        textColor: textColor || 'dark',
         order: Number.isFinite(Number(order)) ? Number(order) : 0,
         active: active === undefined ? true : Boolean(active)
       }

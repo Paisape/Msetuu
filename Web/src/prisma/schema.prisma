@@ -504,6 +504,7 @@ model Banner {
   // optional so a banner with only one button (most pages) is unaffected.
   buttonText2 String?
   buttonLink2 String?
+  textColor  String   @default("dark")
   order      Int      @default(0)
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())

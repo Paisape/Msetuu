@@ -136,7 +136,18 @@ const bannerFields: FieldConfig[] = [
   { key: 'buttonText', label: 'Button text (primary)', type: 'text' },
   { key: 'buttonLink', label: 'Button link (primary)', type: 'text' },
   { key: 'buttonText2', label: 'Button text (secondary, optional)', type: 'text', helperText: 'e.g. "Remedial Store" — leave blank to show only the primary button.' },
-  { key: 'buttonLink2', label: 'Button link (secondary)', type: 'text' },
+  { key: 'buttonLink2', label: 'Button link (secondary, optional)', type: 'text' },
+  {
+    key: 'textColor',
+    label: 'Text Color',
+    type: 'select',
+    defaultValue: 'dark',
+    options: [
+      { value: 'dark', label: 'Dark (Black/Slate)' },
+      { value: 'light', label: 'Light (White with shadow)' }
+    ],
+    helperText: 'Choose light text if your image has a dark background.'
+  },
   { key: 'order', label: 'Display order', type: 'number', defaultValue: 0, helperText: 'Add multiple banners for the same page to show them as an auto-rotating slideshow, in this order.' },
   { key: 'active', label: 'Active', type: 'boolean', defaultValue: true }
 ]
