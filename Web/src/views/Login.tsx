@@ -438,7 +438,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                       </Box>
                     ) : (
                       <Button fullWidth variant='contained' onClick={handleSendPasswordlessOtp} disabled={precheckLoading}>
-                        {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Send OTP'}
+                        {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Send Email OTP'}
                       </Button>
                     )}
                   </>
@@ -459,7 +459,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                       setOtp('')
                     }}
                   >
-                    {loginMethod === 'PASSWORD' ? 'Log in with OTP' : 'Log in with Password'}
+                    {loginMethod === 'PASSWORD' ? 'Log in with Email OTP' : 'Log in with Password'}
                   </Typography>
                 </div>
                 
