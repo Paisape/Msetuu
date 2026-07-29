@@ -379,7 +379,7 @@
           }
         },
         {
-          "name": "Send Passwordless OTP",
+          "name": "Send OTP (Email / SMS)",
           "request": {
             "method": "POST",
             "auth": {
@@ -408,7 +408,7 @@
           }
         },
         {
-          "name": "Verify Passwordless OTP",
+          "name": "Verify OTP (Email / SMS)",
           "request": {
             "method": "POST",
             "auth": {
