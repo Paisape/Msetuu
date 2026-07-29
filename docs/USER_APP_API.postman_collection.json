@@ -408,6 +408,93 @@
                     }
                 },
                 {
+                    "name": "Send OTP (SMS)",
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/send-otp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "send-otp"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"contact\": \"9876543210\",\n    \"type\": \"SMS\",\n    \"purpose\": \"REGISTER\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Verify OTP (Email)",
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/verify-otp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "verify-otp"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"contact\": \"user@example.com\",\n    \"otp\": \"123456\",\n    \"purpose\": \"LOGIN\",\n    \"deviceId\": \"optional-device-id\",\n    \"deviceName\": \"Android App\",\n    \"os\": \"Android\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Verify OTP (SMS)",
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/verify-otp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "verify-otp"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"contact\": \"9876543210\",\n    \"otp\": \"123456\",\n    \"purpose\": \"REGISTER\",\n    \"deviceId\": \"optional-device-id\",\n    \"deviceName\": \"Android App\",\n    \"os\": \"Android\"\n}"
+                        }
+                    }
+                },
+                {
                     "name": "Verify OTP (Unified)",
                     "request": {
                         "method": "POST",
