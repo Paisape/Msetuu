@@ -80,8 +80,8 @@ const Darshan3DPage = () => {
               <Grid size={{ xs: 12, md: 4 }} key={t.id}>
                 <Card className='galaxy-card h-full flex flex-col justify-between overflow-hidden relative'>
                   <div>
-                    <div className='relative h-60 w-full overflow-hidden'>
-                      <img src={t.image} alt={t.name} className='w-full h-full object-cover transition-transform duration-500 hover:scale-105' />
+                    <div className='relative overflow-hidden aspect-video bg-white'>
+                      <img src={t.image} alt={t.name} className='w-full h-full object-contain transition-transform duration-500 hover:scale-105 p-2' />
                       {t.location && (
                         <div className='absolute top-4 left-4 bg-cyan-900/80 backdrop-blur-sm text-cyan-200 text-xs px-3 py-1.5 rounded-full border border-cyan-500/20'>
                           📍 {t.location}

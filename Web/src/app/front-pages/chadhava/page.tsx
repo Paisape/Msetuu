@@ -166,8 +166,8 @@ const ChadhavaPage = () => {
           {currentListings.map((item) => (
             <Grid size={{ xs: 12, sm: 4, md: 4 }} key={item.id}>
               <Card className='galaxy-card flex flex-col justify-between overflow-hidden h-full relative'>
-                <div className='relative h-48 w-full overflow-hidden'>
-                  <img src={item.image} alt={item.title} className='w-full h-full object-cover' />
+                <div className='relative h-60 w-full overflow-hidden bg-white'>
+                  <img src={item.image} alt={item.title} className='w-full h-full object-contain p-2' />
                 </div>
                 <CardContent className='p-5 flex flex-col flex-1'>
                   <Typography variant='subtitle2' className='font-semibold mb-1 truncate' style={{ color: '#10b981' }}>

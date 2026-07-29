@@ -76,7 +76,7 @@ const HeroSection = () => {
           <img
             src={slide.image}
             alt={slide.title}
-            className='w-full h-full object-cover object-center absolute inset-0'
+            className='w-full h-full object-contain object-right absolute inset-0'
           />
         </div>
       ))}

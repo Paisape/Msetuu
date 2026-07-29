@@ -309,7 +309,7 @@ return
       <div className='max-w-6xl mx-auto'>
         {/* Cover / Header Section */}
         <div className='relative rounded-3xl overflow-hidden mb-12 shadow-xl border border-emerald-500/10' style={{ height: '350px' }}>
-          <img src={offer.headerImage} alt={offer.title} className='w-full h-full object-cover' />
+          <img src={offer.headerImage} alt={offer.title} className='w-full h-full object-contain object-right' />
           <div className='absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent' />
           <div className='absolute bottom-8 left-8 right-8'>
             <Typography variant='h3' className='font-bold text-white mb-2 leading-tight drop-shadow-md'>

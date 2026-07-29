@@ -222,7 +222,7 @@ const DarshanPage = () => {
                       <img
                         src={viewedDay.image}
                         alt={viewedDay.deityName}
-                        className='w-full h-full object-cover'
+                        className='w-full h-full object-contain bg-white'
                         style={{ borderRadius: '16px 16px 150px 150px' }}
                       />
 
