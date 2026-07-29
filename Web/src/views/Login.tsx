@@ -95,6 +95,8 @@ const Login = ({ mode }: { mode: SystemMode }) => {
   const [showOtpField, setShowOtpField] = useState(false)
   const [otp, setOtp] = useState('')
   const [precheckLoading, setPrecheckLoading] = useState(false)
+  const [loginMethod, setLoginMethod] = useState<'PASSWORD' | 'OTP'>('PASSWORD')
+  const [passwordlessOtpSent, setPasswordlessOtpSent] = useState(false)
 
   // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
@@ -116,6 +118,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors }
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
@@ -147,6 +150,61 @@ const Login = ({ mode }: { mode: SystemMode }) => {
   )
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
+
+  const handleSendPasswordlessOtp = async () => {
+    const emailVal = getValues('email')
+    if (!emailVal || !emailVal.includes('@')) {
+      setErrorState({ message: ['Please enter a valid email to send OTP.'] })
+      return
+    }
+    setPrecheckLoading(true)
+    setErrorState(null)
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact: emailVal, type: 'EMAIL' })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send OTP')
+      setPasswordlessOtpSent(true)
+    } catch (err: any) {
+      setErrorState({ message: [err.message] })
+    } finally {
+      setPrecheckLoading(false)
+    }
+  }
+
+  const handleVerifyPasswordlessOtp = async () => {
+    const emailVal = getValues('email')
+    if (!otp || otp.length !== 6) {
+      setErrorState({ message: ['Please enter the 6-digit OTP'] })
+      return
+    }
+    setPrecheckLoading(true)
+    setErrorState(null)
+    
+    const res = await signIn('credentials', {
+      email: emailVal,
+      otp,
+      isPasswordless: 'true',
+      redirect: false
+    })
+    
+    setPrecheckLoading(false)
+    if (res && res.ok && res.error === null) {
+      const redirectURL = searchParams.get('redirectTo') ?? '/'
+      router.replace(getLocalizedUrl(redirectURL, locale as Locale))
+    } else {
+      if (res?.error) {
+        try {
+          setErrorState(JSON.parse(res.error))
+        } catch {
+          setErrorState({ message: [res.error] })
+        }
+      }
+    }
+  }
 
   const onSubmit: SubmitHandler<FormData> = async (data: FormData) => {
     setErrorState(null)
@@ -237,7 +295,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
             noValidate
             autoComplete='off'
             action={() => {}}
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={loginMethod === 'PASSWORD' ? handleSubmit(onSubmit) : (e) => e.preventDefault()}
             className='flex flex-col gap-6'
           >
             {showOtpField ? (
@@ -306,55 +364,104 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                     />
                   )}
                 />
-                <Controller
-                  name='password'
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <CustomTextField
-                      {...field}
-                      fullWidth
-                      label='Password'
-                      placeholder='············'
-                      id='login-password'
-                      type={isPasswordShown ? 'text' : 'password'}
-                      onChange={e => {
-                        field.onChange(e.target.value)
-                        errorState !== null && setErrorState(null)
-                      }}
-                      slotProps={{
-                        input: {
-                          endAdornment: (
-                            <InputAdornment position='end'>
-                              <IconButton
-                                edge='end'
-                                onClick={handleClickShowPassword}
-                                onMouseDown={e => e.preventDefault()}
-                              >
-                                <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
-                              </IconButton>
-                            </InputAdornment>
-                          )
-                        }
-                      }}
-                      {...(errors.password && { error: true, helperText: errors.password.message })}
+                {loginMethod === 'PASSWORD' ? (
+                  <>
+                    <Controller
+                      name='password'
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <CustomTextField
+                          {...field}
+                          fullWidth
+                          label='Password'
+                          placeholder='············'
+                          id='login-password'
+                          type={isPasswordShown ? 'text' : 'password'}
+                          onChange={e => {
+                            field.onChange(e.target.value)
+                            errorState !== null && setErrorState(null)
+                          }}
+                          slotProps={{
+                            input: {
+                              endAdornment: (
+                                <InputAdornment position='end'>
+                                  <IconButton
+                                    edge='end'
+                                    onClick={handleClickShowPassword}
+                                    onMouseDown={e => e.preventDefault()}
+                                  >
+                                    <i className={isPasswordShown ? 'tabler-eye' : 'tabler-eye-off'} />
+                                  </IconButton>
+                                </InputAdornment>
+                              )
+                            }
+                          }}
+                          {...(errors.password && { error: true, helperText: errors.password.message })}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
-                  <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
+                    <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
+                      <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
+                      <Typography
+                        className='text-end'
+                        color='primary.main'
+                        component={Link}
+                        href={getLocalizedUrl('/forgot-password', locale as Locale)}
+                      >
+                        Forgot password?
+                      </Typography>
+                    </div>
+                    <Button fullWidth variant='contained' type='submit' disabled={precheckLoading}>
+                      {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Login'}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {passwordlessOtpSent ? (
+                      <Box className='flex flex-col gap-4'>
+                        <CustomTextField
+                          fullWidth
+                          label='Verification Code'
+                          placeholder='Enter 6-digit OTP'
+                          value={otp}
+                          onChange={e => {
+                            setOtp(e.target.value.trim())
+                            setErrorState(null)
+                          }}
+                          {...(errorState !== null && { error: true, helperText: errorState.message[0] })}
+                        />
+                        <Button fullWidth variant='contained' onClick={handleVerifyPasswordlessOtp} disabled={precheckLoading}>
+                          {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Verify & Log In'}
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Button fullWidth variant='contained' onClick={handleSendPasswordlessOtp} disabled={precheckLoading}>
+                        {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Send OTP'}
+                      </Button>
+                    )}
+                  </>
+                )}
+                
+                <div className='flex justify-center items-center flex-wrap gap-2 pt-2'>
+                  <Typography>
+                    {loginMethod === 'PASSWORD' ? 'Prefer passwordless?' : 'Have a password?'}
+                  </Typography>
                   <Typography
-                    className='text-end'
+                    component='span'
+                    className='cursor-pointer'
                     color='primary.main'
-                    component={Link}
-                    href={getLocalizedUrl('/forgot-password', locale as Locale)}
+                    onClick={() => {
+                      setLoginMethod(loginMethod === 'PASSWORD' ? 'OTP' : 'PASSWORD')
+                      setErrorState(null)
+                      setPasswordlessOtpSent(false)
+                      setOtp('')
+                    }}
                   >
-                    Forgot password?
+                    {loginMethod === 'PASSWORD' ? 'Log in with OTP' : 'Log in with Password'}
                   </Typography>
                 </div>
-                <Button fullWidth variant='contained' type='submit' disabled={precheckLoading}>
-                  {precheckLoading ? <CircularProgress size={20} className='text-white' /> : 'Login'}
-                </Button>
+                
                 <div className='flex justify-center items-center flex-wrap gap-2'>
                   <Typography>New on our platform?</Typography>
                   <Typography component={Link} href={getLocalizedUrl('/register', locale as Locale)} color='primary.main'>

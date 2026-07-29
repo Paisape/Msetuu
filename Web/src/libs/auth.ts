@@ -32,17 +32,39 @@ export const authOptions: NextAuthOptions = {
          * For e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
          * You can also use the `req` object to obtain additional parameters (i.e., the request IP address)
          */
-        const { email, password, otp } = credentials as { email: string; password: string; otp?: string }
+        const { email, password, otp, isPasswordless } = credentials as { email: string; password?: string; otp?: string; isPasswordless?: string }
 
         try {
-          // ** Login API Call to match the user credentials and receive user data in response along with his role
-          const res = await fetch(`${process.env.API_URL}/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password, otp })
-          })
+          if (isPasswordless === 'true') {
+            // ** Passwordless OTP Login API Call
+            const res = await fetch(`${process.env.API_URL}/auth/verify-otp`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ contact: email, otp })
+            })
+
+            const data = await res.json()
+
+            if (res.status === 400 || res.status === 401 || res.status === 500) {
+              throw new Error(JSON.stringify({ message: [data.error || 'Invalid OTP'] }))
+            }
+
+            if (res.status === 200 && data.user) {
+              return data.user
+            }
+
+            return null
+          } else {
+            // ** Standard Password Login API Call to match the user credentials and receive user data in response
+            const res = await fetch(`${process.env.API_URL}/login`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ email, password, otp })
+            })
 
           const data = await res.json()
 
@@ -60,6 +82,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           return null
+        }
         } catch (e: any) {
           throw new Error(e.message)
         }
