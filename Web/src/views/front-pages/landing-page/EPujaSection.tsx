@@ -64,7 +64,7 @@ const EPujaSection = () => {
             <Card className='galaxy-card h-full flex flex-col justify-between overflow-hidden'>
               <div>
                 <div className='relative h-60 w-full overflow-hidden bg-white'>
-                  <img src={p.image} alt={p.name} className='w-full h-full object-contain transition-transform duration-500 hover:scale-110 p-2' />
+                  <img src={p.image} alt={p.name} className='w-full h-full object-cover transition-transform duration-500 hover:scale-110' />
                   <div className='absolute top-4 left-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                     {p.category}
                   </div>

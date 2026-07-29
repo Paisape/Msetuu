@@ -402,7 +402,7 @@ return basePrice * quantity
             <Grid size={{ xs: 12, sm: 4, md: 4 }} key={p.id}>
               <Card className='galaxy-card h-full flex flex-col justify-between overflow-hidden relative'>
                 <div className='relative h-48 w-full overflow-hidden bg-white'>
-                  <img src={p.image} alt={p.name} className='w-full h-full object-contain p-2' />
+                  <img src={p.image} alt={p.name} className='w-full h-full object-cover' />
                   {p.planet && (
                     <div className='absolute bottom-4 right-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                       {p.planet}

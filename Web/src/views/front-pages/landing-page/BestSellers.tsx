@@ -107,7 +107,7 @@ const BestSellers = () => {
               <div>
                 {/* Image Section */}
                 <div className='relative overflow-hidden aspect-[4/3] bg-white'>
-                  <img src={p.image} alt={p.name} className='w-full h-full object-contain transition-transform duration-500 hover:scale-105 p-2' />
+                  <img src={p.image} alt={p.name} className='w-full h-full object-cover transition-transform duration-500 hover:scale-105' />
                   
                   {/* Yellow Discount Flag */}
                   <Box className='absolute top-3 left-3 bg-[#eab308] text-slate-900 text-[10px] font-bold px-2.5 py-1 rounded shadow-sm flex items-center gap-1'>

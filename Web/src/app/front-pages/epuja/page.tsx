@@ -239,7 +239,7 @@ const EpujaPage = () => {
               <Grid size={{ xs: 12, sm: 4, md: 4 }} key={item.id}>
                 <Card className='galaxy-card flex flex-col justify-between overflow-hidden h-full relative'>
                   <div className='relative h-60 w-full overflow-hidden bg-white'>
-                     <img src={item.image} alt={item.title} className='w-full h-full object-contain p-2' />
+                     <img src={item.image} alt={item.title} className='w-full h-full object-cover' />
                      <div className='absolute top-4 left-4 bg-emerald-50/90 backdrop-blur-sm text-emerald-700 text-xs px-3 py-1.5 rounded-full border border-emerald-200 font-semibold'>
                        {item.category}
                      </div>
