@@ -65,10 +65,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'User not found for registration verification.' }, { status: 400 })
       }
       
-      const updateData: any = {}
-      if (isEmail) updateData.emailVerified = new Date()
-      else updateData.phoneVerified = new Date() // In a real app we'd have a phoneVerified column or similar. For now we assume emailVerified is enough for web. Wait, User model doesn't have phoneVerified. Let's not crash if we don't have it.
-
+      const updateData: any = { emailVerified: new Date() } // We use emailVerified as a general 'account verified' flag for both email and phone since phoneVerified is not in the schema.
       user = await prisma.user.update({
         where: { id: user.id },
         data: updateData

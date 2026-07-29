@@ -38,6 +38,8 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
   const { lang: locale } = useParams()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
+  const phone = searchParams.get('phone') || ''
+  const contact = phone || email
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
@@ -61,23 +63,23 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact: email, otp: data.otp, purpose: 'REGISTER' })
+        body: JSON.stringify({ contact, otp: data.otp, purpose: 'REGISTER' })
       })
 
       const json = await res.json().catch(() => null)
 
       if (!res.ok) {
-        setSubmitError(json?.error || 'Unable to verify email.')
+        setSubmitError(json?.error || 'Unable to verify account.')
         
 return
       }
 
-      setSubmitSuccess('Email verified successfully! Redirecting to login...')
+      setSubmitSuccess('Account verified successfully! Redirecting to login...')
       setTimeout(() => {
         router.replace(getLocalizedUrl('/login', locale as Locale))
       }, 2000)
     } catch {
-      setSubmitError('Unable to verify email.')
+      setSubmitError('Unable to verify account.')
     } finally {
       setSubmitting(false)
     }
@@ -91,9 +93,9 @@ return
             <Logo />
           </Link>
           <div className='flex flex-col gap-1 mbe-6'>
-            <Typography variant='h4'>Verify your email ✉️</Typography>
+            <Typography variant='h4'>Verify your account 🛡️</Typography>
             <Typography>
-              An activation code was sent to <span className='font-medium text-textPrimary'>{email || 'your email'}</span>.
+              An activation code was sent to <span className='font-medium text-textPrimary'>{contact || 'your contact method'}</span>.
               Please enter the 6-digit code below to continue.
             </Typography>
           </div>
@@ -114,7 +116,7 @@ return
                 />
               )}
             />
-            <Button fullWidth variant='contained' type='submit' disabled={submitting || !email}>
+            <Button fullWidth variant='contained' type='submit' disabled={submitting || !contact}>
               {submitting ? <CircularProgress size={22} /> : 'Verify Account'}
             </Button>
             <div className='flex justify-center items-center flex-wrap gap-2'>
