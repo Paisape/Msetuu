@@ -1,0 +1,3863 @@
+openapi: 3.0.3
+info:
+  title: Mandir Setu — User App API
+  version: "1.0.0"
+  description: |
+    API reference for the customer-facing (devotee) mobile app only. Covers every endpoint the
+    User app actually needs and that has a working backend today. Endpoints for the Priest and
+    Astrologer companion apps are intentionally excluded — those apps have little to no backend
+    built yet.
+
+    ## Authentication
+    The web app uses a NextAuth HttpOnly session cookie, which a native mobile app cannot store.
+    Mobile clients use a short-lived access token + long-lived refresh token pair instead:
+
+    1. `POST /mobile/login` with email + password (+ optional `deviceId`/`deviceName`/`os`).
+    2. The response includes `accessToken` (valid 30 minutes) and `refreshToken` (valid 60
+       days). Send the access token on every subsequent request as
+       `Authorization: Bearer <accessToken>`.
+    3. When a request fails with 401, call `POST /mobile/refresh` with the current
+       `refreshToken` to get a new `accessToken` + a *new* `refreshToken` (it's rotated on every
+       use — the old value stops working immediately, so hold onto only the newest one).
+       Do this proactively before `expiresIn` runs out, not just reactively on 401, for a
+       smooth UX.
+    4. On sign-out, call `POST /mobile/logout` with the current `refreshToken` to revoke it
+       server-side. `POST /mobile/logout-all` (🔒) revokes every device at once — wire this to a
+       "log out everywhere" / "this wasn't me" action.
+
+    Endpoints marked 🔒 require the `Authorization: Bearer <accessToken>` header. Endpoints with
+    no lock are public.
+
+    ### Client-side responsibilities (not enforceable by this backend, but required for a secure app)
+    - **Never store `accessToken`/`refreshToken` in plain text.** Use Android's
+      `EncryptedSharedPreferences`/Keystore or iOS Keychain — not plain `SharedPreferences`,
+      `NSUserDefaults`, SQLite, or unencrypted files.
+    - **Certificate pinning** is recommended for a payments-handling app to reduce MITM risk.
+      Pin against this API's TLS certificate/public key.
+    - The app should talk **only** to this backend — never directly to the database, and never
+      embed the Razorpay `key_secret` (only the public `key_id` returned in `razorpayOrder` is
+      meant for the client).
+
+    ## Money
+    All prices are in INR, as plain numbers (not paise/cents), e.g. `1499` means ₹1,499.
+    Where both `price` and `offerPrice` are present, `offerPrice` (when set and lower) is the
+    amount actually charged — always display `price` struck through and `offerPrice` as the
+    real price in that case.
+
+    ## Payments
+    Every booking/order POST endpoint (Chadhava, E-Puja, Kundli, Jyotish, Ecommerce) creates the
+    order as `PENDING` and returns a `razorpayOrder` object. Run Razorpay's Checkout SDK with
+    those values, then call `POST /payment/verify` with the payment result to mark the order
+    `PAID`. An order is never marked paid by any other endpoint.
+servers:
+  - url: https://www.mandirsetuu.com/api
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Content
+    description: Banners, categories, FAQs, mantras, darshan temples — mostly
+      public, read-only.
+  - name: Chadhava
+  - name: E-Puja
+  - name: Kundli
+  - name: Jyotish
+    description: Astrologer directory and consultation bookings.
+  - name: Astrology
+    description: Standalone Vedic/Western astrology calculations (panchang, dasha,
+      planets, horoscope, numerology, muhurat) — not tied to a paid consultation
+      booking.
+  - name: Ecommerce
+  - name: Orders
+    description: Cross-module order history, invoices, order-status trail, and
+      payment verification.
+  - name: Yatra
+  - name: Geotag
+    description: Temple-visit photo geo-tagging and the points/rewards program built
+      on top of it.
+  - name: Offers
+    description: Standalone promo/campaign landing pages with their own pricing and
+      order flow, separate from the regular catalog.
+  - name: Reviews
+  - name: Notifications
+  - name: Contact
+
+paths:
+  /api/auth/send-otp:
+    post:
+      summary: Send OTP for Passwordless Auth
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact:
+                  type: string
+                  example: user@example.com
+                type:
+                  type: string
+                  enum: [EMAIL, SMS]
+                  example: EMAIL
+      responses:
+        '200':
+          description: OTP sent successfully
+  /api/auth/verify-otp:
+    post:
+      summary: Verify OTP and Login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact:
+                  type: string
+                  example: user@example.com
+                otp:
+                  type: string
+                  example: '123456'
+                deviceId:
+                  type: string
+                  example: 'iphone12'
+                deviceName:
+                  type: string
+                  example: 'My iPhone'
+                os:
+                  type: string
+                  example: 'iOS'
+      responses:
+        '200':
+          description: Verified successfully (returns mobile tokens)
+  /mobile/login:
+    post:
+      tags: [ Auth ]
+      summary: Log in and obtain an access + refresh token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, password ]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                otp:
+                  {
+                    type: string,
+                    description: "Only used if the account has 2FA/OTP-on-login enabled."
+                  }
+                deviceId:
+                  {
+                    type: string,
+                    description: "Client-generated stable device identifier, for the
+                      device-management screen."
+                  }
+                deviceName: { type: string, example: "Pixel 8" }
+                os: { type: string, example: "Android 14" }
+      responses:
+        "200":
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    {
+                      type: string,
+                      description: "JWT — send as `Authorization: Bearer <accessToken>`. Short-lived."
+                    }
+                  expiresIn:
+                    {
+                      type: integer,
+                      description: "Seconds until accessToken expires (1800 = 30 minutes)."
+                    }
+                  refreshToken:
+                    {
+                      type: string,
+                      description: "Opaque long-lived token — store securely, exchange via POST
+                        /mobile/refresh."
+                    }
+                  refreshExpiresIn:
+                    {
+                      type: integer,
+                      description: "Seconds until refreshToken expires (60 days) if never used to
+                        refresh."
+                    }
+                  user: { $ref: "#/components/schemas/AuthUser" }
+        "400":
+          description: Missing email/password
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Too many attempts — back off and retry after the delay in the
+            `Retry-After` header.
+
+  /mobile/refresh:
+    post:
+      tags: [ Auth ]
+      summary: Exchange a refresh token for a new access token
+      security: []
+      description: |
+        Call this proactively before the current accessToken's `expiresIn` elapses (or
+        reactively on a 401). The refresh token is rotated on every call — always persist the
+        `refreshToken` from the response and discard the one you sent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ refreshToken ]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  expiresIn: { type: integer, example: 1800 }
+                  refreshToken:
+                    {
+                      type: string,
+                      description: "New value — replaces the one you sent."
+                    }
+                  refreshExpiresIn: { type: integer, example: 5184000 }
+        "400":
+          description: Missing refreshToken
+        "401":
+          description: "refreshToken is invalid, expired, or was already revoked/rotated —
+            send the user back to login."
+
+  /mobile/logout:
+    post:
+      tags: [ Auth ]
+      summary: Log out this device (revokes one refresh token)
+      security: []
+      description: "Call on sign-out. Idempotent — always returns success even for an
+        already-invalid token, so it can't be used to probe for valid ones."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ refreshToken ]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+
+  /mobile/logout-all:
+    post:
+      tags: [ Auth ]
+      summary: 🔒 Log out every device ("this wasn't me" / lost phone)
+      description: "Revokes every refresh token on the account. Requires a
+        currently-valid accessToken (unlike /mobile/logout) since we need to
+        know whose sessions to kill."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+
+  /mobile/sessions:
+    get:
+      tags: [ Auth ]
+      summary: 🔒 List this account's logged-in devices
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DeviceSession" }
+
+  "/mobile/sessions/{id}":
+    delete:
+      tags: [ Auth ]
+      summary: 🔒 Revoke one device's session
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        "404":
+          description: Not found, or belongs to a different account
+
+  /auth/register:
+    post:
+      tags: [ Auth ]
+      summary: Create a new account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, email, password ]
+              properties:
+                name: { type: string, maxLength: 100 }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8 }
+                phone: { type: string }
+      responses:
+        "201":
+          description: Account created — a 6-digit OTP was emailed to the address for
+            verification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                      email: { type: string }
+                      role: { type: string, enum: [ USER ] }
+                      createdAt: { type: string, format: date-time }
+                  requireVerification: { type: boolean, example: true }
+        "400":
+          description: Invalid name/email/password
+        "409":
+          description: An account with this email already exists
+
+  /auth/verify-email:
+    post:
+      tags: [ Auth ]
+      summary: Verify the email OTP sent at registration
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, otp ]
+              properties:
+                email: { type: string, format: email }
+                otp:
+                  {
+                    type: string,
+                    description: "6-digit code, valid 15 minutes."
+                  }
+      responses:
+        "200":
+          description: Verified (or already-verified)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+        "400":
+          description: Invalid or expired OTP
+
+  /auth/login-precheck:
+    post:
+      tags: [ Auth ]
+      summary: Check credentials and whether an OTP step is required before logging in
+      description: "Call this before POST /mobile/login. If the account is an admin
+        and OTP-on-login is enabled server-side, this emails a 10-minute OTP and
+        returns requireOtp:true — pass that OTP through the login call. Regular
+        users always get requireOtp:false."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, password ]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Credentials valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requireOtp: { type: boolean }
+                  email:
+                    {
+                      type: string,
+                      description: "Only present when requireOtp is true."
+                    }
+        "400": { description: "Missing email/password" }
+        "401": { description: "Invalid credentials" }
+        "403": { description: "Email not verified yet" }
+        "429":
+          {
+            description: "Too many attempts — rate limited (10 per 10 minutes per email)"
+          }
+
+  /auth/forgot-password:
+    post:
+      tags: [ Auth ]
+      summary: Request a password-reset OTP by email
+      description: "Always returns success (even if the email doesn't exist) to avoid
+        leaking which emails are registered. If the account exists, a 6-digit
+        OTP valid for 15 minutes is emailed."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email ]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Always returned, regardless of whether the email exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+        "429":
+          {
+            description: "Too many attempts — rate limited (5 per hour per email)"
+          }
+
+  /auth/reset-password:
+    post:
+      tags: [ Auth ]
+      summary: Reset the password using the OTP from /auth/forgot-password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, otp, newPassword ]
+              properties:
+                email: { type: string, format: email }
+                otp:
+                  {
+                    type: string,
+                    description: "6-digit code from the forgot-password email, valid 15 minutes."
+                  }
+                newPassword: { type: string, format: password, minLength: 8 }
+      responses:
+        "200":
+          description: Password reset — also marks the account as email-verified if it
+            wasn't already
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+        "400":
+          {
+            description: "Missing fields, password under 8 characters, no pending reset, or
+              expired/invalid OTP"
+          }
+        "429":
+          {
+            description: "Too many attempts — rate limited (10 per 10 minutes per email)"
+          }
+
+  /login:
+    post:
+      tags: [ Auth ]
+      summary: Direct credential login (internal endpoint also used by NextAuth/mobile
+        login)
+      description: |
+        Prefer `POST /mobile/login` for mobile clients — it wraps this same credential check and
+        also mints the access/refresh token pair. This endpoint just verifies credentials and
+        returns the bare user object; it does not issue tokens. Note: unlike every other endpoint
+        in this API, error responses use `{ message: string[] }` instead of `{ error: string }`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, password ]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                otp:
+                  {
+                    type: string,
+                    description: "Required only for admin accounts when OTP-on-login is enabled —
+                      get it from /auth/login-precheck first."
+                  }
+      responses:
+        "200":
+          description: Credentials valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string, nullable: true }
+                  email: { type: string }
+                  image: { type: string, nullable: true }
+                  role: { type: string, enum: [ USER, ADMIN, ASTROLOGER ] }
+        "401":
+          description: Invalid credentials, or (admin) missing/expired/invalid OTP
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties: { message: { type: array, items: { type: string } } }
+                }
+        "403":
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties: { message: { type: array, items: { type: string } } }
+                }
+        "429":
+          {
+            description: "Too many attempts — rate limited (10 per 10 minutes per email)"
+          }
+
+  /banners:
+    get:
+      tags: [ Content ]
+      summary: Get active banners for a page
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema: { type: string }
+          description: "e.g. home, chadhava, epuja, jyotish, kundli, ecommerce, yatra,
+            darshan, geotag, login, register"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Banner" }
+
+  /categories:
+    get:
+      tags: [ Content ]
+      summary: Get the admin-curated category list for a module
+      security: []
+      parameters:
+        - name: module
+          in: query
+          required: true
+          schema: { type: string, enum: [ epuja, ecommerce ] }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+
+  /faqs:
+    get:
+      tags: [ Content ]
+      summary: Get FAQs for a page
+      description: "When `listingId` is supplied, the response merges that listing's
+        own FAQs with module-wide ones (listingId is null) so a listing detail
+        page shows both without admin duplicating general FAQs onto every item."
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema: { type: string }
+        - name: listingId
+          in: query
+          required: false
+          schema: { type: string }
+          description: "Optional — scope to FAQs for one specific listing plus module-wide
+            ones."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Faq" }
+
+  /mantra:
+    get:
+      tags: [ Content ]
+      summary: Get all aartis/mantras (audio player content)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Mantra" }
+
+  /darshan:
+    get:
+      tags: [ Content ]
+      summary: Get all Darshan temples (banner, QR code, 3D experience link)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DarshanTemple" }
+
+  "/darshan/{id}":
+    get:
+      tags: [ Content ]
+      summary: Get one Darshan temple by id
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DarshanTemple" }
+        "404": { description: Not found }
+
+  /darshan-daily:
+    get:
+      tags: [ Content ]
+      summary: Get the daily-darshan schedule (one deity/bhajan per day of week), or
+        one day's entry
+      security: []
+      parameters:
+        - name: day
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 6 }
+          description: "0=Sunday..6=Saturday. If passed, returns a single object (or null)
+            for that day instead of the full week's array."
+      responses:
+        "200":
+          description: "Array of DailyDarshan (no `day` param) or a single DailyDarshan /
+            null (with `day`)"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {
+                      type: array,
+                      items: { $ref: "#/components/schemas/DailyDarshan" }
+                    }
+                  - { $ref: "#/components/schemas/DailyDarshan" }
+                  - { type: "null" }
+        "400": { description: "day out of range 0-6" }
+
+  "/darshan-daily/{id}":
+    get:
+      tags: [ Content ]
+      summary: Get one daily-darshan entry by id
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DailyDarshan" }
+        "404": { description: Not found }
+
+  /how-it-works:
+    get:
+      tags: [ Content ]
+      summary: Get the "How It Works" steps for a page
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: string }
+          description: "e.g. chadhava, epuja, jyotish, kundli, yatra. Omit for all pages."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/HowItWorksStep" }
+
+  /vr:
+    get:
+      tags: [ Content ]
+      summary: Browse 360° VR temple media
+      security: []
+      parameters:
+        - name: includeAll
+          in: query
+          required: false
+          schema: { type: string, enum: [ "true" ] }
+          description: "Pass true to also include inactive items (no auth required for
+            this — public flag)."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VrMedia" }
+
+  "/vr/{slug}":
+    get:
+      tags: [ Content ]
+      summary: Get one VR media item by slug (or id)
+      description: "Increments the item's viewsCount as a side effect."
+      security: []
+      parameters:
+        - {
+            name: slug,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VrMedia" }
+        "404": { description: Not found }
+
+  /content/about:
+    get:
+      tags: [ Content ]
+      summary: Get the About Us page content
+      security: []
+      responses:
+        "200":
+          description: "OK — served from a JSON file with a hardcoded fallback if
+            unconfigured, so this never 404s."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AboutUsData" }
+
+  /shop-purposes:
+    get:
+      tags: [ Content ]
+      summary: Get the "Shop by Purpose" tiles (Wealth, Health, etc.) shown on the
+        homepage/Ecommerce filters
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ShopPurpose" }
+
+  /chadhava/listings:
+    get:
+      tags: [ Chadhava ]
+      summary: Browse Chadhava offerings
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChadhavaListing" }
+
+  "/chadhava/listings/{id}":
+    get:
+      tags: [ Chadhava ]
+      summary: Get one Chadhava listing
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChadhavaListing" }
+        "404": { description: Not found }
+
+  /chadhava:
+    get:
+      tags: [ Chadhava ]
+      summary: 🔒 My Chadhava orders
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChadhavaOrder" }
+    post:
+      tags: [ Chadhava ]
+      summary: 🔒 Book a Chadhava (creates a PENDING order + Razorpay order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  name,
+                  gender,
+                  dob,
+                  birthPlace,
+                  chadhavaListingId,
+                  persons
+                ]
+              properties:
+                name: { type: string }
+                gender: { type: string }
+                dob: { type: string, format: date }
+                birthPlace: { type: string }
+                comment: { type: string }
+                chadhavaListingId: { type: string }
+                persons:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  description: "One entry per person the offering is made for — total charged =
+                    listing price × persons.length."
+                  items:
+                    type: object
+                    required: [ name, gotra ]
+                    properties:
+                      name: { type: string, maxLength: 100 }
+                      gotra: { type: string, maxLength: 100 }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order: { $ref: "#/components/schemas/ChadhavaOrder" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing/invalid fields, or no valid persons entry"
+          }
+        "404": { description: Listing not found }
+
+  "/chadhava/{id}":
+    get:
+      tags: [ Chadhava ]
+      summary: 🔒 Get one of my Chadhava orders
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChadhavaOrder" }
+        "403": { description: "Order belongs to a different user" }
+        "404": { description: Not found }
+
+  /epuja/listings:
+    get:
+      tags: [ E-Puja ]
+      summary: Browse Puja listings
+      security: []
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PujaListing" }
+
+  "/epuja/listings/{id}":
+    get:
+      tags: [ E-Puja ]
+      summary: Get one Puja listing (with its packages)
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PujaListing" }
+        "404": { description: Not found }
+
+  /epuja:
+    get:
+      tags: [ E-Puja ]
+      summary: 🔒 My Puja orders
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PujaOrder" }
+    post:
+      tags: [ E-Puja ]
+      summary: 🔒 Book a Puja package (creates a PENDING order + Razorpay order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  name,
+                  gender,
+                  dob,
+                  birthPlace,
+                  pujaListingId,
+                  pujaPackageId
+                ]
+              properties:
+                name: { type: string }
+                gender: { type: string }
+                dob: { type: string, format: date }
+                birthPlace: { type: string }
+                comment: { type: string }
+                pujaListingId: { type: string }
+                pujaPackageId: { type: string }
+                devotees:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: object
+                    properties:
+                      name: { type: string }
+                      gotra: { type: string }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order: { $ref: "#/components/schemas/PujaOrder" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing fields, or package doesn't belong to the given listing"
+          }
+
+  "/epuja/{id}":
+    get:
+      tags: [ E-Puja ]
+      summary: 🔒 Get one of my Puja orders
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PujaOrder" }
+        "403": { description: "Order belongs to a different user" }
+        "404": { description: Not found }
+
+  /kundli/listings:
+    get:
+      tags: [ Kundli ]
+      summary: Browse Kundli package types
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/KundliListing" }
+
+  "/kundli/listings/{id}":
+    get:
+      tags: [ Kundli ]
+      summary: Get one Kundli package type
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KundliListing" }
+        "404": { description: Not found }
+
+  /kundli:
+    get:
+      tags: [ Kundli ]
+      summary: 🔒 My Kundli orders
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/KundliOrder" }
+    post:
+      tags: [ Kundli ]
+      summary: 🔒 Order a Kundli (creates a PENDING order + Razorpay order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, gender, dob, birthPlace, kundliListingId ]
+              properties:
+                name: { type: string }
+                gender: { type: string }
+                dob: { type: string, format: date }
+                timeOfBirth: { type: string }
+                birthPlace: { type: string }
+                comment: { type: string }
+                kundliListingId:
+                  {
+                    type: string,
+                    description: "Must be a real listing from GET /kundli/listings — it's the only
+                      source of price."
+                  }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order: { $ref: "#/components/schemas/KundliOrder" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing fields, or kundliListingId not found"
+          }
+
+  "/kundli/{id}":
+    get:
+      tags: [ Kundli ]
+      summary: 🔒 Get one of my Kundli orders
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KundliOrder" }
+        "403": { description: "Order belongs to a different user" }
+        "404": { description: Not found }
+
+  /jyotish/categories:
+    get:
+      tags: [ Jyotish ]
+      summary: Browse consultation categories (drives the booking form's price)
+      description: "Returns only active categories. The booking form shows these as a
+        Category dropdown with live price; the visitor no longer browses or
+        picks an astrologer directly — admin assigns one after payment."
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/JyotishCategory" }
+
+  /jyotish/astrologers:
+    get:
+      tags: [ Jyotish ]
+      summary: Browse astrologers
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Astrologer" }
+
+  "/jyotish/astrologers/{id}":
+    get:
+      tags: [ Jyotish ]
+      summary: Get one astrologer's profile
+      security: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Astrologer" }
+        "404": { description: Not found }
+
+  /jyotish:
+    get:
+      tags: [ Jyotish ]
+      summary: 🔒 My consultation bookings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ConsultationBooking" }
+    post:
+      tags: [ Jyotish ]
+      summary: 🔒 Book a consultation
+      description: |
+        Single booking form (gemsmantra.com/pages/consultation style) — no astrologer browsing
+        and no calendar date/time-slot picker on this endpoint. `category` must match an active
+        JyotishCategory.name and determines the life-area classification (a separate `purpose`
+        field previously existed but was removed since it duplicated `category`). `durationMins`
+        (30/60/90) selects the session-length tier — price is `category`'s price for that
+        specific duration (e.g. Kundli Reading at 60 min may cost differently than the same
+        category at 30 min). Payment is always required — a Razorpay order is created and
+        returned on every successful booking, and admin assigns an astrologer + the actual
+        calendar slot afterward.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  category,
+                  durationMins,
+                  name,
+                  email,
+                  phone,
+                  dob,
+                  timeOfBirth,
+                  placeOfBirth,
+                  comment
+                ]
+              properties:
+                category:
+                  {
+                    type: string,
+                    description: "Must match an active JyotishCategory.name, e.g. Kundli Reading,
+                      Vastu Consultation, Numerology."
+                  }
+                durationMins:
+                  {
+                    type: integer,
+                    enum: [ 30, 60, 90 ],
+                    description: "Session length — determines which of the category's three price
+                      tiers applies."
+                  }
+                comment:
+                  {
+                    type: string,
+                    description: "Description of the problem/question — minimum 10 words."
+                  }
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                dob: { type: string, format: date }
+                timeOfBirth: { type: string }
+                placeOfBirth: { type: string }
+      responses:
+        "201":
+          description: Booking created — payment required to complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking: { $ref: "#/components/schemas/ConsultationBooking" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing/invalid fields, durationMins not one of 30/60/90, or
+              comment under 10 words"
+          }
+        "404": { description: "Selected category is not available" }
+        "503": { description: "Online payments are not configured yet" }
+
+  "/jyotish/{id}":
+    get:
+      tags: [ Jyotish ]
+      summary: 🔒 Get one of my consultation bookings
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConsultationBooking" }
+        "403": { description: "Booking belongs to a different user" }
+        "404": { description: Not found }
+
+  /jyotish/time-slots:
+    get:
+      tags: [ Jyotish ]
+      summary: Browse consultation time slots
+      description: "Not currently used by the single-form booking flow (admin assigns
+        a slot manually after payment instead) — kept for a possible future
+        slot-picker UI."
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ConsultationTimeSlot" }
+
+  /astrology/panchang:
+    get:
+      tags: [ Astrology ]
+      summary: Detailed panchang for a date/location (upstream-sourced)
+      security: []
+      description: "Wraps an external astrology API. If that provider isn't configured
+        server-side, returns configured:false (200, not an error) rather than
+        failing the request."
+      parameters:
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number },
+            description: "Defaults to a fixed reference location if omitted."
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: { type: boolean }
+                  choghadiya: { type: object, nullable: true }
+                  goodBadTimes: { type: object, nullable: true }
+                  tithi: { type: object, nullable: true }
+                  nakshatra: { type: object, nullable: true }
+                  yoga: { type: object, nullable: true }
+                  karana: { type: object, nullable: true }
+                  sunriseSunset: { type: object, nullable: true }
+                  error: { type: string, nullable: true }
+
+  /astrology/dasha:
+    get:
+      tags: [ Astrology ]
+      summary: Vimshottari Dasha periods for a birth date/time/location
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: true,
+            schema: { type: string, format: date },
+            description: "Birth date."
+          }
+        - {
+            name: time,
+            in: query,
+            required: false,
+            schema: { type: string },
+            description: "HH:mm."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: antar,
+            in: query,
+            required: false,
+            schema: { type: string, enum: [ "1" ] },
+            description: "Pass 1 to also include Antar Dasha sub-periods."
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      dasha: { type: object, nullable: true },
+                      error: { type: string, nullable: true }
+                    }
+                }
+        "400": { description: "Missing or unparseable date" }
+
+  /astrology/planets:
+    get:
+      tags: [ Astrology ]
+      summary: Planetary positions for a date/time/location
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: false,
+            schema: { type: string, format: date },
+            description: "Defaults to now."
+          }
+        - {
+            name: time,
+            in: query,
+            required: false,
+            schema: { type: string },
+            description: "HH:mm."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: extended,
+            in: query,
+            required: false,
+            schema: { type: string, enum: [ "1" ] }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      planets: { type: object, nullable: true },
+                      error: { type: string, nullable: true }
+                    }
+                }
+        "400": { description: "Unparseable date" }
+
+  /astrology/horoscope:
+    get:
+      tags: [ Astrology ]
+      summary: Daily/monthly zodiac-sign horoscope prediction (upstream-sourced)
+      security: []
+      parameters:
+        - {
+            name: sign,
+            in: query,
+            required: true,
+            schema: { type: string },
+            description: "A zodiac sign name, e.g. Aries, Taurus."
+          }
+        - {
+            name: period,
+            in: query,
+            required: false,
+            schema:
+              {
+                type: string,
+                enum: [ daily, monthly, tomorrow ],
+                default: daily
+              }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: { type: boolean }
+                  sign: { type: string }
+                  period: { type: string }
+                  prediction: { type: string, nullable: true }
+                  error: { type: string, nullable: true }
+        "400": { description: "Missing or invalid sign" }
+
+  /astrology/match-making:
+    post:
+      tags: [ Astrology ]
+      summary: Ashtakoot Guna Milan compatibility score between two birth charts
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ boy, girl ]
+              properties:
+                boy:
+                  {
+                    type: object,
+                    required: [ date ],
+                    properties:
+                      {
+                        date: { type: string, format: date },
+                        time: { type: string },
+                        lat: { type: number },
+                        lon: { type: number },
+                        tz: { type: number }
+                      }
+                  }
+                girl:
+                  {
+                    type: object,
+                    required: [ date ],
+                    properties:
+                      {
+                        date: { type: string, format: date },
+                        time: { type: string },
+                        lat: { type: number },
+                        lon: { type: number },
+                        tz: { type: number }
+                      }
+                  }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      matchMaking: { type: object, nullable: true },
+                      error: { type: string, nullable: true }
+                    }
+                }
+        "400":
+          {
+            description: "Invalid JSON, or missing/unparseable boy.date or girl.date"
+          }
+
+  /astrology/geo-location:
+    get:
+      tags: [ Astrology ]
+      summary: Look up latitude/longitude/timezone for a place name
+      description: "Use this to convert a birth-place name into the lat/lon/tz values
+        the other Astrology endpoints accept."
+      security: []
+      parameters:
+        - {
+            name: place,
+            in: query,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      location: { type: object, nullable: true },
+                      error: { type: string, nullable: true }
+                    }
+                }
+        "400": { description: "Missing place" }
+
+  /astrology/timezone:
+    get:
+      tags: [ Astrology ]
+      summary: Look up the UTC offset for a date + coordinate
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: false,
+            schema: { type: string, format: date },
+            description: "Defaults to now."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      timezone: { type: object, nullable: true },
+                      error: { type: string, nullable: true }
+                    }
+                }
+        "400": { description: "Unparseable date" }
+
+  /panchang:
+    get:
+      tags: [ Astrology ]
+      summary: Simplified daily panchang (sun/tithi/nakshatra/yoga/karana) for a
+        date/location
+      description: "A lighter-weight alternative to /astrology/panchang — separate
+        implementation, not a duplicate route."
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: false,
+            schema: { type: string, format: date },
+            description: "YYYY-MM-DD, defaults to today."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+      responses:
+        "200":
+          description: "OK, or configured:false with a signup-instructions message if the
+            upstream provider isn't set up yet"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: { type: boolean }
+                  date: { type: string }
+                  sun: { type: object, nullable: true }
+                  tithi: { type: object, nullable: true }
+                  nakshatra: { type: object, nullable: true }
+                  yoga: { type: object, nullable: true }
+                  karana: { type: object, nullable: true }
+                  message: { type: string, nullable: true }
+        "400": { description: "Invalid date" }
+        "502": { description: "Upstream provider error" }
+
+  /choghadiya:
+    get:
+      tags: [ Astrology ]
+      summary: Choghadiya (auspicious/inauspicious time blocks) for a date/location
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: false,
+            schema: { type: string, format: date },
+            description: "YYYY-MM-DD, defaults to today."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+      responses:
+        "200":
+          description: "OK, or configured:false with a signup-instructions message if the
+            upstream provider isn't set up yet"
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      date: { type: string },
+                      message: { type: string, nullable: true }
+                    },
+                  additionalProperties: true
+                }
+        "400": { description: "Invalid date" }
+        "502": { description: "Upstream provider error" }
+
+  /muhurat:
+    get:
+      tags: [ Astrology ]
+      summary: Auspicious/inauspicious muhurat windows for a date/location (Abhijit,
+        Rahu Kalam, etc.)
+      security: []
+      parameters:
+        - {
+            name: date,
+            in: query,
+            required: false,
+            schema: { type: string, format: date },
+            description: "YYYY-MM-DD, defaults to today."
+          }
+        - {
+            name: lat,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: lon,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+        - {
+            name: tz,
+            in: query,
+            required: false,
+            schema: { type: number }
+          }
+      responses:
+        "200":
+          description: "OK, or configured:false with a message if the upstream provider
+            isn't set up yet"
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean },
+                      date: { type: string },
+                      message: { type: string, nullable: true }
+                    },
+                  additionalProperties: true
+                }
+        "400": { description: "Invalid date" }
+        "502": { description: "Upstream provider error" }
+
+  /horoscope:
+    get:
+      tags: [ Astrology ]
+      summary: Rashi (Vedic moon-sign) horoscope prediction — separate from
+        /astrology/horoscope (Western zodiac sign)
+      security: []
+      parameters:
+        - {
+            name: rashi,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum:
+                  [
+                    mesha,
+                    vrishabha,
+                    mithuna,
+                    karka,
+                    simha,
+                    kanya,
+                    tula,
+                    vrishchika,
+                    dhanu,
+                    makara,
+                    kumbha,
+                    meena
+                  ]
+              }
+          }
+        - {
+            name: period,
+            in: query,
+            required: false,
+            schema:
+              {
+                type: string,
+                enum: [ today, tomorrow, week, month ],
+                default: today
+              }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      rashi: { type: string },
+                      period: { type: string },
+                      sign: { type: string }
+                    },
+                  additionalProperties: true
+                }
+        "400": { description: "Missing/invalid rashi or period" }
+        "502": { description: "Upstream provider error" }
+
+  /numerology:
+    get:
+      tags: [ Astrology ]
+      summary: Numerology profile from name + date of birth (computed locally, no
+        external API)
+      security: []
+      parameters:
+        - {
+            name: name,
+            in: query,
+            required: true,
+            schema: { type: string, maxLength: 200 }
+          }
+        - {
+            name: dob,
+            in: query,
+            required: true,
+            schema: { type: string, format: date },
+            description: "YYYY-MM-DD."
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties:
+                    {
+                      configured: { type: boolean, example: true },
+                      name: { type: string },
+                      dob: { type: string }
+                    },
+                  additionalProperties: true
+                }
+        "400": { description: "Missing/invalid name or dob" }
+
+  "/offer/{slug}":
+    get:
+      tags: [ Offers ]
+      summary: Get a promo/campaign offer landing page
+      security: []
+      parameters:
+        - {
+            name: slug,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Offer" }
+        "404": { description: "Not found, or the offer is inactive" }
+    post:
+      tags: [ Offers ]
+      summary: Record a page visit for this offer (analytics beacon)
+      description: "Fire this once when the offer landing page loads. No request body
+        needed."
+      security: []
+      parameters:
+        - {
+            name: slug,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties: { success: { type: boolean } }
+                }
+        "404": { description: "Offer not found (any status)" }
+
+  "/offer/{slug}/order":
+    post:
+      tags: [ Offers ]
+      summary: Place an order for a promo offer (guest checkout allowed)
+      description: "If the caller is logged in, the order is linked to their account;
+        otherwise it's a guest order (userId is null). Always creates a Razorpay
+        order — verify it the same way as every other module, via POST
+        /payment/verify with orderType: OFFER and this order's id."
+      security: []
+      parameters:
+        - {
+            name: slug,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, email, phone ]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                comment: { type: string }
+                packageName:
+                  {
+                    type: string,
+                    description: "Required if the offer's pricingType is PACKAGE — must match one of
+                      Offer.packages[].name."
+                  }
+                devotees:
+                  type: array
+                  description: "Required, non-empty, if the offer's pricingType is PER_PERSON.
+                    personCount = devotees.length, and amountPaid = offerPrice ×
+                    personCount."
+                  items:
+                    {
+                      type: object,
+                      properties: { name: { type: string }, gotra: { type: string } }
+                    }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order: { $ref: "#/components/schemas/OfferOrder" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing name/email/phone, missing devotees for a PER_PERSON offer,
+              or missing/invalid packageName for a PACKAGE offer"
+          }
+        "404": { description: "Offer not found or inactive" }
+        "503": { description: "Online payments are not configured yet" }
+
+  /ecommerce/products:
+    get:
+      tags: [ Ecommerce ]
+      summary: Browse products
+      security: []
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+        - { name: purpose, in: query, schema: { type: string } }
+        - { name: planet, in: query, schema: { type: string } }
+        - {
+            name: bestseller,
+            in: query,
+            schema: { type: string, enum: [ "1" ] },
+            description: "Pass 1 to filter to Best Sellers only."
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+
+  /ecommerce:
+    get:
+      tags: [ Ecommerce ]
+      summary: 🔒 My product orders
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProductOrder" }
+    post:
+      tags: [ Ecommerce ]
+      summary: 🔒 Place a product order (creates a PENDING order + Razorpay order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ productId, address ]
+              properties:
+                productId: { type: string }
+                quantity: { type: integer, default: 1, minimum: 1, maximum: 20 }
+                carat:
+                  {
+                    type: number,
+                    description: "Required, 3.5–12.5, only for products in the Gemstones category."
+                  }
+                address: { type: string, description: "Shipping address." }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order: { $ref: "#/components/schemas/ProductOrder" }
+                  razorpayOrder: { $ref: "#/components/schemas/RazorpayOrder" }
+        "400":
+          {
+            description: "Missing fields, or invalid carat for a gemstone product"
+          }
+        "404": { description: Product not found }
+
+  "/ecommerce/{id}":
+    get:
+      tags: [ Ecommerce ]
+      summary: 🔒 Get one of my product orders
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductOrder" }
+        "403": { description: "Order belongs to a different user" }
+        "404": { description: Not found }
+
+  /my-orders:
+    get:
+      tags: [ Orders ]
+      summary: 🔒 My orders across every module, in one list
+      description: "Use this to render a unified 'My Orders' screen. Fetch per-module
+        detail from that module's GET endpoint using `targetId`/`id` when the
+        user opens one."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MyOrderEntry" }
+
+  /addresses:
+    get:
+      tags: [ Orders ]
+      summary: 🔒 My saved address book (default address first)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Address" }
+    post:
+      tags: [ Orders ]
+      summary: 🔒 Save a new address to my address book
+      description: "The first address a user ever saves always becomes the default
+        automatically, regardless of `isDefault` sent."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ fullAddress ]
+              properties:
+                label:
+                  {
+                    type: string,
+                    nullable: true,
+                    description: "Optional nickname, e.g. \"Home\", \"Work\". Max 40 characters."
+                  }
+                fullAddress: { type: string, description: "5-500 characters." }
+                isDefault:
+                  {
+                    type: boolean,
+                    description: "If true, unsets any previous default and makes this one the
+                      default."
+                  }
+      responses:
+        "201":
+          description: Address saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Address" }
+        "400":
+          {
+            description: "Missing/invalid fields, or the 20-address-per-user limit was
+              reached"
+          }
+
+  "/addresses/{id}":
+    patch:
+      tags: [ Orders ]
+      summary: 🔒 Edit one of my saved addresses, or set it as default
+      description: "isDefault can only be set to true here (to make this address the
+        new default) — to remove a default, set a different address as default
+        instead."
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string, nullable: true }
+                fullAddress: { type: string, description: "5-500 characters." }
+                isDefault: { type: boolean }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Address" }
+        "404":
+          {
+            description: "Address not found, or does not belong to the caller"
+          }
+    delete:
+      tags: [ Orders ]
+      summary: 🔒 Delete one of my saved addresses
+      description: "If the deleted address was the default and other saved addresses
+        remain, the most recently updated one is automatically promoted to
+        default."
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties: { success: { type: boolean } }
+                }
+        "404":
+          {
+            description: "Address not found, or does not belong to the caller"
+          }
+
+  /my-orders/addresses:
+    get:
+      tags: [ Orders ]
+      summary: 🔒 My past shipping addresses (legacy autofill list)
+      description: |
+        Superseded by `GET /addresses` (the real address book) — kept for backward
+        compatibility only. Returns distinct `shippingAddress` strings pulled from the user's
+        own past Ecommerce orders (`ProductOrder.shippingAddress`), most recent first. New
+        clients should use `/addresses` instead, which supports add/edit/delete/set-default.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+                example: [ "123 Example Street, City, State, 400001" ]
+
+  /payment/verify:
+    post:
+      tags: [ Orders ]
+      summary: 🔒 Verify a Razorpay payment and mark the order PAID
+      description: "Call this from the Razorpay Checkout success handler. This is the
+        only endpoint that ever marks an order PAID."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  orderType,
+                  orderId,
+                  razorpayPaymentId,
+                  razorpayOrderId,
+                  razorpaySignature
+                ]
+              properties:
+                orderType:
+                  {
+                    type: string,
+                    enum: [ CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE, OFFER ]
+                  }
+                orderId: { type: string }
+                razorpayPaymentId: { type: string }
+                razorpayOrderId: { type: string }
+                razorpaySignature: { type: string }
+      responses:
+        "200":
+          description: Verified and marked PAID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  orderId: { type: string }
+        "400":
+          {
+            description: "Missing fields, signature invalid, or razorpayOrderId doesn't
+              match this order"
+          }
+        "403": { description: "This order doesn't belong to you" }
+        "409": { description: "Already paid" }
+
+  /invoices:
+    get:
+      tags: [ Orders ]
+      summary: 🔒 My invoices
+      description: "Regular users always see only their own invoices, regardless of
+        filters used — the userId scope is forced server-side. An admin caller
+        sees every user's invoices matching the filters instead."
+      parameters:
+        - {
+            name: status,
+            in: query,
+            required: false,
+            schema: { type: string, enum: [ PAID, CANCELLED ] }
+          }
+        - {
+            name: orderType,
+            in: query,
+            required: false,
+            schema:
+              {
+                type: string,
+                enum: [ CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE, YATRA ]
+              }
+          }
+        - {
+            name: orderId,
+            in: query,
+            required: false,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Invoice" }
+
+  "/invoices/{id}":
+    get:
+      tags: [ Orders ]
+      summary: 🔒 Get one of my invoices
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "403": { description: "Invoice belongs to a different user" }
+        "404": { description: Not found }
+
+  /orders/trail:
+    get:
+      tags: [ Orders ]
+      summary: 🔒 Status-change history for one order (audit trail)
+      description: "Use this to render an order-tracking timeline. The
+        `ip`/`userAgent` fields on each entry are only populated when the caller
+        is an admin — they are omitted for regular customers viewing their own
+        trail."
+      parameters:
+        - {
+            name: type,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum: [ CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE, YATRA ]
+              }
+          }
+        - {
+            name: id,
+            in: query,
+            required: true,
+            schema: { type: string },
+            description: "The order id."
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OrderTrailEntry" }
+        "400": { description: "Missing/invalid type or id" }
+        "403": { description: "Order belongs to a different user" }
+
+  /yatra:
+    get:
+      tags: [ Yatra ]
+      summary: 🔒 My Yatra (pilgrimage tour) booking requests
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/YatraBooking" }
+    post:
+      tags: [ Yatra ]
+      summary: 🔒 Submit a Yatra booking request
+      description: "No payment step — this is a lead-capture form; the team follows up
+        to arrange the actual tour."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  name,
+                  contactNumber,
+                  cityOfDeparture,
+                  destination,
+                  travelDate
+                ]
+              properties:
+                name: { type: string }
+                contactNumber: { type: string }
+                cityOfDeparture: { type: string }
+                destination: { type: string }
+                totalTravelers: { type: integer, default: 1, minimum: 1 }
+                travelDate: { type: string, format: date }
+                comment: { type: string }
+      responses:
+        "201":
+          description: Request submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/YatraBooking" }
+        "400": { description: "Missing/invalid fields" }
+
+  "/yatra/{id}":
+    get:
+      tags: [ Yatra ]
+      summary: 🔒 Get one of my Yatra booking requests
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string }
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/YatraBooking" }
+        "403": { description: "Booking belongs to a different user" }
+        "404": { description: Not found }
+
+  /geotag:
+    get:
+      tags: [ Geotag ]
+      summary: My geo-tagged temple-visit photos, or the public approved map
+      description: "🔒 with no params: the caller's own tags (any status). With
+        `?public=1` (no auth needed): every APPROVED tag, for the public
+        community map — never exposes who submitted it."
+      security: []
+      parameters:
+        - name: public
+          in: query
+          required: false
+          schema: { type: string, enum: [ "1" ] }
+          description: "Pass 1 for the public, unauthenticated approved-tags map."
+      responses:
+        "200":
+          description: "Array of GeoTagPhoto (🔒 own tags) or a reduced public shape (id,
+            imageUrl, templeName, latitude, longitude, createdAt) when public=1"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeoTagPhoto" }
+    post:
+      tags: [ Geotag ]
+      summary: 🔒 Share a geo-tagged photo
+      description: |
+        Upload the actual image file first via `POST /upload/review-media` to get `imageUrl`,
+        then call this. Rate-limited to 20 submissions/hour. `templeName` is auto-suggested
+        server-side from `latitude`/`longitude` (never trusted from the client's own "detected"
+        claim) — if no match is found nearby, the visitor must enter one manually. Starts
+        PENDING; points are awarded only once an admin approves it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ imageUrl ]
+              properties:
+                imageUrl: { type: string }
+                latitude: { type: number, minimum: -90, maximum: 90 }
+                longitude: { type: number, minimum: -180, maximum: 180 }
+                templeName:
+                  {
+                    type: string,
+                    maxLength: 150,
+                    description: "Required if no temple could be auto-suggested from
+                      latitude/longitude."
+                  }
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GeoTagPhoto" }
+        "400":
+          {
+            description: "Missing imageUrl, out-of-range coordinates, or no templeName could
+              be determined"
+          }
+        "429":
+          {
+            description: "Too many submissions — rate limited (20 per hour)"
+          }
+
+  /geotag/nearest:
+    get:
+      tags: [ Geotag ]
+      summary: Find the nearest known temple to a coordinate (for auto-filling
+        templeName)
+      security: []
+      parameters:
+        - {
+            name: lat,
+            in: query,
+            required: true,
+            schema: { type: number, minimum: -90, maximum: 90 }
+          }
+        - {
+            name: lng,
+            in: query,
+            required: true,
+            schema: { type: number, minimum: -180, maximum: 180 }
+          }
+      responses:
+        "200":
+          description: "OK — temple is null if none is within range, never errors for 'no
+            match'"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  temple:
+                    {
+                      type: object,
+                      nullable: true,
+                      properties: { name: { type: string }, distanceKm: { type: number } }
+                    }
+                  pointsPerTag: { type: integer }
+        "400": { description: "Missing or out-of-range lat/lng" }
+
+  /geotag/settings:
+    get:
+      tags: [ Geotag ]
+      summary: Get the current points-per-tag reward rate
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                {
+                  type: object,
+                  properties: { pointsPerTag: { type: integer } }
+                }
+
+  /geotag/points:
+    get:
+      tags: [ Geotag ]
+      summary: 🔒 My points balance and ledger
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  points: { type: integer, description: "Current running balance." }
+                  transactions:
+                    type: array
+                    maxItems: 100
+                    description: "Most recent 100 entries, newest first."
+                    items: { $ref: "#/components/schemas/PointsTransaction" }
+
+  /geotag/redemption-slabs:
+    get:
+      tags: [ Geotag ]
+      summary: Browse active redemption slabs (points required per rewardable product)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    pointsRequired: { type: integer }
+                    productId: { type: string }
+                    active: { type: boolean }
+                    createdAt: { type: string, format: date-time }
+                    product:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        image: { type: string }
+                        price: { type: number }
+
+  /geotag/redeem:
+    post:
+      tags: [ Geotag ]
+      summary: 🔒 Redeem points for a slab's product
+      description: "Points are deducted atomically the moment the request is created
+        (not on admin approval), so two concurrent requests can't both spend the
+        same points. Rate-limited to 20/hour."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ slabId ]
+              properties:
+                slabId: { type: string }
+                shippingAddress: { type: string, maxLength: 500 }
+      responses:
+        "201":
+          description: Redemption request created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedemptionRequest" }
+        "400": { description: "Missing slabId, or insufficient points" }
+        "404": { description: "Slab not found or inactive" }
+        "429":
+          {
+            description: "Too many attempts — rate limited (20 per hour)"
+          }
+
+  /geotag/redemptions:
+    get:
+      tags: [ Geotag ]
+      summary: 🔒 My redemption requests
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RedemptionRequest" }
+
+  /upload/review-media:
+    post:
+      tags: [ Geotag ]
+      summary: 🔒 Upload an image or short video (multipart/form-data)
+      description: |
+        Used for geotag photos and review media. Field name must be `file`. Images: JPEG/PNG/WebP/GIF
+        up to 15MB (auto re-compressed to WebP). Videos: MP4/WebM/MOV up to 30MB, stored as-is.
+        This is NOT the same endpoint as the admin catalog uploader — this one is open to any
+        logged-in user.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [ file ]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    {
+                      type: string,
+                      description: "Relative path, e.g. /uploads/reviews/xxxx.webp — prefix with the
+                        server origin to display."
+                    }
+                  type: { type: string, enum: [ image, video ] }
+        "400":
+          {
+            description: "No file, unsupported type, or exceeds the size limit"
+          }
+
+  /reviews:
+    get:
+      tags: [ Reviews ]
+      summary: Get reviews
+      security: []
+      description: |
+        Two usage modes:
+        - `orderType` + `targetId` (public): approved reviews for a listing/product/astrologer, plus average rating and count.
+        - `orderType` + `orderId` (🔒 requires auth): the logged-in user's own review for that specific order, to show "you already reviewed this".
+      parameters:
+        - {
+            name: orderType,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum: [ CHADHAVA, EPUJA, KUNDLI, JYOTISH, ECOMMERCE ]
+              }
+          }
+        - {
+            name: targetId,
+            in: query,
+            schema: { type: string },
+            description: "The listing/product/astrologer id — use with orderType for public
+              reviews."
+          }
+        - {
+            name: orderId,
+            in: query,
+            schema: { type: string },
+            description: "Use with orderType (and auth) to fetch your own review for that
+              order."
+          }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      reviews:
+                        {
+                          type: array,
+                          items: { $ref: "#/components/schemas/Review" }
+                        }
+                      averageRating: { type: number }
+                      count: { type: integer }
+                  - type: object
+                    properties:
+                      review:
+                        oneOf:
+                          - { $ref: "#/components/schemas/Review" }
+                          - { type: "null" }
+        "400":
+          {
+            description: "orderType and either orderId or targetId are required"
+          }
+    post:
+      tags: [ Reviews ]
+      summary: 🔒 Submit a review for a completed (PAID) order
+      description: "Verified-purchase only — the order is looked up server-side by
+        orderId and must belong to the caller and be PAID. One review per order
+        (a second attempt returns 409)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ orderType, orderId, rating ]
+              properties:
+                orderType:
+                  {
+                    type: string,
+                    enum: [ CHADHAVA, EPUJA, KUNDLI, JYOTISH, ECOMMERCE ]
+                  }
+                orderId: { type: string }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string, maxLength: 1000 }
+                media:
+                  type: array
+                  maxItems: 5
+                  description: "Must be URLs returned by POST /upload/review-media — any other URL
+                    is rejected."
+                  items:
+                    type: object
+                    properties:
+                      url: { type: string }
+                      type: { type: string, enum: [ image, video ] }
+      responses:
+        "201":
+          description: Review submitted (starts as PENDING, awaiting admin approval before
+            it's public)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Review" }
+        "403": { description: "Not your order, or order isn't PAID yet" }
+        "404": { description: Order not found }
+        "409": { description: "You already reviewed this order" }
+
+  /notifications/firebase/token:
+    post:
+      tags: [ Notifications ]
+      summary: 🔒 Register this device's push token
+      description: "Call after login (and whenever Firebase issues a new token) so the
+        backend can send this user push notifications."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ fcmToken ]
+              properties:
+                fcmToken: { type: string }
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+
+  /contact:
+    post:
+      tags: [ Contact ]
+      summary: Submit a Contact Us / support message
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, email, message ]
+              properties:
+                name: { type: string, maxLength: 100 }
+                email: { type: string, format: email, maxLength: 254 }
+                message: { type: string, maxLength: 3000 }
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        "400": { description: "Missing/invalid fields" }
+  "/reviews/{id}":
+    patch:
+      summary: Update Review
+      tags:
+        - Reviews
+      responses:
+        "200":
+          description: Successful response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+    delete:
+      summary: Delete Review
+      tags:
+        - Reviews
+      responses:
+        "200":
+          description: Successful response
+  /geotag/temples:
+    get:
+      summary: Get Geotag Temples
+      tags:
+        - Geotag Rewards
+      responses:
+        "200":
+          description: Successful response
+  /refunds:
+    get:
+      summary: My Refunds
+      tags:
+        - Orders & Invoices
+      responses:
+        "200":
+          description: Successful response
+  /legal/terms:
+    get:
+      summary: Terms and Conditions
+      tags:
+        - Legal & Contact
+      responses:
+        "200":
+          description: Successful response
+  /notifications/history:
+    get:
+      summary: My Notifications History
+      tags:
+        - Notifications
+      responses:
+        "200":
+          description: Successful response
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Token from POST /mobile/login."
+
+  schemas:
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        role: { type: string, enum: [ USER, ADMIN, ASTROLOGER ] }
+        image: { type: string, nullable: true }
+
+    DeviceSession:
+      type: object
+      properties:
+        id:
+          {
+            type: string,
+            description: "Use this in DELETE /mobile/sessions/{id} to revoke it."
+          }
+        deviceId: { type: string, nullable: true }
+        deviceName: { type: string, nullable: true, example: "Pixel 8" }
+        os: { type: string, nullable: true, example: "Android 14" }
+        createdAt: { type: string, format: date-time }
+        lastActiveAt:
+          {
+            type: string,
+            format: date-time,
+            description: "Updated each time this device calls /mobile/refresh."
+          }
+        expiresAt: { type: string, format: date-time }
+
+    Banner:
+      type: object
+      properties:
+        id: { type: string }
+        page: { type: string }
+        title: { type: string }
+        subtitle: { type: string, nullable: true }
+        image: { type: string }
+        buttonText: { type: string, nullable: true }
+        buttonLink: { type: string, nullable: true }
+        buttonText2: { type: string, nullable: true }
+        buttonLink2: { type: string, nullable: true }
+        order: { type: integer }
+        active: { type: boolean }
+
+    Category:
+      type: object
+      properties:
+        id: { type: string }
+        module: { type: string, enum: [ epuja, ecommerce ] }
+        name: { type: string }
+        order: { type: integer }
+        active: { type: boolean }
+
+    Faq:
+      type: object
+      properties:
+        id: { type: string }
+        page: { type: string }
+        listingId:
+          {
+            type: string,
+            nullable: true,
+            description: "Scopes this FAQ to one specific listing on the page. Null =
+              applies to every listing under this page (module-wide)."
+          }
+        question: { type: string }
+        answer: { type: string }
+        order: { type: integer }
+        active: { type: boolean }
+
+    Mantra:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subtitle: { type: string }
+        fileUrl: { type: string }
+        duration: { type: string }
+        deity: { type: string }
+
+    DarshanTemple:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        location: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        image: { type: string }
+        qrCodeUrl: { type: string }
+        model3dUrl: { type: string }
+
+    ChadhavaListing:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description:
+          {
+            type: string,
+            nullable: true,
+            description: "Optional — may be empty."
+          }
+        location: { type: string, nullable: true }
+        image: { type: string }
+        price: { type: number }
+        offerPrice: { type: number, nullable: true }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        significance: { type: string, nullable: true }
+        benefits:
+          {
+            type: string,
+            nullable: true,
+            description: "One benefit per line."
+          }
+        secondaryTabLabel:
+          {
+            type: string,
+            nullable: true,
+            description: "Defaults to \"Temple Details\" when unset."
+          }
+        media:
+          type: array
+          nullable: true
+          description: "Ordered image/video gallery for the detail-page carousel, in
+            addition to the primary image."
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              type: { type: string, enum: [ image, video ] }
+
+    ChadhavaOrder:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          {
+            type: string,
+            enum: [ PENDING, PROCESSING, COMPLETED, CANCELLED ]
+          }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        amountPaid: { type: number, nullable: true }
+        personCount: { type: integer }
+        persons:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              gotra: { type: string }
+        createdAt: { type: string, format: date-time }
+        chadhavaListing: { $ref: "#/components/schemas/ChadhavaListing" }
+
+    PujaPackage:
+      type: object
+      properties:
+        id: { type: string }
+        pujaListingId: { type: string }
+        type: { type: string, enum: [ SINGLE, COUPLE, FAMILY ] }
+        price: { type: number }
+        offerPrice: { type: number, nullable: true }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+
+    PujaListing:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        image: { type: string }
+        price: { type: number }
+        category: { type: string }
+        templeName: { type: string, nullable: true }
+        templeLocation: { type: string, nullable: true }
+        significance: { type: string, nullable: true }
+        benefits:
+          {
+            type: string,
+            nullable: true,
+            description: "One benefit per line."
+          }
+        secondaryTabLabel:
+          {
+            type: string,
+            nullable: true,
+            description: "Defaults to \"Temple Details\" when unset."
+          }
+        media:
+          type: array
+          nullable: true
+          description: "Ordered image/video gallery for the detail-page carousel, in
+            addition to the primary image."
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              type: { type: string, enum: [ image, video ] }
+        packages:
+          type: array
+          items: { $ref: "#/components/schemas/PujaPackage" }
+
+    PujaOrder:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          {
+            type: string,
+            enum: [ PENDING, PROCESSING, COMPLETED, CANCELLED ]
+          }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        amountPaid: { type: number, nullable: true }
+        createdAt: { type: string, format: date-time }
+        pujaListing: { $ref: "#/components/schemas/PujaListing" }
+        pujaPackage: { $ref: "#/components/schemas/PujaPackage" }
+
+    KundliListing:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        delivery: { type: string }
+        image: { type: string }
+        price: { type: number }
+        offerPrice: { type: number, nullable: true }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        significance: { type: string, nullable: true }
+        benefits:
+          {
+            type: string,
+            nullable: true,
+            description: "One benefit per line."
+          }
+        secondaryTabLabel:
+          {
+            type: string,
+            nullable: true,
+            description: "Defaults to \"Details\" when unset."
+          }
+        media:
+          type: array
+          nullable: true
+          description: "Ordered image/video gallery for the detail-page carousel, in
+            addition to the primary image."
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              type: { type: string, enum: [ image, video ] }
+
+    KundliOrder:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                PENDING,
+                SHARED_WITH_PANDIT,
+                DISPATCHED,
+                COMPLETED,
+                CANCELLED
+              ]
+          }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        createdAt: { type: string, format: date-time }
+        kundliListing: { $ref: "#/components/schemas/KundliListing" }
+
+    Astrologer:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        bio: { type: string }
+        image: { type: string }
+        rating: { type: number }
+        specialties: { type: string, description: "Comma-separated." }
+        price30: { type: number }
+        offerPrice30: { type: number, nullable: true }
+        price60: { type: number }
+        offerPrice60: { type: number, nullable: true }
+
+    JyotishCategory:
+      type: object
+      description: "Admin-managed consultation category — drives the price
+        shown/charged on the single Jyotish booking form together with the
+        visitor's chosen session duration (astrologer/calendar date/time are not
+        selected by the visitor; they are assigned by admin after payment). Each
+        category has its own rate per duration tier, e.g. Kundli Reading might
+        be ₹500/₹1000/₹1500 for Half Hour/1 Hour/1.5 Hours while another
+        category charges differently."
+      properties:
+        id: { type: string }
+        name:
+          {
+            type: string,
+            description: "e.g. Kundli Reading, Vastu Consultation, Numerology. Must match
+              ConsultationBooking.category exactly."
+          }
+        price30: { type: number, description: "Half Hour (30 min) price." }
+        offerPrice30: { type: number, nullable: true }
+        price60: { type: number, description: "1 Hour (60 min) price." }
+        offerPrice60: { type: number, nullable: true }
+        price90: { type: number, description: "1.5 Hours (90 min) price." }
+        offerPrice90: { type: number, nullable: true }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        active: { type: boolean }
+
+    ConsultationBooking:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        dob: { type: string, format: date-time, nullable: true }
+        timeOfBirth: { type: string, nullable: true }
+        placeOfBirth: { type: string, nullable: true }
+        category:
+          {
+            type: string,
+            description: "Must match an active JyotishCategory.name — the life-area
+              classification, and one half of what determines price."
+          }
+        comment:
+          {
+            type: string,
+            nullable: true,
+            description: "Free-text description of the problem/question."
+          }
+        durationMins:
+          {
+            type: integer,
+            nullable: true,
+            enum: [ 30, 60, 90 ],
+            description: "Session length the visitor picked — the other half of what
+              determines price, via the matching JyotishCategory.price{30,60,90}
+              tier."
+          }
+        slotTime:
+          {
+            type: string,
+            format: date-time,
+            nullable: true,
+            description: "The actual calendar appointment time — not collected on the public
+              form; admin assigns it after payment (separate from durationMins,
+              which the visitor does pick)."
+          }
+        status:
+          {
+            type: string,
+            enum: [ PENDING, CONFIRMED, COMPLETED, CANCELLED ]
+          }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        createdAt: { type: string, format: date-time }
+        astrologer:
+          {
+            $ref: "#/components/schemas/Astrologer",
+            nullable: true,
+            description: "Null until admin assigns an astrologer."
+          }
+
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category:
+          {
+            type: string,
+            description: "e.g. Bracelets, Rudraksha, Gemstones."
+          }
+        price: { type: number }
+        offerPrice: { type: number, nullable: true }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        image: { type: string }
+        description: { type: string }
+        isBestSeller: { type: boolean }
+        planet:
+          {
+            type: string,
+            nullable: true,
+            description: "Associated planet, e.g. Rahu, Ketu."
+          }
+        purpose:
+          {
+            type: string,
+            nullable: true,
+            description: "Shop-by-purpose tag, e.g. Wealth, Health."
+          }
+        rating: { type: number, nullable: true }
+        reviewsCount: { type: integer, nullable: true }
+        sourceName:
+          {
+            type: string,
+            nullable: true,
+            description: "e.g. \"Gemological Institute Certified\"."
+          }
+        sourceLocation:
+          {
+            type: string,
+            nullable: true,
+            description: "e.g. \"Sourced from Nepal Himalayas\"."
+          }
+        significance:
+          {
+            type: string,
+            nullable: true,
+            description: "Certification / origin / authenticity details."
+          }
+        benefits:
+          {
+            type: string,
+            nullable: true,
+            description: "One benefit per line."
+          }
+        secondaryTabLabel:
+          {
+            type: string,
+            nullable: true,
+            description: "Defaults to \"Source & Certification\" when unset."
+          }
+        media:
+          type: array
+          nullable: true
+          description: "Ordered image/video gallery for the detail-page carousel, in
+            addition to the primary image."
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              type: { type: string, enum: [ image, video ] }
+        specification:
+          {
+            type: string,
+            nullable: true,
+            description: "One spec per line, e.g. \"Weight: 5g\" — rendered as a bullet
+              list."
+          }
+        howToWear:
+          {
+            type: string,
+            nullable: true,
+            description: "Freeform usage/wearing instructions paragraph."
+          }
+
+    ProductOrder:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          {
+            type: string,
+            enum: [ PENDING, PROCESSING, COMPLETED, CANCELLED ]
+          }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        quantity: { type: integer }
+        carat: { type: number, nullable: true }
+        totalAmount: { type: number }
+        shippingAddress: { type: string }
+        createdAt: { type: string, format: date-time }
+        product: { $ref: "#/components/schemas/Product" }
+
+    Address:
+      type: object
+      properties:
+        id: { type: string }
+        label:
+          {
+            type: string,
+            nullable: true,
+            description: "Optional nickname, e.g. \"Home\", \"Work\"."
+          }
+        fullAddress: { type: string }
+        isDefault: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    RazorpayOrder:
+      type: object
+      nullable: true
+      properties:
+        id:
+          {
+            type: string,
+            description: "Razorpay order_id — pass to Checkout."
+          }
+        amount:
+          {
+            type: integer,
+            description: "In paise (smallest currency unit)."
+          }
+        currency: { type: string, example: INR }
+        key:
+          {
+            type: string,
+            description: "Razorpay key_id — pass to Checkout."
+          }
+
+    MyOrderEntry:
+      type: object
+      properties:
+        type:
+          {
+            type: string,
+            enum: [ CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE, YATRA ]
+          }
+        id: { type: string }
+        label: { type: string }
+        amount: { type: number, nullable: true }
+        status: { type: string }
+        paymentStatus: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        targetId:
+          {
+            type: string,
+            nullable: true,
+            description: "id of the listing/product/astrologer this order is for."
+          }
+
+    YatraBooking:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        contactNumber: { type: string }
+        cityOfDeparture: { type: string }
+        yatraDestination:
+          {
+            type: string,
+            description: "NOTE: the request field is `destination`, but it comes back as
+              `yatraDestination`."
+          }
+        totalTravelers: { type: integer }
+        travelDate: { type: string, format: date }
+        comment: { type: string, nullable: true }
+        status: { type: string, enum: [ PENDING, CONFIRMED, CANCELLED ] }
+        createdAt: { type: string, format: date-time }
+
+    GeoTagPhoto:
+      type: object
+      properties:
+        id: { type: string }
+        imageUrl: { type: string }
+        latitude: { type: number, nullable: true }
+        longitude: { type: number, nullable: true }
+        templeName:
+          {
+            type: string,
+            nullable: true,
+            description: "Final temple name — either the visitor's entry or the
+              auto-detected suggestion."
+          }
+        suggestedTempleName:
+          {
+            type: string,
+            nullable: true,
+            description: "Server-derived nearest-temple guess from latitude/longitude,
+              independent of what the visitor entered."
+          }
+        status:
+          {
+            type: string,
+            enum: [ PENDING, APPROVED, REJECTED ],
+            description: "Points are only awarded once an admin sets this to APPROVED."
+          }
+        createdAt: { type: string, format: date-time }
+
+    PointsTransaction:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        amount:
+          {
+            type: integer,
+            description: "Positive = earned, negative = spent."
+          }
+        reason: { type: string }
+        geoTagId: { type: string, nullable: true }
+        redemptionId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    RedemptionRequest:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        slabId: { type: string }
+        pointsSpent: { type: integer }
+        status: { type: string, enum: [ PENDING, FULFILLED, REJECTED ] }
+        shippingAddress: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        slab:
+          type: object
+          properties:
+            id: { type: string }
+            pointsRequired: { type: integer }
+            product:
+              type: object
+              properties:
+                id: { type: string }
+                name: { type: string }
+                image: { type: string }
+
+    Review:
+      type: object
+      properties:
+        id: { type: string }
+        customerName: { type: string }
+        orderType:
+          {
+            type: string,
+            enum: [ CHADHAVA, EPUJA, KUNDLI, JYOTISH, ECOMMERCE ]
+          }
+        orderId: { type: string }
+        targetId: { type: string }
+        targetTitle: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        media:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              type: { type: string, enum: [ image, video ] }
+        status: { type: string, enum: [ PENDING, APPROVED, REJECTED ] }
+        createdAt: { type: string, format: date-time }
+
+    HowItWorksStep:
+      type: object
+      properties:
+        id: { type: string }
+        page: { type: string }
+        title: { type: string }
+        description: { type: string }
+        order: { type: integer }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    VrMedia:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        mediaType:
+          {
+            type: string,
+            enum: [ VR_360_IMAGE, VR_360_VIDEO, HD_VIDEO ]
+          }
+        mediaUrl: { type: string }
+        thumbnailUrl: { type: string, nullable: true }
+        active: { type: boolean }
+        viewsCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AboutUsData:
+      type: object
+      description: "Served from a JSON file with a hardcoded default fallback, so this
+        endpoint never 404s even before an admin configures it."
+      properties:
+        heroTitle: { type: string }
+        heroSubtitle: { type: string }
+        heroImage: { type: string }
+        storyTitle: { type: string }
+        storyParagraph1: { type: string }
+        storyParagraph2: { type: string }
+        storyParagraph3: { type: string }
+        missionTitle: { type: string }
+        missionDescription: { type: string }
+        visionTitle: { type: string }
+        visionDescription: { type: string }
+        stats:
+          type: array
+          items:
+            {
+              type: object,
+              properties:
+                {
+                  label: { type: string },
+                  value: { type: string },
+                  icon: { type: string }
+                }
+            }
+        pillars:
+          type: array
+          items:
+            {
+              type: object,
+              properties:
+                {
+                  title: { type: string },
+                  description: { type: string },
+                  icon: { type: string }
+                }
+            }
+        team:
+          type: array
+          items:
+            {
+              type: object,
+              properties:
+                {
+                  name: { type: string },
+                  role: { type: string },
+                  bio: { type: string },
+                  image: { type: string }
+                }
+            }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    DailyDarshan:
+      type: object
+      properties:
+        id: { type: string }
+        dayOfWeek:
+          {
+            type: integer,
+            minimum: 0,
+            maximum: 6,
+            description: "0=Sunday..6=Saturday."
+          }
+        deityName: { type: string }
+        image: { type: string }
+        bhajanTitle: { type: string, nullable: true }
+        bhajanUrl: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ConsultationTimeSlot:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        startTime: { type: string, description: "HH:mm, 24-hour." }
+        order: { type: integer }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    ShopPurpose:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        image: { type: string }
+        order: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Offer:
+      type: object
+      description: "A promo/campaign landing page (e.g. a festival special) with its
+        own slug, pricing, and order flow — separate from the regular catalog
+        listings."
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        subtitle: { type: string, nullable: true }
+        headerImage: { type: string }
+        details: { type: string, description: "HTML content." }
+        pricingType: { type: string, enum: [ FLAT, PER_PERSON, PACKAGE ] }
+        salePrice: { type: number }
+        offerPrice: { type: number, nullable: true }
+        packages:
+          type: array
+          nullable: true
+          description: "Only present when pricingType is PACKAGE."
+          items:
+            {
+              type: object,
+              properties:
+                {
+                  name: { type: string },
+                  salePrice: { type: number },
+                  offerPrice: { type: number, nullable: true }
+                }
+            }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        active: { type: boolean }
+        visitsCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    OfferOrder:
+      type: object
+      properties:
+        id: { type: string }
+        offerId: { type: string }
+        userId:
+          {
+            type: string,
+            nullable: true,
+            description: "Null for guest checkout."
+          }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        comment: { type: string, nullable: true }
+        packageName:
+          {
+            type: string,
+            nullable: true,
+            description: "Set when the offer's pricingType is PACKAGE."
+          }
+        personCount: { type: integer }
+        devotees:
+          type: array
+          nullable: true
+          description: "Set when the offer's pricingType is PER_PERSON."
+          items:
+            {
+              type: object,
+              properties: { name: { type: string }, gotra: { type: string } }
+            }
+        amountPaid: { type: number }
+        gstPercentage: { type: number }
+        gstInclusive: { type: boolean }
+        paymentStatus: { type: string, enum: [ PENDING, PAID, FAILED ] }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        offer: { $ref: "#/components/schemas/Offer" }
+
+    Refund:
+      type: object
+      properties:
+        id: { type: string }
+        invoiceId: { type: string }
+        amount: { type: number }
+        reason: { type: string, nullable: true }
+        status: { type: string, enum: [ INITIATED, PROCESSED ] }
+        processedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        invoiceNumber: { type: string }
+        orderType:
+          {
+            type: string,
+            enum: [ CHADHAVA, EPUJA, JYOTISH, KUNDLI, ECOMMERCE, YATRA ]
+          }
+        orderId: { type: string }
+        userId: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string, nullable: true }
+        itemLabel: { type: string }
+        subtotal: { type: number }
+        gstPercentage: { type: number }
+        gstAmount: { type: number }
+        total: { type: number }
+        status: { type: string, enum: [ PAID, CANCELLED ] }
+        issuedAt: { type: string, format: date-time }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+        refund:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/Refund" },
+                { type: "null" }
+              ]
+          }
+
+    OrderTrailEntry:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        note: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        actorName: { type: string }
+        actorRole: { type: string, enum: [ ADMIN, SYSTEM, USER ] }
+        ip:
+          {
+            type: string,
+            nullable: true,
+            description: "Only present when the caller is an admin — omitted for regular
+              customers viewing their own trail."
+          }
+        userAgent:
+          {
+            type: string,
+            nullable: true,
+            description: "Only present when the caller is an admin — omitted for regular
+              customers viewing their own trail."
+          }
