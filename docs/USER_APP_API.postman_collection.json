@@ -379,7 +379,7 @@
           }
         },
         {
-          "name": "Send OTP (Email / SMS)",
+          "name": "Send OTP (Email)",
           "request": {
             "method": "POST",
             "auth": {
@@ -408,7 +408,7 @@
           }
         },
         {
-          "name": "Verify OTP (Email / SMS)",
+          "name": "Verify OTP (Email)",
           "request": {
             "method": "POST",
             "auth": {
