@@ -166,15 +166,22 @@ const Register = ({ mode }: { mode: SystemMode }) => {
       }
 
       if (json?.requireVerification) {
-        // Automatically send the registration OTP to mobile
-        await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contact: data.phone, type: 'SMS', purpose: 'REGISTER' })
-        }).catch(() => null)
+        // Automatically send the registration OTP to both mobile and email
+        await Promise.all([
+          fetch('/api/auth/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: data.phone, type: 'SMS', purpose: 'REGISTER' })
+          }).catch(() => null),
+          fetch('/api/auth/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: data.email, type: 'EMAIL', purpose: 'REGISTER' })
+          }).catch(() => null)
+        ])
 
-        // Redirect to OTP verification page with the phone in query string
-        router.replace(getLocalizedUrl(`/verify-otp?phone=${encodeURIComponent(data.phone)}`, locale as Locale))
+        // Redirect to OTP verification page with both email and phone in query string
+        router.replace(getLocalizedUrl(`/verify-otp?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(data.phone)}`, locale as Locale))
       } else {
         // Fallback for non-verification mode
         const signInRes = await signIn('credentials', { email: data.email, password: data.password, redirect: false })

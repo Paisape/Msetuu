@@ -12,10 +12,7 @@ import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
 import { Controller, useForm } from 'react-hook-form'
-import { valibotResolver } from '@hookform/resolvers/valibot'
-import { object, string, pipe, nonEmpty, length } from 'valibot'
 import type { SubmitHandler } from 'react-hook-form'
-import type { InferInput } from 'valibot'
 
 import type { SystemMode } from '@core/types'
 import type { Locale } from '@configs/i18n'
@@ -27,11 +24,10 @@ import CustomTextField from '@core/components/mui/TextField'
 import { getLocalizedUrl } from '@/utils/i18n'
 
 
-type FormData = InferInput<typeof schema>
-
-const schema = object({
-  otp: pipe(string(), nonEmpty('This field is required'), length(6, 'Must be exactly 6 characters'))
-})
+type FormData = {
+  emailOtp?: string
+  phoneOtp?: string
+}
 
 const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
   const router = useRouter()
@@ -39,7 +35,6 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
   const phone = searchParams.get('phone') || ''
-  const contact = phone || email
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
@@ -50,8 +45,7 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
     handleSubmit,
     formState: { errors }
   } = useForm<FormData>({
-    resolver: valibotResolver(schema),
-    defaultValues: { otp: '' }
+    defaultValues: { emailOtp: '', phoneOtp: '' }
   })
 
   const onSubmit: SubmitHandler<FormData> = async data => {
@@ -60,18 +54,53 @@ const VerifyEmail = ({ mode }: { mode: SystemMode }) => {
     setSubmitting(true)
 
     try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact, otp: data.otp, purpose: 'REGISTER' })
-      })
+      const promises = []
+      
+      if (email) {
+        if (!data.emailOtp || data.emailOtp.length !== 6) {
+          setSubmitError('Please enter a valid 6-digit Email OTP.')
+          setSubmitting(false)
+          return
+        }
+        promises.push(
+          fetch('/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: email, otp: data.emailOtp, purpose: 'REGISTER' })
+          })
+        )
+      }
+      
+      if (phone) {
+        if (!data.phoneOtp || data.phoneOtp.length !== 6) {
+          setSubmitError('Please enter a valid 6-digit Mobile OTP.')
+          setSubmitting(false)
+          return
+        }
+        promises.push(
+          fetch('/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: phone, otp: data.phoneOtp, purpose: 'REGISTER' })
+          })
+        )
+      }
 
-      const json = await res.json().catch(() => null)
+      if (promises.length === 0) {
+        setSubmitError('No contact information provided to verify.')
+        setSubmitting(false)
+        return
+      }
 
-      if (!res.ok) {
-        setSubmitError(json?.error || 'Unable to verify account.')
-        
-return
+      const results = await Promise.all(promises)
+      
+      for (const res of results) {
+        if (!res.ok) {
+          const json = await res.json().catch(() => null)
+          setSubmitError(json?.error || 'Unable to verify account.')
+          setSubmitting(false)
+          return
+        }
       }
 
       setSubmitSuccess('Account verified successfully! Redirecting to login...')
@@ -95,28 +124,46 @@ return
           <div className='flex flex-col gap-1 mbe-6'>
             <Typography variant='h4'>Verify your account 🛡️</Typography>
             <Typography>
-              An activation code was sent to <span className='font-medium text-textPrimary'>{contact || 'your contact method'}</span>.
-              Please enter the 6-digit code below to continue.
+              Activation codes were sent to your registered contacts.
+              Please enter the 6-digit codes below to continue.
             </Typography>
           </div>
           {submitError && <Alert severity='error' className='mbe-6'>{submitError}</Alert>}
           {submitSuccess && <Alert severity='success' className='mbe-6'>{submitSuccess}</Alert>}
           <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
-            <Controller
-              name='otp'
-              control={control}
-              render={({ field }) => (
-                <CustomTextField
-                  {...field}
-                  autoFocus
-                  fullWidth
-                  label='Verification Code'
-                  placeholder='123456'
-                  {...(errors.otp && { error: true, helperText: errors.otp.message })}
-                />
-              )}
-            />
-            <Button fullWidth variant='contained' type='submit' disabled={submitting || !contact}>
+            
+            {email && (
+              <Controller
+                name='emailOtp'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    autoFocus
+                    fullWidth
+                    label={`Email Code (${email})`}
+                    placeholder='123456'
+                  />
+                )}
+              />
+            )}
+            
+            {phone && (
+              <Controller
+                name='phoneOtp'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    label={`Mobile Code (${phone})`}
+                    placeholder='123456'
+                  />
+                )}
+              />
+            )}
+
+            <Button fullWidth variant='contained' type='submit' disabled={submitting || (!email && !phone)}>
               {submitting ? <CircularProgress size={22} /> : 'Verify Account'}
             </Button>
             <div className='flex justify-center items-center flex-wrap gap-2'>
