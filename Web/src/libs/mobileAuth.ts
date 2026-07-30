@@ -4,7 +4,8 @@ import { encode } from 'next-auth/jwt'
 
 // Short-lived: if an access token is ever stolen (e.g. from an insecure app-side cache), it's
 // only useful for a limited window before it stops working on its own.
-export const ACCESS_TOKEN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days (TEMPORARY FOR TESTING)
+const expiryDays = process.env.TOKEN_EXPIRY_DAYS ? parseInt(process.env.TOKEN_EXPIRY_DAYS, 10) : 30
+export const ACCESS_TOKEN_MAX_AGE_SECONDS = expiryDays * 24 * 60 * 60
 
 // Long-lived, but device-bound and revocable (see RefreshToken model) — this is what actually
 // keeps the user signed in across app opens. Rotated on every use (see /api/mobile/refresh).
