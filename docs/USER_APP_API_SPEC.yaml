@@ -84,6 +84,95 @@ tags:
   - name: Contact
 
 paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Registration successful
+        '400':
+          description: Validation error
+  /api/auth/login-precheck:
+    post:
+      summary: Precheck login credentials
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Precheck successful
+        '401':
+          description: Invalid credentials
+  /api/auth/forgot-password:
+    post:
+      summary: Request a password reset OTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: OTP sent
+  /api/auth/reset-password:
+    post:
+      summary: Reset password using OTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password reset successful
   /api/auth/send-otp:
     post:
       summary: Send OTP for Passwordless Auth
@@ -135,7 +224,29 @@ paths:
                   example: 'iOS'
       responses:
         '200':
-          description: Verified successfully (returns mobile tokens)
+          description: Verified successfully (returns mobile tokens and user info)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  isNewUser:
+                    type: boolean
+                    description: True if the user was just registered via passwordless OTP
+                  accessToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                  refreshToken:
+                    type: string
+                  refreshExpiresIn:
+                    type: integer
+                  user:
+                    $ref: '#/components/schemas/AuthUser'
   /mobile/login:
     post:
       tags: [ Auth ]

@@ -77,7 +77,10 @@ export async function POST(req: Request) {
     }
 
     // --- LOGIN FLOW ---
+    let isNewUser = false
+
     if (!user) {
+      isNewUser = true
       // Auto-registration for passwordless login
       const randomPassword = require('crypto').randomBytes(32).toString('hex')
       const hashedPassword = await bcrypt.hash(randomPassword, 12)
@@ -129,6 +132,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: 'Verified successfully.',
+      isNewUser,
       accessToken,
       expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS,
       refreshToken,
