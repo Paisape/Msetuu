@@ -10,9 +10,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
-  eslint: {
-    ignoreDuringBuilds: true
-  },
 
   // These three entry points are served via rewrite (not redirect) so the browser's address
   // bar stays exactly where the visitor typed/clicked — localhost:3000 shows the landing page

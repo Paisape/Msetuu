@@ -3,6 +3,8 @@ import Link from 'next/link'
 
 import type { AboutUsData } from '@/app/api/content/about/route'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'About Us | Mandirsetuu - Connecting Devotees to the Divine',
   description: 'Learn about Mandirsetuu, our mission, verified Vedic priests, authentic temple e-pujas, VR darshans, and certified Jyotish astrology services.'

@@ -65,9 +65,9 @@ export async function PUT(req: Request) {
       
       const trimmedPhone = phone ? phone.trim() : null
       // Check if phone is already taken by someone else
-      if (trimmedPhone && trimmedPhone !== user.phone) {
+      if (trimmedPhone) {
         const existing = await prisma.user.findFirst({ where: { phone: trimmedPhone } })
-        if (existing) {
+        if (existing && existing.id !== user.id) {
           return NextResponse.json({ error: 'This phone number is already in use.' }, { status: 400 })
         }
       }
