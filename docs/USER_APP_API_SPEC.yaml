@@ -84,6 +84,104 @@ tags:
   - name: Contact
 
 paths:
+  /api/profile:
+    get:
+      summary: Get the logged-in user's profile
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+    put:
+      summary: Update the logged-in user's personal details
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+      responses:
+        '200':
+          description: Profile updated successfully
+  /api/addresses:
+    get:
+      summary: Get the logged-in user's address book
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+    post:
+      summary: Add a new address
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ fullAddress ]
+              properties:
+                label: { type: string }
+                fullAddress: { type: string }
+                isDefault: { type: boolean }
+      responses:
+        '201':
+          description: Address created successfully
+  /api/addresses/{id}:
+    patch:
+      summary: Edit an existing address
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+                fullAddress: { type: string }
+                isDefault: { type: boolean }
+      responses:
+        '200':
+          description: Address updated successfully
+    delete:
+      summary: Delete an address
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Address deleted successfully
   /api/auth/register:
     post:
       summary: Register a new user
