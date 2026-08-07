@@ -78,9 +78,25 @@ const UserDropdown = () => {
       await signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
     } catch (error) {
       console.error(error)
+    }
+  }
 
-      // Show above error in a toast like following
-      // toastService.error((err as Error).message)
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you absolutely sure you want to permanently delete your account? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      const res = await fetch('/api/auth/delete-account', { method: 'DELETE' })
+      if (!res.ok) {
+        throw new Error('Failed to delete account')
+      }
+      
+      // Sign out after deletion
+      await signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
+    } catch (error) {
+      console.error(error)
+      alert("Error deleting account. Please try again.")
     }
   }
 
@@ -147,6 +163,20 @@ const UserDropdown = () => {
                       sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
                     >
                       Logout
+                    </Button>
+                  </div>
+                  <Divider className='mlb-1' />
+                  <div className='flex items-center plb-2 pli-3'>
+                    <Button
+                      fullWidth
+                      variant='outlined'
+                      color='error'
+                      size='small'
+                      endIcon={<i className='tabler-trash' />}
+                      onClick={handleDeleteAccount}
+                      sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
+                    >
+                      Delete Account
                     </Button>
                   </div>
                 </MenuList>
