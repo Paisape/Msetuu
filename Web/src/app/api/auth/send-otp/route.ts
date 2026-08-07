@@ -28,8 +28,9 @@ export async function POST(req: Request) {
     const rateLimited = enforceRateLimit(req, 'send-otp', { limit: 5, windowMs: 15 * 60 * 1000, identifier: contact })
     if (rateLimited) return rateLimited
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    // Generate 6-digit OTP (or fixed OTP for Google Play Store test account)
+    const isTestAccount = contact === 'dev@mandirsetuu.com'
+    const otp = isTestAccount ? '223344' : Math.floor(100000 + Math.random() * 900000).toString()
     const otpHash = await bcrypt.hash(otp, 12)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
@@ -49,6 +50,10 @@ export async function POST(req: Request) {
     })
 
     if (type === 'EMAIL') {
+      if (isTestAccount) {
+        return NextResponse.json({ success: true, message: 'OTP simulated successfully for test account.' }, { status: 200 })
+      }
+
       let subject, html
       if (purpose === 'REGISTER') {
         const user = await prisma.user.findUnique({ where: { email: contact } })
