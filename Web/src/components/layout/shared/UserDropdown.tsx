@@ -145,13 +145,23 @@ const UserDropdown = () => {
                     </div>
                   </div>
                   <Divider className='mlb-1' />
-                  <MenuItem
-                    className='mli-2 gap-3'
-                    onClick={e => handleDropdownClose(e, '/apps/mandir-setu/config')}
-                  >
-                    <i className='tabler-settings' />
-                    <Typography color='text.primary'>Settings</Typography>
-                  </MenuItem>
+                  {(session?.user as any)?.role === 'ADMIN' ? (
+                    <MenuItem
+                      className='mli-2 gap-3'
+                      onClick={e => handleDropdownClose(e, '/apps/mandir-setu/config')}
+                    >
+                      <i className='tabler-settings' />
+                      <Typography color='text.primary'>Settings</Typography>
+                    </MenuItem>
+                  ) : (
+                    <MenuItem
+                      className='mli-2 gap-3'
+                      onClick={e => handleDropdownClose(e, '/front-pages/my-orders')}
+                    >
+                      <i className='tabler-layout-dashboard' />
+                      <Typography color='text.primary'>Dashboard</Typography>
+                    </MenuItem>
+                  )}
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
                       fullWidth
