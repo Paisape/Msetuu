@@ -11,7 +11,7 @@ import styled from '@emotion/styled'
 import type { VerticalNavContextProps } from '@menu/contexts/verticalNavContext'
 
 // Component Imports
-import VuexyLogo from '@core/svg/Logo'
+// (Removed VuexyLogo import)
 
 // Config Imports
 import themeConfig from '@configs/themeConfig'
@@ -71,7 +71,7 @@ const Logo = ({ color, isStatic = false }: { color?: CSSProperties['color']; isS
 
   return (
     <div className='flex items-center'>
-      <VuexyLogo className='text-2xl text-primary' />
+      <img src='/images/logo-mandirsetuu.png' alt='Logo' className='h-8 w-auto object-contain' />
       <LogoText
         color={color}
         ref={logoTextRef}
@@ -80,7 +80,7 @@ const Logo = ({ color, isStatic = false }: { color?: CSSProperties['color']; isS
         transitionDuration={transitionDuration}
         isBreakpointReached={isStatic ? true : isBreakpointReached}
       >
-        {themeConfig.templateName}
+        {/* {themeConfig.templateName} */}
       </LogoText>
     </div>
   )
