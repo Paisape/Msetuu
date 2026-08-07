@@ -37,13 +37,21 @@ export const authOptions: NextAuthOptions = {
         try {
           if (isPasswordless === 'true') {
             // ** Passwordless OTP Login API Call
-            const res = await fetch(`${process.env.API_URL}/auth/verify-otp`, {
+            const apiUrl = process.env.INTERNAL_API_URL || process.env.API_URL || 'http://127.0.0.1:3000/api'
+            const res = await fetch(`${apiUrl}/auth/verify-otp`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ contact: email, otp, purpose: 'LOGIN' })
             })
+
+            const contentType = res.headers.get('content-type')
+            if (!contentType || !contentType.includes('application/json')) {
+              const text = await res.text()
+              console.error(`[NextAuth verify-otp] Expected JSON, got HTTP ${res.status}:`, text.substring(0, 200))
+              throw new Error(JSON.stringify({ message: ['Server connection error. Please try again.'] }))
+            }
 
             const data = await res.json()
 
@@ -58,13 +66,21 @@ export const authOptions: NextAuthOptions = {
             return null
           } else {
             // ** Standard Password Login API Call to match the user credentials and receive user data in response
-            const res = await fetch(`${process.env.API_URL}/login`, {
+            const apiUrl = process.env.INTERNAL_API_URL || process.env.API_URL || 'http://127.0.0.1:3000/api'
+            const res = await fetch(`${apiUrl}/login`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ email, password, otp })
             })
+
+          const contentType = res.headers.get('content-type')
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text()
+            console.error(`[NextAuth login] Expected JSON, got HTTP ${res.status}:`, text.substring(0, 200))
+            throw new Error(JSON.stringify({ message: ['Server connection error. Please try again.'] }))
+          }
 
           const data = await res.json()
 

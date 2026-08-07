@@ -262,7 +262,8 @@ const Login = ({ mode }: { mode: SystemMode }) => {
         try {
           error = JSON.parse(res.error)
         } catch {
-          error = { message: [res.error] }
+          console.error("Login error parse failed. Raw error:", res.error)
+          error = { message: ['Authentication failed due to a server connection issue. Please try again.'] }
         }
 
         setErrorState(error)

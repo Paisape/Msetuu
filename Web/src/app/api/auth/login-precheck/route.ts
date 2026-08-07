@@ -63,7 +63,16 @@ export async function POST(req: Request) {
 
         // Send the email
         const { subject, html } = adminLoginOtpEmail({ otp })
-        sendEmail({ to: user.email!, subject, html }).catch(console.error)
+        try {
+          const emailResult = await sendEmail({ to: user.email!, subject, html })
+          if (!emailResult.sent) {
+            console.error('SMTP Email Error:', emailResult.reason)
+            return NextResponse.json({ error: 'Failed to send OTP email. Please check SMTP configuration.' }, { status: 500 })
+          }
+        } catch (emailError: any) {
+          console.error('SMTP Email Error:', emailError)
+          return NextResponse.json({ error: 'Failed to send OTP email. Please check SMTP configuration.' }, { status: 500 })
+        }
 
         await logActivity({
           userId: user.id,
