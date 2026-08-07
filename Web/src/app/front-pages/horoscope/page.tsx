@@ -475,7 +475,7 @@ export default function HoroscopePage() {
                   <Typography variant='h6' className='font-bold mb-1' style={{ color: '#047857' }}>
                     📅 Hindu Panchang Today
                   </Typography>
-                  <Typography variant='body2' className='mb-4 font-semibold' style={{ color: '#10b981' }}>
+                  <Typography variant='body2' className='mb-4 font-semibold' style={{ color: '#006241' }}>
                     {panchangData.date}
                   </Typography>
                   <div className='flex flex-col gap-3'>
@@ -491,7 +491,7 @@ export default function HoroscopePage() {
                         background: item.alert ? 'rgba(220,38,38,0.04)' : 'rgba(249,115,22,0.04)',
                         border: `1px solid ${item.alert ? 'rgba(220,38,38,0.1)' : 'rgba(249,115,22,0.1)'}`
                       }}>
-                        <i className={`${item.icon} text-base mt-0.5`} style={{ color: item.alert ? '#dc2626' : '#10b981' }} />
+                        <i className={`${item.icon} text-base mt-0.5`} style={{ color: item.alert ? '#dc2626' : '#006241' }} />
                         <div>
                           <span className='text-xs block' style={{ color: '#6b7280' }}>{item.label}</span>
                           <span className='text-sm font-semibold' style={{ color: item.alert ? '#dc2626' : '#0f172a' }}>{item.val}</span>

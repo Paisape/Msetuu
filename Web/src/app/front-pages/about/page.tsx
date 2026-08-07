@@ -73,7 +73,7 @@ async function getAboutData(): Promise<AboutUsData> {
 // FrontMenu) via front-pages/layout.tsx — it previously sat under the (blank-layout-pages)
 // group, which is chrome-free by design for auth/error pages, so About rendered with no
 // header/footer at all. Restyled from the old dark-slate/amber palette to the site's actual
-// brand (emerald green #006241/#10b981, light background) to match every other page.
+// brand (emerald green #006241/#006241, light background) to match every other page.
 export default async function AboutUsPage() {
   const content = await getAboutData()
 
@@ -101,7 +101,7 @@ export default async function AboutUsPage() {
             <Link
               href='/front-pages/epuja'
               className='px-8 py-3.5 rounded-xl font-bold text-white shadow-lg hover:-translate-y-0.5 transition-all duration-300'
-              style={{ background: 'linear-gradient(135deg,#10b981,#34d399)' }}
+              style={{ background: 'linear-gradient(135deg,#006241,#34d399)' }}
             >
               Explore E-Pujas
             </Link>
@@ -234,7 +234,7 @@ export default async function AboutUsPage() {
                 </div>
                 <div className='p-6 space-y-1.5'>
                   <h3 className='text-xl font-bold text-slate-800'>{member.name}</h3>
-                  <div className='text-xs font-semibold uppercase tracking-wider' style={{ color: '#10b981' }}>{member.role}</div>
+                  <div className='text-xs font-semibold uppercase tracking-wider' style={{ color: '#006241' }}>{member.role}</div>
                   <p className='text-slate-500 text-sm pt-2 leading-relaxed'>{member.bio}</p>
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default async function AboutUsPage() {
       </section>
 
       {/* Final CTA */}
-      <section className='py-20 text-center' style={{ background: 'linear-gradient(135deg,#006241 0%,#10b981 100%)' }}>
+      <section className='py-20 text-center' style={{ background: 'linear-gradient(135deg,#006241 0%,#006241 100%)' }}>
         <div className='max-w-3xl mx-auto px-6'>
           <span className='text-4xl block mb-4'>🙏</span>
           <h2 className='text-3xl sm:text-4xl font-bold text-white mb-6'>Begin Your Sacred Journey with Mandirsetuu</h2>

@@ -57,7 +57,7 @@ const FloatingAudioPlayer = () => {
                 onClick={togglePlay}
                 size='medium'
                 sx={{
-                  backgroundColor: '#10b981',
+                  backgroundColor: '#006241',
                   color: '#ffffff',
                   '&:hover': { backgroundColor: '#059669' },
                   width: 40,
@@ -99,7 +99,7 @@ const FloatingAudioPlayer = () => {
               max={duration || 100}
               onChange={handleSliderChange}
               sx={{
-                color: '#10b981',
+                color: '#006241',
                 padding: '4px 0',
                 '& .MuiSlider-thumb': {
                   width: 8,

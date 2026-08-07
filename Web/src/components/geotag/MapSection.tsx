@@ -43,7 +43,7 @@ const MapSection = () => {
   if (loading) {
     return (
       <div className='flex justify-center py-16'>
-        <CircularProgress style={{ color: '#10b981' }} />
+        <CircularProgress style={{ color: '#006241' }} />
       </div>
     )
   }

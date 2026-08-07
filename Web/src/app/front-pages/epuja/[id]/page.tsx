@@ -170,7 +170,7 @@ const EpujaDetailPage = () => {
                     <Typography variant='subtitle2' className='font-bold' style={{ color: '#a7f3d0' }}>Key Benefits</Typography>
                     {benefitLines.slice(0, 4).map((benefit, idx) => (
                       <div key={idx} className='flex items-start gap-2'>
-                        <span style={{ color: '#10b981', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
+                        <span style={{ color: '#006241', fontWeight: 700, lineHeight: '1.4' }}>✓</span>
                         <Typography variant='body2' style={{ color: '#d1d5db' }}>{benefit}</Typography>
                       </div>
                     ))}

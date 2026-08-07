@@ -252,7 +252,7 @@ const EpujaPage = () => {
                       {item.description}
                     </Typography>
                     {singlePkg && (
-                      <Typography variant='subtitle2' className='font-semibold mb-4' style={{ color: '#10b981' }}>
+                      <Typography variant='subtitle2' className='font-semibold mb-4' style={{ color: '#006241' }}>
                         Starting from:{' '}
                         {hasOfferDiscount(singlePkg) && (
                           <span style={{ textDecoration: 'line-through', opacity: 0.55, marginRight: 4 }}>
@@ -346,7 +346,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' },
+                        '&:hover fieldset': { borderColor: '#006241' },
                         '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
@@ -370,7 +370,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -386,7 +386,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -402,7 +402,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   >
@@ -424,7 +424,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -441,7 +441,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -459,7 +459,7 @@ const EpujaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -484,7 +484,7 @@ const EpujaPage = () => {
                                 '& .MuiOutlinedInput-root': {
                                   color: '#0f172a',
                                   '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                                  '&:hover fieldset': { borderColor: '#10b981' }
+                                  '&:hover fieldset': { borderColor: '#006241' }
                                 }
                               }}
                             />
@@ -500,7 +500,7 @@ const EpujaPage = () => {
                                 '& .MuiOutlinedInput-root': {
                                   color: '#0f172a',
                                   '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                                  '&:hover fieldset': { borderColor: '#10b981' }
+                                  '&:hover fieldset': { borderColor: '#006241' }
                                 }
                               }}
                             />

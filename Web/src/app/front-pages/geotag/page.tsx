@@ -305,7 +305,7 @@ const TagSection = () => {
               }
             />
             {pointsPerTag != null && (
-              <Typography variant='caption' className='block mt-2' style={{ color: '#10b981' }}>
+              <Typography variant='caption' className='block mt-2' style={{ color: '#006241' }}>
                 Earn {pointsPerTag} points once your tag is approved by our team!
               </Typography>
             )}
@@ -370,7 +370,7 @@ const GeotagPage = () => {
           onChange={(_, v) => setTab(v)}
           centered
           className='mb-8'
-          TabIndicatorProps={{ style: { backgroundColor: '#10b981' } }}
+          TabIndicatorProps={{ style: { backgroundColor: '#006241' } }}
         >
           <Tab label='Tag Yourself' value='tag' />
           <Tab label='My Rewards' value='rewards' />

@@ -88,7 +88,7 @@ export default function HowItWorksSection({ title = 'How It Works', subtitle = '
                     fontWeight: 700,
                     fontSize: '18px',
                     color: '#fff',
-                    background: 'linear-gradient(135deg, #10b981, #006241)'
+                    background: 'linear-gradient(135deg, #006241, #006241)'
                   }}
                 >
                   {idx + 1}
@@ -119,7 +119,7 @@ export default function HowItWorksSection({ title = 'How It Works', subtitle = '
                   fontWeight: 700,
                   fontSize: '14px',
                   color: '#fff',
-                  background: 'linear-gradient(135deg, #10b981, #006241)'
+                  background: 'linear-gradient(135deg, #006241, #006241)'
                 }}
               >
                 {idx + 1}

@@ -7,6 +7,18 @@
 @plugin 'tailwindcss-logical';
 
 @theme {
+  --color-emerald-50: #ebf6ec;
+  --color-emerald-100: #cde6d2;
+  --color-emerald-200: #a1d1ac;
+  --color-emerald-300: #6cb87f;
+  --color-emerald-400: #3c9c57;
+  --color-emerald-500: #006241;
+  --color-emerald-600: #004d33;
+  --color-emerald-700: #003d29;
+  --color-emerald-800: #002c1e;
+  --color-emerald-900: #001f15;
+  --color-emerald-950: #00110b;
+
   --radius-none: 0px;
   --radius-xs: var(--mui-shape-customBorderRadius-xs);
   --radius-sm: var(--mui-shape-customBorderRadius-sm);
@@ -321,14 +333,14 @@ code {
 }
 
 .galaxy-glow-btn {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #34d399 100%) !important;
   color: white !important;
   box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35) !important;
   border-radius: 8px !important;
 }
 
 .galaxy-glow-btn:hover {
-  background: linear-gradient(135deg, #006241 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #006241 100%) !important;
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
   transform: translateY(-1px);
 }
@@ -377,7 +389,7 @@ body .galaxy-bg .galaxy-glow-btn.galaxy-glow-btn * {
 /* Outlined buttons — mint green text/border */
 body .galaxy-bg .MuiButton-outlined,
 body .galaxy-bg .MuiButton-outlined * {
-  color: #10b981 !important;
+  color: #006241 !important;
   border-color: rgba(16, 185, 129, 0.55) !important;
 }
 
@@ -447,7 +459,7 @@ body .galaxy-bg .MuiButton-text * {
 /* Hover labels — mint green */
 body .galaxy-bg .group:hover span,
 body .galaxy-bg .group:hover .MuiTypography-root {
-  color: #10b981 !important;
+  color: #006241 !important;
 }
 
 /* Ensure navbar texts and links are forced to dark slate in light theme */
@@ -462,21 +474,21 @@ body .galaxy-bg .group:hover .MuiTypography-root {
 /* Force all MUI Contained buttons on all pages to use the mint green theme */
 body .MuiButton-contained,
 body .MuiButton-containedPrimary {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #34d399 100%) !important;
   color: white !important;
   box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25) !important;
 }
 
 body .MuiButton-contained:hover,
 body .MuiButton-containedPrimary:hover {
-  background: linear-gradient(135deg, #006241 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #006241 0%, #006241 100%) !important;
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
 }
 
 /* Force all MUI Outlined buttons on all pages to use the mint green theme */
 body .MuiButton-outlined,
 body .MuiButton-outlinedPrimary {
-  color: #10b981 !important;
+  color: #006241 !important;
   border-color: rgba(16, 185, 129, 0.5) !important;
 }
 
@@ -488,7 +500,7 @@ body .MuiButton-outlinedPrimary:hover {
 
 /* Force standard buttons */
 body button[type="submit"] {
-  background-color: #10b981 !important;
+  background-color: #006241 !important;
   color: white !important;
 }
 

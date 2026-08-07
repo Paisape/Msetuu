@@ -44,7 +44,7 @@ const fieldSx = {
   '& .MuiOutlinedInput-root': {
     color: '#0f172a',
     '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-    '&:hover fieldset': { borderColor: '#10b981' },
+    '&:hover fieldset': { borderColor: '#006241' },
     '&.Mui-focused fieldset': { borderColor: '#006241' }
   }
 }

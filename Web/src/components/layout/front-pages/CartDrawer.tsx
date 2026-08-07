@@ -314,7 +314,7 @@ const CartDrawer = () => {
                       <Radio
                         value={addr.id}
                         checked={selectedAddressId === addr.id}
-                        sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }}
+                        sx={{ color: '#006241', '&.Mui-checked': { color: '#006241' }, p: 0, mt: '2px' }}
                       />
                       <Box className='flex-1 text-left'>
                         {addr.label && (
@@ -347,7 +347,7 @@ const CartDrawer = () => {
                     <Radio
                       value='new'
                       checked={selectedAddressId === 'new'}
-                      sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' }, p: 0, mt: '2px' }}
+                      sx={{ color: '#006241', '&.Mui-checked': { color: '#006241' }, p: 0, mt: '2px' }}
                     />
                     <Box className='text-left'>
                       <Typography variant='body2' className='text-slate-800 font-bold'>
@@ -376,7 +376,7 @@ const CartDrawer = () => {
                     '& .MuiOutlinedInput-root': {
                       color: '#1e293b',
                       '& fieldset': { borderColor: 'rgba(16,185,129,0.3)' },
-                      '&:hover fieldset': { borderColor: '#10b981' }
+                      '&:hover fieldset': { borderColor: '#006241' }
                     }
                   }}
                 />

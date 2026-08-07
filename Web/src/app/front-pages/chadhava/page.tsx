@@ -170,7 +170,7 @@ const ChadhavaPage = () => {
                   <img src={item.image} alt={item.title} className='w-full h-full object-cover' />
                 </div>
                 <CardContent className='p-5 flex flex-col flex-1'>
-                  <Typography variant='subtitle2' className='font-semibold mb-1 truncate' style={{ color: '#10b981' }}>
+                  <Typography variant='subtitle2' className='font-semibold mb-1 truncate' style={{ color: '#006241' }}>
                     📍 {item.temple}
                   </Typography>
                   <Typography variant='h6' className='font-bold mb-3 truncate' style={{ color: '#047857' }}>
@@ -286,7 +286,7 @@ const ChadhavaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' },
+                        '&:hover fieldset': { borderColor: '#006241' },
                         '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
@@ -303,7 +303,7 @@ const ChadhavaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' },
+                        '&:hover fieldset': { borderColor: '#006241' },
                         '&.Mui-focused fieldset': { borderColor: '#006241' }
                       }
                     }}
@@ -326,7 +326,7 @@ const ChadhavaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -343,7 +343,7 @@ const ChadhavaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -361,7 +361,7 @@ const ChadhavaPage = () => {
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -385,7 +385,7 @@ const ChadhavaPage = () => {
                               '& .MuiOutlinedInput-root': {
                                 color: '#0f172a',
                                 '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                                '&:hover fieldset': { borderColor: '#10b981' }
+                                '&:hover fieldset': { borderColor: '#006241' }
                               }
                             }}
                           />
@@ -401,7 +401,7 @@ const ChadhavaPage = () => {
                               '& .MuiOutlinedInput-root': {
                                 color: '#0f172a',
                                 '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                                '&:hover fieldset': { borderColor: '#10b981' }
+                                '&:hover fieldset': { borderColor: '#006241' }
                               }
                             }}
                           />

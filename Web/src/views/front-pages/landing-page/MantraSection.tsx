@@ -151,7 +151,7 @@ const MantraSection = () => {
                         max={duration || 100}
                         onChange={handleSliderChange}
                         sx={{
-                          color: '#10b981',
+                          color: '#006241',
                           '& .MuiSlider-thumb': {
                             width: 8,
                             height: 8,

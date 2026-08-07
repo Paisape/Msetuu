@@ -115,7 +115,7 @@ const RewardsSection = () => {
   if (loading) {
     return (
       <div className='flex justify-center py-16'>
-        <CircularProgress style={{ color: '#10b981' }} />
+        <CircularProgress style={{ color: '#006241' }} />
       </div>
     )
   }
@@ -139,7 +139,7 @@ const RewardsSection = () => {
       {/* Balance */}
       <Card
         className='p-8 text-center mb-10'
-        style={{ background: 'linear-gradient(135deg,#006241 0%,#10b981 100%)' }}
+        style={{ background: 'linear-gradient(135deg,#006241 0%,#006241 100%)' }}
       >
         <Typography className='text-white/80 font-semibold'>Your Points Balance</Typography>
         <Typography variant='h2' className='font-bold text-white'>
@@ -220,7 +220,7 @@ const RewardsSection = () => {
             {transactions.map(t => (
               <div key={t.id} className='flex justify-between text-sm py-1.5 border-b border-slate-100'>
                 <span style={{ color: '#374151' }}>{t.reason}</span>
-                <span className='font-bold' style={{ color: t.amount >= 0 ? '#10b981' : '#ef4444' }}>
+                <span className='font-bold' style={{ color: t.amount >= 0 ? '#006241' : '#ef4444' }}>
                   {t.amount >= 0 ? '+' : ''}
                   {t.amount}
                 </span>

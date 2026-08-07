@@ -190,7 +190,7 @@ const GeotagManagerClient = () => {
                         Uploaded: {new Date(photo.createdAt).toLocaleString()}
                       </Typography>
 
-                      <div className='flex items-center gap-2 text-sm mb-1' style={{ color: '#10b981' }}>
+                      <div className='flex items-center gap-2 text-sm mb-1' style={{ color: '#006241' }}>
                         <i className='tabler-building-temple' />
                         <span className='font-semibold'>{photo.templeName || 'No temple name given'}</span>
                       </div>
@@ -213,7 +213,7 @@ const GeotagManagerClient = () => {
                       </div>
 
                       {photo.status === 'APPROVED' && photo.pointsAwarded !== null && (
-                        <Typography variant='caption' className='block mt-1 font-bold' style={{ color: '#10b981' }}>
+                        <Typography variant='caption' className='block mt-1 font-bold' style={{ color: '#006241' }}>
                           +{photo.pointsAwarded} points awarded
                         </Typography>
                       )}

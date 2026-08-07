@@ -57,7 +57,7 @@ export function renderEmailLayout(bodyHtml: string, previewText = ''): string {
 
 function ctaButton(text: string, url: string): string {
   return `<div style="text-align:center;margin:24px 0;">
-    <a href="${url}" style="display:inline-block;background:linear-gradient(135deg, ${BRAND_GREEN} 0%, #10b981 100%);color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 28px;border-radius:999px;">${text}</a>
+    <a href="${url}" style="display:inline-block;background:linear-gradient(135deg, ${BRAND_GREEN} 0%, #006241 100%);color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 28px;border-radius:999px;">${text}</a>
   </div>`
 }
 

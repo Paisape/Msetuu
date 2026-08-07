@@ -49,7 +49,7 @@ export type MapPin = {
 
 const IndiaMap = ({ pins, onPinClick }: { pins: MapPin[]; onPinClick?: (pin: MapPin) => void }) => (
   <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className='w-full h-auto' role='img' aria-label='Map of India with tagged temple visits'>
-    <path d={BOUNDARY_PATH} fill='rgba(16,185,129,0.08)' stroke='#10b981' strokeWidth={1.5} strokeLinejoin='round' />
+    <path d={BOUNDARY_PATH} fill='rgba(16,185,129,0.08)' stroke='#006241' strokeWidth={1.5} strokeLinejoin='round' />
 
     {pins.map(pin => {
       const { x, y } = project(pin.latitude, pin.longitude)
@@ -65,7 +65,7 @@ const IndiaMap = ({ pins, onPinClick }: { pins: MapPin[]; onPinClick?: (pin: Map
             <animate attributeName='r' values='7;12;7' dur='2.5s' repeatCount='indefinite' />
             <animate attributeName='opacity' values='0.25;0;0.25' dur='2.5s' repeatCount='indefinite' />
           </circle>
-          <circle r={4.5} fill='#10b981' stroke='#ffffff' strokeWidth={1.2} />
+          <circle r={4.5} fill='#006241' stroke='#ffffff' strokeWidth={1.2} />
         </g>
       )
     })}

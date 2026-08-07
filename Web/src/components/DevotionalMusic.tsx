@@ -300,7 +300,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
 
           {/* Track info */}
           <Box sx={{ textAlign: 'center', py: '4px' }}>
-            <Typography sx={{ fontSize: '10px', color: '#10b981', fontWeight: 700, mb: '2px' }}>
+            <Typography sx={{ fontSize: '10px', color: '#006241', fontWeight: 700, mb: '2px' }}>
               {track.deity}
             </Typography>
             <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
@@ -319,7 +319,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
               <Box sx={{
                 height: '100%',
                 width: `${progressPct}%`,
-                background: 'linear-gradient(90deg,#10b981,#34d399)',
+                background: 'linear-gradient(90deg,#006241,#34d399)',
                 borderRadius: '4px',
                 transition: 'width 0.5s linear'
               }} />
@@ -345,9 +345,9 @@ return `${m}:${sec.toString().padStart(2, '0')}`
               sx={{
                 width: 44, height: 44,
                 color: 'white',
-                background: 'linear-gradient(135deg,#10b981,#34d399)',
+                background: 'linear-gradient(135deg,#006241,#34d399)',
                 boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
-                '&:hover': { background: 'linear-gradient(135deg,#006241,#10b981)', transform: 'scale(1.06)' },
+                '&:hover': { background: 'linear-gradient(135deg,#006241,#006241)', transform: 'scale(1.06)' },
                 transition: 'all 0.2s ease'
               }}
             >
@@ -373,7 +373,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
               onChange={(_, v) => setVolume((v as number) / 100)}
               size='small'
               sx={{
-                color: '#10b981',
+                color: '#006241',
                 height: 3,
                 padding: '4px 0',
                 '& .MuiSlider-thumb': { width: 10, height: 10, '&:hover': { boxShadow: '0 0 0 8px rgba(16,185,129,0.16)' } },
@@ -393,7 +393,7 @@ return `${m}:${sec.toString().padStart(2, '0')}`
                   width: i === currentIdx ? '20px' : '6px',
                   height: '6px',
                   borderRadius: '4px',
-                  background: i === currentIdx ? '#10b981' : 'rgba(16,185,129,0.2)',
+                  background: i === currentIdx ? '#006241' : 'rgba(16,185,129,0.2)',
                   border: 'none',
                   cursor: 'pointer',
                   padding: 0,

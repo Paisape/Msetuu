@@ -279,7 +279,7 @@ return
   if (loading) {
     return (
       <Box className='galaxy-bg stars-overlay min-h-screen flex items-center justify-center'>
-        <CircularProgress style={{ color: '#10b981' }} />
+        <CircularProgress style={{ color: '#006241' }} />
       </Box>
     )
   }
@@ -538,7 +538,7 @@ return (
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -557,7 +557,7 @@ return (
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -575,7 +575,7 @@ return (
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />
@@ -594,7 +594,7 @@ return (
                       '& .MuiOutlinedInput-root': {
                         color: '#0f172a',
                         '& fieldset': { borderColor: 'rgba(16, 185, 129, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#10b981' }
+                        '&:hover fieldset': { borderColor: '#006241' }
                       }
                     }}
                   />

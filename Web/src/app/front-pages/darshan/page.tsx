@@ -49,10 +49,10 @@ const InteractionButton = ({
           width: 56,
           height: 56,
           fontSize: 26,
-          background: active ? 'linear-gradient(135deg,#10b981,#34d399)' : 'rgba(16,185,129,0.08)',
+          background: active ? 'linear-gradient(135deg,#006241,#34d399)' : 'rgba(16,185,129,0.08)',
           boxShadow: active ? '0 4px 18px rgba(16,185,129,0.5)' : 'none',
           transition: 'all 0.25s ease',
-          '&:hover': { background: active ? 'linear-gradient(135deg,#006241,#10b981)' : 'rgba(16,185,129,0.16)' }
+          '&:hover': { background: active ? 'linear-gradient(135deg,#006241,#006241)' : 'rgba(16,185,129,0.16)' }
         }}
       >
         <span>{emoji}</span>
@@ -162,7 +162,7 @@ const DarshanPage = () => {
 
         {loading ? (
           <div className='flex justify-center py-16'>
-            <CircularProgress style={{ color: '#10b981' }} />
+            <CircularProgress style={{ color: '#006241' }} />
           </div>
         ) : days.length === 0 ? (
           <Typography className='text-center py-16' style={{ color: '#6b7280' }}>
@@ -297,14 +297,14 @@ const DarshanPage = () => {
                         width: 46,
                         height: 46,
                         color: 'white',
-                        background: 'linear-gradient(135deg,#10b981,#34d399)',
-                        '&:hover': { background: 'linear-gradient(135deg,#006241,#10b981)' }
+                        background: 'linear-gradient(135deg,#006241,#34d399)',
+                        '&:hover': { background: 'linear-gradient(135deg,#006241,#006241)' }
                       }}
                     >
                       <i className={isPlaying ? 'tabler-player-pause-filled' : 'tabler-player-play-filled'} />
                     </IconButton>
                     <div>
-                      <Typography variant='caption' className='font-bold block' style={{ color: '#10b981' }}>
+                      <Typography variant='caption' className='font-bold block' style={{ color: '#006241' }}>
                         {isPlaying ? 'Now Playing' : 'Bhajan'}
                       </Typography>
                       <Typography className='font-semibold' style={{ color: '#0f172a' }}>

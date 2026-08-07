@@ -141,7 +141,7 @@ const MyOrdersPage = () => {
                   <CardContent>
                     <div className='flex items-center justify-between flex-wrap gap-3'>
                       <div>
-                        <Typography variant='caption' style={{ color: '#10b981' }} className='font-semibold'>
+                        <Typography variant='caption' style={{ color: '#006241' }} className='font-semibold'>
                           {MODULE_LABEL[order.type]}
                         </Typography>
                         <Typography variant='h6' className='font-bold' style={{ color: '#047857' }}>

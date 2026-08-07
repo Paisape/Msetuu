@@ -138,7 +138,7 @@ const Faqs = () => {
           <Grid container spacing={6}>
             <Grid size={{ xs: 12, lg: 5 }} className='text-center'>
               <img
-                src='/images/front-pages/landing-page/boy-sitting-with-laptop.png'
+                src='/images/front-pages/landing-page/faq-devotional.jpg'
                 alt='boy with laptop'
                 className='is-[80%] max-is-[320px]'
               />
