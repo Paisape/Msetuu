@@ -99,6 +99,12 @@ const Footer = ({ mode }: { mode: Mode }) => {
                 <Typography component={Link} href='/front-pages/kundli' color='white' className='opacity-[0.78]'>
                   Handcrafted Kundli
                 </Typography>
+                <Typography component={Link} href='/front-pages/ecommerce' color='white' className='opacity-[0.78]'>
+                  E-Commerce Shop
+                </Typography>
+                <Typography component={Link} href='/front-pages/yatra' color='white' className='opacity-[0.78]'>
+                  Yatra Booking
+                </Typography>
               </div>
             </Grid>
             <Grid size={{ xs: 12, sm: 3, lg: 2 }}>
@@ -106,12 +112,6 @@ const Footer = ({ mode }: { mode: Mode }) => {
                 Quick Links
               </Typography>
               <div className='flex flex-col gap-4'>
-                <Typography component={Link} href='/front-pages/ecommerce' color='white' className='opacity-[0.78]'>
-                  E-Commerce Shop
-                </Typography>
-                <Typography component={Link} href='/front-pages/yatra' color='white' className='opacity-[0.78]'>
-                  Yatra Booking
-                </Typography>
                 <Typography component={Link} href='/front-pages/about' color='white' className='opacity-[0.78]'>
                   About Us
                 </Typography>
@@ -126,6 +126,12 @@ const Footer = ({ mode }: { mode: Mode }) => {
                 </Typography>
                 <Typography component={Link} href='/front-pages/return-policy' color='white' className='opacity-[0.78]'>
                   Return Policy
+                </Typography>
+                <Typography component={Link} href='/front-pages/terms-and-conditions' color='white' className='opacity-[0.78]'>
+                  Terms & Conditions
+                </Typography>
+                <Typography component={Link} href='/front-pages/delete-account' color='white' className='opacity-[0.78]'>
+                  Delete Account
                 </Typography>
               </div>
             </Grid>

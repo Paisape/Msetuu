@@ -76,9 +76,20 @@ export default function DeleteAccount() {
         </Typography>
 
         {step !== 'SUCCESS' && (
-          <Typography variant='body1' color='text.secondary' className='mb-8'>
-            To delete your MandirSetu account and permanently remove your data, please verify your identity using the email or phone number associated with your account.
-          </Typography>
+          <>
+            <Typography variant='body1' color='text.secondary' className='mb-6'>
+              To delete your MandirSetu account and permanently remove your data, please verify your identity using the email or phone number associated with your account.
+            </Typography>
+            <Alert severity='warning' className='mb-8 text-left'>
+              <Typography variant='subtitle2' className='font-bold mb-1'>What happens when you delete your account?</Typography>
+              <ul className='list-disc pl-5 mb-0 text-sm'>
+                <li>Your profile and login credentials will be permanently erased.</li>
+                <li>Your active e-puja and chadhava subscriptions/orders will be disassociated from your identity.</li>
+                <li>Your horoscope, kundli, and personal consultation history will be permanently deleted.</li>
+                <li>This action is irreversible. You cannot recover your account later.</li>
+              </ul>
+            </Alert>
+          </>
         )}
 
         {error && <Alert severity='error' className='mb-6 text-left'>{error}</Alert>}
