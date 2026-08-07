@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -416,6 +416,18 @@ const MyOrdersPage = () => {
           <Typography variant='body1' style={{ color: '#374151' }}>
             Manage your profile, addresses, and track all your orders.
           </Typography>
+          {sessionStatus === 'authenticated' && (
+            <div className='mt-6'>
+              <Button 
+                variant='outlined' 
+                color='error' 
+                onClick={() => signOut({ callbackUrl: '/' })}
+                startIcon={<i className='tabler-logout' />}
+              >
+                Logout
+              </Button>
+            </div>
+          )}
         </div>
 
         {sessionStatus === 'unauthenticated' && (
