@@ -11,6 +11,9 @@ It uses **Next.js** for the frontend and API routes, **Prisma** as the ORM, and 
 
 ## Setup Instructions
 
+> [!IMPORTANT]
+> **DO NOT install anything in the C: drive.** The C: drive is reserved for Windows files only. Please use the **D: drive** for all installations (Node.js, PostgreSQL, cloning this project, etc.).
+
 ### 1. Clone the repository
 Clone the repository to your new PC and navigate to the Web directory:
 `ash
@@ -76,3 +79,4 @@ px prisma db push (or migrate deploy) before starting the server.
 
 ## APIs and Mobile App Integration
 Check the docs/ folder in the root repository for details on the REST API structure and endpoints for Mobile Application integration.
+
