@@ -22,7 +22,7 @@ RUN npx prisma generate && npm run build:icons
 RUN npm run build
 
 # Prune development dependencies to keep the final runner image light
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --legacy-peer-deps
 
 # Production image, copy all the files and run next
 FROM base AS runner
