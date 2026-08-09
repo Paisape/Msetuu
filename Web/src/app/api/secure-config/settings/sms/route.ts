@@ -12,7 +12,9 @@ export async function GET() {
 
     const settings = await getRedactedSettings('SMS')
 
-    return NextResponse.json(settings)
+    const response = NextResponse.json(settings)
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0')
+    return response
   } catch (err) {
     return handleApiError(err)
   }

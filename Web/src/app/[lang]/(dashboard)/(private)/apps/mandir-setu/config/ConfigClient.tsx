@@ -133,7 +133,7 @@ const SettingsPanel = ({
     setError(null)
 
     try {
-      const res = await fetch(endpoint)
+      const res = await fetch(`${endpoint}?_t=${Date.now()}`, { cache: 'no-store' })
       const data = await res.json().catch(() => null)
 
       if (!res.ok) throw new Error(data?.error || 'Failed to load settings.')
