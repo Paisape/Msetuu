@@ -21,6 +21,9 @@ RUN npx prisma generate && npm run build:icons
 # Next.js build
 RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
+# Prune development dependencies to keep the final runner image light
+RUN npm prune --omit=dev
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
