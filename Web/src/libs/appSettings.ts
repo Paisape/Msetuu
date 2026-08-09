@@ -87,20 +87,26 @@ export async function getSettingOrEnv(category: string, key: string, envVarName:
 // Throws if SETTINGS_ENCRYPTION_KEY isn't configured, since silently storing plaintext secrets
 // would defeat the entire point of this store.
 export async function setSettings(category: string, values: Record<string, string>, updatedById?: string): Promise<void> {
+  console.log(`[setSettings] Saving category ${category} values:`, Object.keys(values))
   if (!isSettingsEncryptionConfigured()) {
     throw new Error('SETTINGS_ENCRYPTION_KEY is not configured on the server — cannot securely store settings.')
   }
 
   try {
     await Promise.all(
-      Object.entries(values).map(([key, value]) =>
-        prisma.appSetting.upsert({
+      Object.entries(values).map(([key, value]) => {
+        console.log(`[setSettings] Upserting key: ${key}`)
+        return prisma.appSetting.upsert({
           where: { category_key: { category, key } },
           create: { category, key, value: encryptSetting(value), updatedById },
           update: { value: encryptSetting(value), updatedById }
         })
-      )
+      })
     )
+    console.log(`[setSettings] Successfully upserted all keys in database for category ${category}`)
+  } catch (err) {
+    console.error(`[setSettings] Prisma upsert error for category ${category}:`, err)
+    throw err
   } finally {
     // Bust the cache even on a partial failure (some upserts in the batch may have already
     // committed before one rejected) — an admin retrying after an error must never read back a

@@ -127,19 +127,40 @@ export async function saveSettings(category: SettingsCategory, body: Record<stri
   const allowedKeys = new Set(FIELD_DEFS[category].map(f => f.key))
   const toSave: Record<string, string> = {}
 
+  console.log(`[saveSettings] Category: ${category}, AllowedKeys:`, Array.from(allowedKeys))
+  console.log(`[saveSettings] Request Body:`, body)
+
   for (const [key, rawValue] of Object.entries(body)) {
-    if (!allowedKeys.has(key)) continue
-    if (typeof rawValue !== 'string') continue
+    if (!allowedKeys.has(key)) {
+      console.log(`[saveSettings] Skipping key (not whitelisted): ${key}`)
+      continue
+    }
+    if (typeof rawValue !== 'string') {
+      console.log(`[saveSettings] Skipping key (not a string, type is ${typeof rawValue}): ${key}`)
+      continue
+    }
 
     const value = rawValue.trim()
 
-    if (!value) continue
-    if (/^••••/.test(value)) continue
+    if (!value) {
+      console.log(`[saveSettings] Skipping key (empty value): ${key}`)
+      continue
+    }
+    if (/^••••/.test(value)) {
+      console.log(`[saveSettings] Skipping key (masked secret placeholder): ${key}`)
+      continue
+    }
 
     toSave[key] = value
   }
 
-  if (Object.keys(toSave).length === 0) return
+  console.log(`[saveSettings] Filtered toSave:`, toSave)
+
+  if (Object.keys(toSave).length === 0) {
+    console.log(`[saveSettings] Nothing to save.`)
+    return
+  }
 
   await setSettings(category, toSave, updatedById)
+  console.log(`[saveSettings] Successfully called setSettings for ${category}`)
 }
