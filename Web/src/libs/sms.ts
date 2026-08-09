@@ -4,6 +4,7 @@
  * Project: Paisape / MandirSetu
  */
 
+import prisma from '@/libs/prisma'
 import { getSettingOrEnv } from '@/libs/appSettings'
 import { DEFAULT_OTP_TEMPLATE_ID, renderOtpSms } from '@/libs/smsTemplates'
 
@@ -41,8 +42,21 @@ export async function sendTextziSms(
   templateId?: string | null
 ): Promise<SendSmsResult> {
   const provider = (await getSettingOrEnv('SMS', 'SMS_PROVIDER', 'SMS_PROVIDER')) || 'TEXTZI'
+  const activeTemplateId = templateId || DEFAULT_OTP_TEMPLATE_ID
+
   if (provider.toUpperCase() === 'DISABLED') {
     console.warn('[SMS] SMS Provider is set to DISABLED in settings. Skipping dispatch.')
+    await prisma.smsLog.create({
+      data: {
+        mobile,
+        message,
+        templateId: activeTemplateId,
+        status: 'DISABLED',
+        requestUrl: 'N/A',
+        error: 'SMS Provider is disabled in settings.'
+      }
+    }).catch(err => console.error('[SMS] Logging failed:', err))
+
     return { success: false, message: 'SMS Provider is disabled in settings.' }
   }
 
@@ -51,14 +65,36 @@ export async function sendTextziSms(
   const defaultTemplateId =
     (await getSettingOrEnv('SMS', 'TEXTZI_TEMPLATE_ID', 'TEXTZI_TEMPLATE_ID')) || DEFAULT_OTP_TEMPLATE_ID
 
-  const activeTemplateId = templateId || defaultTemplateId
+  const finalTemplateId = templateId || defaultTemplateId
   const formattedMobile = formatTextziMobile(mobile)
 
+  const redactedParams = new URLSearchParams({
+    api_key: '••••',
+    user_id: userId || '',
+    mobile: formattedMobile,
+    template_id: finalTemplateId,
+    message: message
+  })
+  const redactedUrl = `https://api.textzi.in/v1/sms/send-url?${redactedParams.toString()}`
+
   if (!apiKey || !userId) {
-    console.error('[SMS] Textzi API credentials (TEXTZI_API_KEY / TEXTZI_USER_ID) not configured.')
+    const errorMsg = 'Textzi SMS credentials (TEXTZI_API_KEY / TEXTZI_USER_ID) not configured.'
+    console.error(`[SMS] ${errorMsg}`)
+    
+    await prisma.smsLog.create({
+      data: {
+        mobile: formattedMobile,
+        message,
+        templateId: finalTemplateId,
+        status: 'FAILED',
+        requestUrl: redactedUrl,
+        error: errorMsg
+      }
+    }).catch(err => console.error('[SMS] Logging failed:', err))
+
     return {
       success: false,
-      message: 'Textzi SMS credentials (TEXTZI_API_KEY / TEXTZI_USER_ID) not configured.'
+      message: errorMsg
     }
   }
 
@@ -66,7 +102,7 @@ export async function sendTextziSms(
     api_key: apiKey,
     user_id: userId,
     mobile: formattedMobile,
-    template_id: activeTemplateId,
+    template_id: finalTemplateId,
     message: message
   })
 
@@ -83,6 +119,18 @@ export async function sendTextziSms(
     }
 
     if (!res.ok) {
+      await prisma.smsLog.create({
+        data: {
+          mobile: formattedMobile,
+          message,
+          templateId: finalTemplateId,
+          status: 'FAILED',
+          requestUrl: redactedUrl,
+          response: typeof data === 'object' ? JSON.stringify(data) : String(data),
+          error: `Textzi API error HTTP ${res.status}`
+        }
+      }).catch(err => console.error('[SMS] Logging failed:', err))
+
       return {
         success: false,
         httpCode: res.status,
@@ -91,16 +139,41 @@ export async function sendTextziSms(
       }
     }
 
+    // Save success log
+    await prisma.smsLog.create({
+      data: {
+        mobile: formattedMobile,
+        message,
+        templateId: finalTemplateId,
+        status: 'SUCCESS',
+        requestUrl: redactedUrl,
+        response: typeof data === 'object' ? JSON.stringify(data) : String(data)
+      }
+    }).catch(err => console.error('[SMS] Logging failed:', err))
+
     return {
       success: true,
       httpCode: res.status,
       response: data
     }
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Failed to reach Textzi SMS endpoint'
     console.error('[SMS] Textzi API call failed:', err)
+
+    await prisma.smsLog.create({
+      data: {
+        mobile: formattedMobile,
+        message,
+        templateId: finalTemplateId,
+        status: 'FAILED',
+        requestUrl: redactedUrl,
+        error: errorMsg
+      }
+    }).catch(loggingErr => console.error('[SMS] Logging failed:', loggingErr))
+
     return {
       success: false,
-      message: err instanceof Error ? err.message : 'Failed to reach Textzi SMS endpoint'
+      message: errorMsg
     }
   }
 }

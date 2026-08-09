@@ -488,7 +488,7 @@ const ConfigClient = () => {
             )}
             {tabIndex === 3 && (
               <>
-                <Chip size='small' label='No SMS provider is wired up yet — this only saves the config.' className='mb-4' />
+                <Chip size='small' color='success' variant='outlined' label='Textzi SMS Gateway Active — GET https://api.textzi.in/v1/sms/send-url' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/sms' fields={SMS_FIELDS} />
               </>
             )}

@@ -23,6 +23,10 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
+import Box from '@mui/material/Box'
+import Pagination from '@mui/material/Pagination'
 
 type SmsTemplate = {
   id: string
@@ -35,11 +39,32 @@ type SmsTemplate = {
   createdAt: string
 }
 
+type SmsLog = {
+  id: string
+  mobile: string
+  message: string
+  templateId: string
+  status: string // SUCCESS, FAILED, DISABLED
+  requestUrl: string
+  response?: string | null
+  error?: string | null
+  createdAt: string
+}
+
 export default function SmsTemplatesClient() {
+  const [activeTab, setActiveTab] = useState(0)
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState<SmsTemplate[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Logs Report State
+  const [logs, setLogs] = useState<SmsLog[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [selectedLog, setSelectedLog] = useState<SmsLog | null>(null)
+  const [openLogDialog, setOpenLogDialog] = useState(false)
 
   // Dialog State
   const [openDialog, setOpenDialog] = useState(false)
@@ -69,9 +94,38 @@ export default function SmsTemplatesClient() {
     }
   }, [])
 
+  const fetchLogs = useCallback(async (pageNum: number) => {
+    setLogsLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/sms-templates/logs?page=${pageNum}&limit=15`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to fetch SMS logs.')
+      setLogs(data.logs || [])
+      setTotalPages(data.pagination?.pages || 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch SMS logs.')
+    } finally {
+      setLogsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
+    if (activeTab === 0) {
+      fetchTemplates()
+    } else {
+      fetchLogs(page)
+    }
+  }, [activeTab, page, fetchTemplates, fetchLogs])
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue)
+    setPage(1)
+  }
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value)
+  }
 
   const handleOpenCreate = () => {
     setEditingTemplate({
@@ -170,13 +224,18 @@ export default function SmsTemplatesClient() {
     }
   }
 
+  const handleViewLogDetails = (log: SmsLog) => {
+    setSelectedLog(log)
+    setOpenLogDialog(true)
+  }
+
   return (
     <div className='flex flex-col gap-6 p-4'>
       <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-2xl font-bold'>DLT SMS Templates Master</h1>
           <p className='text-sm text-gray-500'>
-            Manage registered DLT templates for Textzi SMS Gateway & OTP delivery
+            Manage registered DLT templates for Textzi SMS Gateway & view delivery logs
           </p>
         </div>
         <div className='flex gap-2'>
@@ -209,107 +268,197 @@ export default function SmsTemplatesClient() {
         </Alert>
       )}
 
-      {/* Overview Info Banner */}
-      <Card variant='outlined' className='bg-primary/5 border-primary/20'>
-        <CardContent className='flex flex-col gap-2'>
-          <div className='flex items-center gap-2 font-semibold text-primary'>
-            <i className='tabler-info-circle text-lg' />
-            Paisape DLT Gateway Configuration (Textzi)
-          </div>
-          <p className='text-sm text-gray-600'>
-            Default OTP Template ID: <strong>1177178593496518428</strong> (Paisape Account Verification).
-            Runtime variables like <code>{'{#num#}'}</code> will automatically be replaced with real 6-digit OTP codes when calling <code>send_otp_sms($mobile, $otp)</code>.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Tabs Menu */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label='SMS tabs'>
+          <Tab label='DLT Templates' />
+          <Tab label='SMS Delivery Logs & Reports' />
+        </Tabs>
+      </Box>
 
-      {/* Templates Table */}
-      <Card>
-        <CardHeader title='Registered DLT Templates' subheader='Master template catalog for Textzi SMS integration' />
-        <CardContent>
-          {loading ? (
-            <div className='p-6 text-center'>
-              <CircularProgress size={24} />
-            </div>
-          ) : (
-            <TableContainer component={Paper} variant='outlined'>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Template Name</TableCell>
-                    <TableCell>DLT Template ID</TableCell>
-                    <TableCell>Content / Message Format</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align='right'>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {templates.map(tpl => (
-                    <TableRow key={tpl.id}>
-                      <TableCell className='font-medium'>
-                        {tpl.name}
-                        {tpl.isDefault && (
-                          <Chip label='Default OTP' size='small' color='primary' className='ml-2 text-xs' />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <code className='px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-mono text-sm'>
-                          {tpl.templateId}
-                        </code>
-                      </TableCell>
-                      <TableCell className='max-w-md text-sm text-gray-700 dark:text-gray-300'>
-                        {tpl.content}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={tpl.active ? 'Active' : 'Inactive'}
-                          color={tpl.active ? 'success' : 'default'}
-                          size='small'
-                        />
-                      </TableCell>
-                      <TableCell align='right'>
-                        <div className='flex justify-end gap-1'>
-                          <Tooltip title='Edit Template'>
-                            <IconButton size='small' onClick={() => handleOpenEdit(tpl)}>
-                              <i className='tabler-edit text-base' />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title='Test Dispatch'>
-                            <IconButton
+      {activeTab === 0 && (
+        <>
+          {/* Overview Info Banner */}
+          <Card variant='outlined' className='bg-primary/5 border-primary/20'>
+            <CardContent className='flex flex-col gap-2'>
+              <div className='flex items-center gap-2 font-semibold text-primary'>
+                <i className='tabler-info-circle text-lg' />
+                Paisape DLT Gateway Configuration (Textzi)
+              </div>
+              <p className='text-sm text-gray-600'>
+                Default OTP Template ID: <strong>1177178593496518428</strong> (Paisape Account Verification).
+                Runtime variables like <code>{'{#num#}'}</code> will automatically be replaced with real 6-digit OTP codes when calling <code>send_otp_sms($mobile, $otp)</code>.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Templates Table */}
+          <Card>
+            <CardHeader title='Registered DLT Templates' subheader='Master template catalog for Textzi SMS integration' />
+            <CardContent>
+              {loading ? (
+                <div className='p-6 text-center'>
+                  <CircularProgress size={24} />
+                </div>
+              ) : (
+                <TableContainer component={Paper} variant='outlined'>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Template Name</TableCell>
+                        <TableCell>DLT Template ID</TableCell>
+                        <TableCell>Content / Message Format</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align='right'>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {templates.map(tpl => (
+                        <TableRow key={tpl.id}>
+                          <TableCell className='font-medium'>
+                            {tpl.name}
+                            {tpl.isDefault && (
+                              <Chip label='Default OTP' size='small' color='primary' className='ml-2 text-xs' />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <code className='px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-mono text-sm'>
+                              {tpl.templateId}
+                            </code>
+                          </TableCell>
+                          <TableCell className='max-w-md text-sm text-gray-700 dark:text-gray-300'>
+                            {tpl.content}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={tpl.active ? 'Active' : 'Inactive'}
+                              color={tpl.active ? 'success' : 'default'}
                               size='small'
-                              color='primary'
-                              onClick={() => {
-                                setTestTemplateId(tpl.templateId)
-                                setOpenTestDialog(true)
-                              }}
-                            >
-                              <i className='tabler-send text-base' />
-                            </IconButton>
-                          </Tooltip>
-                          {!tpl.isDefault && (
-                            <Tooltip title='Delete'>
-                              <IconButton size='small' color='error' onClick={() => handleDelete(tpl.id)}>
-                                <i className='tabler-trash text-base' />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {templates.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className='text-center py-6 text-gray-500'>
-                        No DLT templates found. Click &quot;Add New DLT Template&quot; to add one.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                            />
+                          </TableCell>
+                          <TableCell align='right'>
+                            <div className='flex justify-end gap-1'>
+                              <Tooltip title='Edit Template'>
+                                <IconButton size='small' onClick={() => handleOpenEdit(tpl)}>
+                                  <i className='tabler-edit text-base' />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title='Test Dispatch'>
+                                <IconButton
+                                  size='small'
+                                  color='primary'
+                                  onClick={() => {
+                                    setTestTemplateId(tpl.templateId)
+                                    setOpenTestDialog(true)
+                                  }}
+                                >
+                                  <i className='tabler-send text-base' />
+                                </IconButton>
+                              </Tooltip>
+                              {!tpl.isDefault && (
+                                <Tooltip title='Delete'>
+                                  <IconButton size='small' color='error' onClick={() => handleDelete(tpl.id)}>
+                                    <i className='tabler-trash text-base' />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {templates.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className='text-center py-6 text-gray-500'>
+                            No DLT templates found. Click &quot;Add New DLT Template&quot; to add one.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {activeTab === 1 && (
+        <Card>
+          <CardHeader title='SMS Request & Response Logs' subheader='Complete audit trail of all SMS delivery transactions' />
+          <CardContent>
+            {logsLoading ? (
+              <div className='p-6 text-center'>
+                <CircularProgress size={24} />
+              </div>
+            ) : (
+              <>
+                <TableContainer component={Paper} variant='outlined'>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Timestamp</TableCell>
+                        <TableCell>Recipient Mobile</TableCell>
+                        <TableCell>Template ID</TableCell>
+                        <TableCell>Message Text</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align='right'>Details</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {logs.map(log => (
+                        <TableRow key={log.id} hover>
+                          <TableCell className='text-xs whitespace-nowrap'>
+                            {new Date(log.createdAt).toLocaleString()}
+                          </TableCell>
+                          <TableCell className='font-mono text-sm'>
+                            +{log.mobile}
+                          </TableCell>
+                          <TableCell className='text-xs font-mono'>
+                            {log.templateId}
+                          </TableCell>
+                          <TableCell className='text-sm max-w-xs overflow-hidden text-ellipsis whitespace-nowrap'>
+                            {log.message}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={log.status}
+                              color={
+                                log.status === 'SUCCESS'
+                                  ? 'success'
+                                  : log.status === 'DISABLED'
+                                  ? 'default'
+                                  : 'error'
+                              }
+                              size='small'
+                            />
+                          </TableCell>
+                          <TableCell align='right'>
+                            <Button size='small' variant='outlined' onClick={() => handleViewLogDetails(log)}>
+                              View Payload
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {logs.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className='text-center py-6 text-gray-500'>
+                            No delivery logs recorded yet.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                {totalPages > 1 && (
+                  <div className='mt-4 flex justify-center'>
+                    <Pagination count={totalPages} page={page} onChange={handlePageChange} color='primary' />
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add / Edit Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth='sm' fullWidth>
@@ -393,6 +542,64 @@ export default function SmsTemplatesClient() {
           <Button variant='contained' color='primary' onClick={handleSendTestSms} disabled={sendingTest}>
             {sendingTest ? <CircularProgress size={20} color='inherit' /> : 'Send Test SMS'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Log Transaction Payload Dialog */}
+      <Dialog open={openLogDialog} onClose={() => setOpenLogDialog(false)} maxWidth='md' fullWidth>
+        <DialogTitle>SMS Transaction Details</DialogTitle>
+        <DialogContent className='flex flex-col gap-4 mt-2'>
+          <div>
+            <strong>Recipient Mobile:</strong> +{selectedLog?.mobile}
+          </div>
+          <div>
+            <strong>DLT Template ID:</strong> <code>{selectedLog?.templateId}</code>
+          </div>
+          <div>
+            <strong>Status:</strong>{' '}
+            <Chip
+              label={selectedLog?.status}
+              color={
+                selectedLog?.status === 'SUCCESS'
+                  ? 'success'
+                  : selectedLog?.status === 'DISABLED'
+                  ? 'default'
+                  : 'error'
+              }
+              size='small'
+            />
+          </div>
+          <div>
+            <strong>Message Text:</strong>
+            <Paper variant='outlined' className='p-3 mt-1 bg-gray-50 text-sm'>
+              {selectedLog?.message}
+            </Paper>
+          </div>
+          <div>
+            <strong>API Request URL (API Key Masked):</strong>
+            <Paper variant='outlined' className='p-2 mt-1 bg-gray-50 text-xs font-mono break-all'>
+              {selectedLog?.requestUrl}
+            </Paper>
+          </div>
+          {selectedLog?.response && (
+            <div>
+              <strong>Gateway Response Payload:</strong>
+              <Paper variant='outlined' className='p-3 mt-1 bg-gray-900 text-green-400 text-xs font-mono overflow-auto max-h-60'>
+                <pre>{JSON.stringify(JSON.parse(selectedLog.response), null, 2)}</pre>
+              </Paper>
+            </div>
+          )}
+          {selectedLog?.error && (
+            <div>
+              <strong>Error Trace / Message:</strong>
+              <Alert severity='error' variant='outlined' className='mt-1 font-mono text-sm'>
+                {selectedLog.error}
+              </Alert>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenLogDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </div>

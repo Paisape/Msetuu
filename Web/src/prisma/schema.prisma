@@ -1008,5 +1008,18 @@ model SmsTemplate {
   updatedAt   DateTime @updatedAt
 }
 
+// Logging table for tracking Textzi SMS Gateway request & response transactions
+model SmsLog {
+  id          String   @id @default(cuid())
+  mobile      String
+  message     String
+  templateId  String
+  status      String   // SUCCESS, FAILED, DISABLED
+  requestUrl  String   // Request endpoint called (with API key redacted for security)
+  response    String?  // JSON string or plain text response from API
+  error       String?  // cURL or Fetch library level errors if any
+  createdAt   DateTime @default(now())
+}
+
 
 

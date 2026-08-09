@@ -53,8 +53,9 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   ],
   SMS: [
     { key: 'SMS_PROVIDER', secret: false, label: 'SMS Provider' },
-    { key: 'SMS_API_KEY', secret: true, label: 'SMS API Key' },
-    { key: 'SMS_API_SECRET', secret: true, label: 'SMS API Secret' },
+    { key: 'TEXTZI_API_KEY', secret: true, label: 'Textzi API Key' },
+    { key: 'TEXTZI_USER_ID', secret: false, label: 'Textzi User ID' },
+    { key: 'TEXTZI_TEMPLATE_ID', secret: false, label: 'Default DLT Template ID' },
     { key: 'SMS_SENDER_ID', secret: false, label: 'Sender ID' }
   ],
   WHATSAPP: [
