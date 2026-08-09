@@ -995,4 +995,18 @@ model NotificationLog {
   createdAt      DateTime @default(now())
 }
 
+// Master table for DLT registered SMS Templates (e.g. Textzi DLT Templates)
+model SmsTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  templateId  String   @unique // DLT Template ID (e.g. 1177178593496518428)
+  content     String   // Template content text with variable placeholders like {#num#}
+  senderId    String?
+  active      Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
 

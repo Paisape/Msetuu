@@ -61,10 +61,11 @@ const NOTIFICATION_EMAIL_FIELDS: FieldMeta[] = [
 ]
 
 const SMS_FIELDS: FieldMeta[] = [
-  { key: 'SMS_PROVIDER', label: 'SMS Provider', secret: false, placeholder: 'e.g. MSG91, Twilio' },
-  { key: 'SMS_API_KEY', label: 'SMS API Key', secret: true },
-  { key: 'SMS_API_SECRET', label: 'SMS API Secret', secret: true },
-  { key: 'SMS_SENDER_ID', label: 'Sender ID', secret: false, placeholder: '6-character sender ID' }
+  { key: 'SMS_PROVIDER', label: 'SMS Provider (TEXTZI / DISABLED)', secret: false, placeholder: 'TEXTZI' },
+  { key: 'TEXTZI_API_KEY', label: 'Textzi API Key', secret: true },
+  { key: 'TEXTZI_USER_ID', label: 'Textzi User ID', secret: false, placeholder: 'Your Textzi User ID' },
+  { key: 'TEXTZI_TEMPLATE_ID', label: 'Default DLT Template ID', secret: false, placeholder: '1177178593496518428' },
+  { key: 'SMS_SENDER_ID', label: 'Sender ID (Optional)', secret: false, placeholder: '6-character sender ID' }
 ]
 
 const ASTROLOGY_FIELDS: FieldMeta[] = [
