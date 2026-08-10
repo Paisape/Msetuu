@@ -15,3 +15,4 @@ AGENTS.md
 docker-compose*
 *.db
 *.log
+Web/public/uploads

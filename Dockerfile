@@ -8,7 +8,6 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY Web/package.json ./
 RUN npm config set maxsockets 1 && \
-    npm config set jobs 1 && \
     npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --prefer-offline
 
 # Rebuild the source code only when needed
