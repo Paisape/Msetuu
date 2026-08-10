@@ -14,20 +14,32 @@ function maskName(name: string): string {
     .join(' ')
 }
 
+function getAppDomain(): string {
+  // NEXT_PUBLIC_APP_URL is the primary user-facing root URL of the website
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
+  // Fallback: If NEXTAUTH_URL is used, strip /api/auth path
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.split('/api/auth')[0]
+  }
+  return 'https://mandirsetuu.com'
+}
+
 /**
  * Sends a welcome email containing the user's personal referral code and link.
  */
 export async function sendWelcomeReferralEmail(toEmail: string, userName: string, referralCode: string) {
-  const domain = process.env.NEXTAUTH_URL || 'https://paisape.in'
+  const domain = getAppDomain()
   const referralLink = `${domain}/register?ref=${referralCode}`
-  const subject = 'Welcome to Paisape! Here is your Referral Link'
+  const subject = 'Welcome to Mandirsetuu! Here is your Referral Link'
 
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Welcome to Paisape</title>
+      <title>Welcome to Mandirsetuu</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -45,7 +57,7 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         .header {
-          background: linear-gradient(135deg, #7367f0 0%, #a83279 100%);
+          background: linear-gradient(135deg, #006241 0%, #f97316 100%);
           color: #ffffff;
           padding: 40px 20px;
           text-align: center;
@@ -60,13 +72,13 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
           line-height: 1.6;
         }
         .content h2 {
-          color: #7367f0;
+          color: #006241;
           font-size: 20px;
           margin-top: 0;
         }
         .code-box {
-          background-color: #f0edf7;
-          border: 1px dashed #7367f0;
+          background-color: #f0fdf4;
+          border: 1px dashed #006241;
           border-radius: 8px;
           padding: 20px;
           text-align: center;
@@ -75,7 +87,7 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
         .referral-code {
           font-size: 32px;
           font-weight: 700;
-          color: #7367f0;
+          color: #006241;
           letter-spacing: 2px;
           margin-bottom: 10px;
         }
@@ -87,7 +99,7 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
         }
         .button {
           display: inline-block;
-          background-color: #7367f0;
+          background-color: #006241;
           color: #ffffff !important;
           text-decoration: none;
           padding: 12px 30px;
@@ -116,7 +128,7 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
     <body>
       <div class="container">
         <div class="header">
-          <h1>Welcome to Paisape, ${userName}! 🎉</h1>
+          <h1>Welcome to Mandirsetuu, ${userName}! 🎉</h1>
         </div>
         <div class="content">
           <h2>Your account is registered successfully.</h2>
@@ -130,7 +142,7 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
           <h3>How it works:</h3>
           <ul class="benefit-list">
             <li><strong>Step 1:</strong> Share your unique referral link with your family & friends.</li>
-            <li><strong>Step 2:</strong> When they sign up and verify their phone OTP, you instantly get a signup reward cash.</li>
+            <li><strong>Step 2:</strong> When they sign up and verify their email and phone OTP, you instantly get a signup reward cash.</li>
             <li><strong>Step 3:</strong> When they place their first order, you get a percentage/flat commission.</li>
             <li><strong>Step 4:</strong> You will continue earning recurring commissions on their future orders!</li>
           </ul>
@@ -140,8 +152,8 @@ export async function sendWelcomeReferralEmail(toEmail: string, userName: string
           </div>
         </div>
         <div class="footer">
-          <p>This is an automated transactional message from Paisape.</p>
-          <p>&copy; ${new Date().getFullYear()} Paisape. All rights reserved.</p>
+          <p>This is an automated transactional message from Mandirsetuu.</p>
+          <p>&copy; ${new Date().getFullYear()} Mandirsetuu. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -162,7 +174,7 @@ export async function sendReferralCommissionEmail(
   newBalance: number,
   type: 'SIGNUP' | 'FIRST_ORDER' | 'RECURRING_ORDER'
 ) {
-  const domain = process.env.NEXTAUTH_URL || 'https://paisape.in'
+  const domain = getAppDomain()
   const subject = 'Congratulations! You earned a Referral Commission 💰'
   const maskedFriendName = maskName(friendName)
 
@@ -198,7 +210,7 @@ export async function sendReferralCommissionEmail(
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         .header {
-          background: linear-gradient(135deg, #28c76f 0%, #81fbb8 100%);
+          background: linear-gradient(135deg, #006241 0%, #f97316 100%);
           color: #ffffff;
           padding: 40px 20px;
           text-align: center;
@@ -213,8 +225,8 @@ export async function sendReferralCommissionEmail(
           line-height: 1.6;
         }
         .reward-badge {
-          background-color: #e3f9eb;
-          border: 1px solid #28c76f;
+          background-color: #f0fdf4;
+          border: 1px solid #006241;
           border-radius: 8px;
           padding: 20px;
           text-align: center;
@@ -223,7 +235,7 @@ export async function sendReferralCommissionEmail(
         .reward-amount {
           font-size: 36px;
           font-weight: 700;
-          color: #28c76f;
+          color: #006241;
         }
         .balance-info {
           font-size: 14px;
@@ -232,7 +244,7 @@ export async function sendReferralCommissionEmail(
         }
         .button {
           display: inline-block;
-          background-color: #28c76f;
+          background-color: #006241;
           color: #ffffff !important;
           text-decoration: none;
           padding: 12px 30px;
@@ -273,8 +285,8 @@ export async function sendReferralCommissionEmail(
           </div>
         </div>
         <div class="footer">
-          <p>This is an automated transaction alert from Paisape.</p>
-          <p>&copy; ${new Date().getFullYear()} Paisape. All rights reserved.</p>
+          <p>This is an automated transaction alert from Mandirsetuu.</p>
+          <p>&copy; ${new Date().getFullYear()} Mandirsetuu. All rights reserved.</p>
         </div>
       </div>
     </body>

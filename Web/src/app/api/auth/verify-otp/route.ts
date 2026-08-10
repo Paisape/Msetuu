@@ -152,7 +152,15 @@ export async function POST(req: Request) {
       expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS,
       refreshToken,
       refreshExpiresIn: REFRESH_TOKEN_MAX_AGE_SECONDS,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+        referralCode: user.referralCode,
+        referralWalletBalance: user.referralWalletBalance
+      }
     }, { status: 200 })
 
   } catch (err: any) {
