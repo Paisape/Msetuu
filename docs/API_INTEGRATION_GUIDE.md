@@ -92,3 +92,31 @@ Every `POST` booking endpoint above returns a `razorpayOrder` object.
    - Payload: `{ "orderType": "EPUJA", "orderId": "<database_order_id>", "razorpayPaymentId": "<id>", "razorpayOrderId": "<id>", "razorpaySignature": "<sig>" }`
    - `orderType` must be one of: `EPUJA`, `JYOTISH`, `CHADHAVA`, `KUNDLI`, `ECOMMERCE`, or `OFFER`.
 4. **Server Action**: Server marks order as `PAID` and triggers invoicing.
+
+---
+
+## 12. Refer & Earn (Commission & Payouts) Flow
+
+Devotees can refer friends using their unique referral link/code.
+
+### 12.1. Registration with Referral Code
+- **Register**: `POST /api/auth/register`
+  - Payload adds: `{ ..., "referralCode": "REF12345" }` (optional). If valid, matches the user and records the referrer relationship.
+
+### 12.2. Customer Referral Dashboard APIs
+- **Get Referral Stats**: `GET /api/my-referrals/stats`
+  - Response: Includes unique referral code, wallet balance (`referralWalletBalance`), counts of total invites and active buyers, lifetime withdrawals, min payout limit, transaction history ledger (`earnings`), and withdrawal request logs (`payouts`).
+- **Get Friends List**: `GET /api/my-referrals/friends`
+  - Response: Returns a list of referred friends with privacy-masked names/emails (`name: "C****n B*****a"`) and their referral status (`Active Buyer` / `Verified Member` / `Pending Verification`).
+- **Request Payout Withdrawal**: `POST /api/my-referrals/payout`
+  - Payload: `{ "amount": 1000, "bankHolderName": "...", "bankName": "...", "accountNumber": "...", "ifscCode": "...", "upiId": "..." }`
+  - Validation: Validates that balance >= amount, amount >= minimum limit, and that the bank account number / UPI is not already registered under a different user profile (anti-fraud check).
+
+### 12.3. Admin Referral Management APIs
+- **Get Payout Requests**: `GET /api/admin/referrals/payouts`
+  - Response: List of all pending, approved, paid, and rejected payout requests across the system.
+- **Update Payout Request**: `PATCH /api/admin/referrals/payouts/[id]`
+  - Payload: `{ "status": "APPROVED" | "PAID" | "REJECTED", "adminNotes": "..." }`
+  - Action: Transitions the withdrawal status. If marked as `REJECTED`, the amount is automatically refunded back to the referrer's wallet balance.
+- **Manage User Specific Overrides**: `GET` / `PATCH` `/api/admin/referrals/user-overrides/[id]`
+  - Payload: `{ "refCommissionSignup": 50, "refCommissionFirst": 150, "refCommissionRecurring": null }` (Leave `null` to fall back and inherit the global default config rates).

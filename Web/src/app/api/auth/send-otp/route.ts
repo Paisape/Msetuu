@@ -5,6 +5,7 @@ import prisma from '@/libs/prisma'
 import { enforceRateLimit } from '@/libs/rateLimit'
 import { sendEmail } from '@/libs/email'
 import { welcomeVerificationEmail, welcomePhoneVerificationEmail, passwordlessOtpEmail } from '@/libs/emailTemplates'
+import { sendOtpSms } from '@/libs/sms'
 
 export async function POST(req: Request) {
   try {
@@ -106,9 +107,18 @@ export async function POST(req: Request) {
         }
       }
 
-      // SMS Flow (Simulated for now until SMS integration)
-      console.log(`[SIMULATED SMS] Sending ${purpose} OTP ${otp} to phone number ${contact}`)
-      
+      // Real SMS Flow using Textzi integration (for non-registration flows e.g. LOGIN)
+      try {
+        const smsResult = await sendOtpSms(contact, otp)
+        if (!smsResult.success) {
+          console.error('[SMS] Send OTP failed:', smsResult.message)
+          return NextResponse.json({ error: smsResult.message || 'Failed to send OTP via SMS.' }, { status: 500 })
+        }
+      } catch (smsError: any) {
+        console.error('[SMS] Send OTP failed with error:', smsError)
+        return NextResponse.json({ error: 'Failed to send OTP via SMS.' }, { status: 500 })
+      }
+
       return NextResponse.json({ success: true, message: 'OTP sent via SMS successfully.' }, { status: 200 })
     }
   } catch (err: any) {
