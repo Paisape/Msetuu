@@ -1,7 +1,20 @@
 #!/bin/sh
+set -e
 
 echo "=== Starting Mandirsetuu Container ==="
 echo "Current Directory: $(pwd)"
+
+# If a persistent volume is mounted over public/uploads (common on hosting
+# platforms so uploads survive redeploys), it's created owned by root at
+# mount time — that overrides the image's built-in --chown and causes
+# "EACCES: permission denied, mkdir '/app/public/uploads'" even though the
+# image itself is fine. Fix ownership here (running as root) on every start,
+# then drop to the unprivileged nextjs user for everything else.
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p ./public/uploads
+  chown -R nextjs:nodejs ./public
+  exec su-exec nextjs sh "$0" "$@"
+fi
 
 # Attempt database migration push
 echo "=== Running Prisma DB Push ==="
