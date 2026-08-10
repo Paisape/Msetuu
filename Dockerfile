@@ -7,7 +7,9 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY Web/package.json ./
-RUN npm install --legacy-peer-deps --ignore-scripts
+RUN npm config set maxsockets 1 && \
+    npm config set jobs 1 && \
+    npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --prefer-offline
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -19,7 +21,7 @@ COPY Web/ .
 RUN npx prisma generate && npm run build:icons
 
 # Next.js build
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Prune development dependencies to keep the final runner image light
 RUN npm prune --omit=dev --legacy-peer-deps
