@@ -35,7 +35,39 @@ export async function POST(req: Request) {
     const existing = await prisma.user.findUnique({ where: { email } })
 
     if (existing) {
-      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
+      if (existing.emailVerified !== null) {
+        return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
+      }
+
+      // If the account exists but is unverified, allow updating/overwriting it to re-trigger verification
+      const referralCodeInput = typeof body.referralCode === 'string' ? body.referralCode.trim() : ''
+      const { generateUniqueReferralCode, validateReferrer } = await import('@/libs/referralEngine')
+      
+      const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email, phone) : null
+      const uniqueReferralCode = existing.referralCode || await generateUniqueReferralCode()
+      const hashedPassword = await bcrypt.hash(password, 12)
+
+      const user = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          phone,
+          password: hashedPassword,
+          referralCode: uniqueReferralCode,
+          referredById
+        },
+        select: { id: true, name: true, email: true, phone: true, role: true, referralCode: true, createdAt: true }
+      })
+
+      await logActivity({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        action: 'REGISTER',
+        details: 'Unverified user account updated for re-registration.'
+      })
+
+      return NextResponse.json({ user, requireVerification: true }, { status: 201 })
     }
 
     const referralCodeInput = typeof body.referralCode === 'string' ? body.referralCode.trim() : ''
