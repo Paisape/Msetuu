@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/', destination: '/front-pages/landing-page' },
       { source: '/login', destination: '/en/login' },
+      { source: '/register', destination: '/en/register' },
       { source: '/MsetuAdmin', destination: '/en/apps/mandir-setu' },
       { source: '/:lang(en|fr|ar)/MsetuAdmin', destination: '/:lang/apps/mandir-setu' },
       // Force any localized upload paths back to the public/uploads directory
