@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 
 // Next Imports
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 // MUI Imports
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -24,7 +24,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { signIn } from 'next-auth/react'
 import { Controller, useForm } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { email, object, minLength, string, pipe, nonEmpty } from 'valibot'
+import { email, object, minLength, string, pipe, nonEmpty, optional } from 'valibot'
 import type { SubmitHandler } from 'react-hook-form'
 import type { InferInput } from 'valibot'
 import classnames from 'classnames'
@@ -81,7 +81,8 @@ const schema = object({
     string(),
     nonEmpty('This field is required'),
     minLength(8, 'Password must be at least 8 characters long')
-  )
+  ),
+  referralCode: optional(string())
 })
 
 const Register = ({ mode }: { mode: SystemMode }) => {
@@ -101,6 +102,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
 
   // Hooks
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { lang: locale } = useParams()
   const { settings } = useSettings()
   const theme = useTheme()
@@ -131,11 +133,19 @@ const Register = ({ mode }: { mode: SystemMode }) => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors }
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
-    defaultValues: { name: '', email: '', phone: '', password: '' }
+    defaultValues: { name: '', email: '', phone: '', password: '', referralCode: '' }
   })
+
+  useEffect(() => {
+    const refCode = searchParams.get('ref') || ''
+    if (refCode) {
+      setValue('referralCode', refCode)
+    }
+  }, [searchParams, setValue])
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
@@ -221,8 +231,8 @@ const Register = ({ mode }: { mode: SystemMode }) => {
         </Link>
         <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-8 sm:mbs-11 md:mbs-0'>
           <div className='flex flex-col gap-1'>
-            <Typography variant='h4'>Adventure starts here 🚀</Typography>
-            <Typography>Make your app management easy and fun!</Typography>
+            <Typography variant='h4'>Devotion Starts Here 🪔</Typography>
+            <Typography>Makes your devotion journey easy and joyful</Typography>
           </div>
           {submitError && <Alert severity='error'>{submitError}</Alert>}
           <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
@@ -289,6 +299,19 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                     }
                   }}
                   {...(errors.password && { error: true, helperText: errors.password.message })}
+                />
+              )}
+            />
+            <Controller
+              name='referralCode'
+              control={control}
+              render={({ field }) => (
+                <CustomTextField
+                  {...field}
+                  fullWidth
+                  label='Referral Code (Optional)'
+                  placeholder='Enter referral code'
+                  {...(errors.referralCode && { error: true, helperText: errors.referralCode.message })}
                 />
               )}
             />
