@@ -76,6 +76,20 @@ model User {
   redemptionRequests  RedemptionRequest[]
 
   addresses Address[]
+
+  // Referral Program Fields
+  referralCode           String?            @unique
+  referredById           String?
+  referralWalletBalance  Float              @default(0.0)
+  refCommissionSignup    Float?
+  refCommissionFirst     Float?
+  refCommissionRecurring Float?
+
+  // Relations
+  referredBy             User?              @relation("UserReferrals", fields: [referredById], references: [id])
+  referredUsers          User[]             @relation("UserReferrals")
+  referralTransactions   ReferralLedger[]
+  payoutRequests         PayoutRequest[]
 }
 
 // Mobile app auth: short-lived JWT access tokens (minted on the fly, never stored) paired with
@@ -1020,6 +1034,40 @@ model SmsLog {
   error       String?  // cURL or Fetch library level errors if any
   createdAt   DateTime @default(now())
 }
+
+// Logging table for tracking Refer & Earn earnings transactions
+model ReferralLedger {
+  id             String    @id @default(cuid())
+  referrerId     String
+  referredUserId String
+  amount         Float
+  type           String    // SIGNUP, FIRST_ORDER, RECURRING_ORDER, CLAWBACK
+  status         String    // PENDING, CONFIRMED, CANCELLED
+  orderId        String?   // Reference to related order
+  createdAt      DateTime  @default(now())
+  confirmedAt    DateTime?
+
+  referrer User @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+}
+
+// User-requested cash withdrawals to bank account or UPI
+model PayoutRequest {
+  id             String    @id @default(cuid())
+  userId         String
+  amount         Float
+  status         String    @default("PENDING") // PENDING, APPROVED, PAID, REJECTED
+  bankHolderName String
+  bankName       String
+  accountNumber  String
+  ifscCode       String
+  upiId          String?
+  adminNotes     String?
+  createdAt      DateTime  @default(now())
+  processedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 
 
 

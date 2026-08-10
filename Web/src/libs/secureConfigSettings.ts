@@ -3,7 +3,7 @@ import { getSettingsForCategory, setSettings } from '@/libs/appSettings'
 // Shared field catalogue + redaction logic for the Config > PG/Email/SMS admin forms. Centralised
 // here so every settings route (GET redact, POST save) enforces the exact same allow-list of keys
 // per category — a route can never read/write a key that isn't declared below.
-export type SettingsCategory = 'PG' | 'EMAIL' | 'NOTIFICATION_EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE' | 'WHATSAPP' | 'FIREBASE' | 'LEGAL'
+export type SettingsCategory = 'PG' | 'EMAIL' | 'NOTIFICATION_EMAIL' | 'SMS' | 'ASTROLOGY' | 'ADSENSE' | 'WHATSAPP' | 'FIREBASE' | 'LEGAL' | 'REFERRAL'
 
 type FieldDef = { key: string; secret: boolean; label: string }
 
@@ -69,6 +69,15 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   ],
   LEGAL: [
     { key: 'TERMS_AND_CONDITIONS', secret: false, label: 'Terms and Conditions (Checkout)' }
+  ],
+  REFERRAL: [
+    { key: 'REFERRAL_SYSTEM_ENABLED', secret: false, label: 'Enable Referral System (true / false)' },
+    { key: 'REFERRAL_MIN_PAYOUT', secret: false, label: 'Minimum Payout Limit (₹)' },
+    { key: 'REFERRAL_SIGNUP_REWARD', secret: false, label: 'Default Signup Reward (₹)' },
+    { key: 'REFERRAL_FIRST_ORDER_REWARD_TYPE', secret: false, label: 'First Order Reward Type (FLAT / PERCENTAGE)' },
+    { key: 'REFERRAL_FIRST_ORDER_REWARD', secret: false, label: 'Default First Order Reward (Amount or %)' },
+    { key: 'REFERRAL_RECURRING_REWARD_TYPE', secret: false, label: 'Ongoing Orders Reward Type (FLAT / PERCENTAGE)' },
+    { key: 'REFERRAL_RECURRING_REWARD', secret: false, label: 'Default Ongoing Orders Reward (Amount or %)' }
   ]
 }
 

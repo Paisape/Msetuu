@@ -73,6 +73,17 @@ export async function POST(req: Request) {
       
       notifyUserWelcome(user.id, user.name || undefined)
 
+      // Trigger referral rewards and send Welcome Email
+      const { processSignupReferral } = await import('@/libs/referralEngine')
+      const { sendWelcomeReferralEmail } = await import('@/libs/referralEmails')
+      
+      await processSignupReferral(user.id)
+      
+      if (user.email && user.referralCode) {
+        await sendWelcomeReferralEmail(user.email, user.name || 'User', user.referralCode)
+          .catch(err => console.error('[verify-otp] Welcome email failed:', err))
+      }
+
       return NextResponse.json({ success: true, message: 'Verified successfully.' }, { status: 200 })
     }
 
@@ -85,6 +96,9 @@ export async function POST(req: Request) {
       const randomPassword = require('crypto').randomBytes(32).toString('hex')
       const hashedPassword = await bcrypt.hash(randomPassword, 12)
 
+      const { generateUniqueReferralCode } = await import('@/libs/referralEngine')
+      const uniqueReferralCode = await generateUniqueReferralCode()
+
       user = await prisma.user.create({
         data: {
           email: isEmail ? contact : null,
@@ -92,7 +106,8 @@ export async function POST(req: Request) {
           name: isEmail ? contact.split('@')[0] : 'User',
           password: hashedPassword,
           role: 'USER',
-          emailVerified: isEmail ? new Date() : null
+          emailVerified: isEmail ? new Date() : null,
+          referralCode: uniqueReferralCode
         }
       })
       

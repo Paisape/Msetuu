@@ -31,4 +31,17 @@ export async function logOrderTrail({ orderType, orderId, status, note, actorId,
       userAgent
     }
   })
+
+  // Trigger referral commission status updates based on the final order status
+  try {
+    if (status === 'COMPLETED') {
+      const { confirmOrderCommission } = await import('@/libs/referralEngine')
+      await confirmOrderCommission(orderId)
+    } else if (status === 'CANCELLED') {
+      const { clawbackOrderCommission } = await import('@/libs/referralEngine')
+      await clawbackOrderCommission(orderId)
+    }
+  } catch (err) {
+    console.error('[orderTrail] Failed to process referral commission update:', err)
+  }
 }

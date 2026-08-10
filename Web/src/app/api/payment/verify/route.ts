@@ -147,6 +147,14 @@ export async function POST(req: Request) {
       gstInclusive
     })
 
+    // Log referral purchase commission (runs as best-effort in background)
+    try {
+      const { logOrderPaymentCommission } = await import('@/libs/referralEngine')
+      await logOrderPaymentCommission(orderId, order.userId, amountCharged)
+    } catch (refErr) {
+      console.error('[payment-verify] Failed to log referral commission:', refErr)
+    }
+
     // 7b. Email the customer a payment receipt. Best-effort — never blocks the response.
     if (order.user?.email) {
       const { subject, html } = paymentSuccessEmail({

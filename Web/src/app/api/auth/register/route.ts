@@ -38,6 +38,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
     }
 
+    const referralCodeInput = typeof body.referralCode === 'string' ? body.referralCode.trim() : ''
+    const { generateUniqueReferralCode, validateReferrer } = await import('@/libs/referralEngine')
+    
+    const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email, phone) : null
+    const uniqueReferralCode = await generateUniqueReferralCode()
+
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const user = await prisma.user.create({
@@ -47,8 +53,10 @@ export async function POST(req: Request) {
         phone,
         password: hashedPassword,
         role: 'USER',
+        referralCode: uniqueReferralCode,
+        referredById
       },
-      select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phone: true, role: true, referralCode: true, createdAt: true }
     })
 
     await logActivity({

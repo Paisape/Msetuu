@@ -101,6 +101,16 @@ const LEGAL_FIELDS: FieldMeta[] = [
   { key: 'TERMS_AND_CONDITIONS', label: 'Terms and Conditions (Checkout)', secret: false }
 ]
 
+const REFERRAL_FIELDS: FieldMeta[] = [
+  { key: 'REFERRAL_SYSTEM_ENABLED', label: 'Enable Referral System (true / false)', secret: false, placeholder: 'false' },
+  { key: 'REFERRAL_MIN_PAYOUT', label: 'Minimum Payout Limit (₹)', secret: false, placeholder: '500' },
+  { key: 'REFERRAL_SIGNUP_REWARD', label: 'Default Signup Reward (₹)', secret: false, placeholder: '10' },
+  { key: 'REFERRAL_FIRST_ORDER_REWARD_TYPE', label: 'First Order Reward Type (FLAT / PERCENTAGE)', secret: false, placeholder: 'PERCENTAGE' },
+  { key: 'REFERRAL_FIRST_ORDER_REWARD', label: 'Default First Order Reward (Amount or %)', secret: false, placeholder: '5' },
+  { key: 'REFERRAL_RECURRING_REWARD_TYPE', label: 'Ongoing Orders Reward Type (FLAT / PERCENTAGE)', secret: false, placeholder: 'PERCENTAGE' },
+  { key: 'REFERRAL_RECURRING_REWARD', label: 'Default Ongoing Orders Reward (Amount or %)', secret: false, placeholder: '2' }
+]
+
 type FieldEntry = { value: string; configured: boolean; source: 'db' | 'env' | 'none' }
 
 // A single settings form (PG / Email / SMS) — loads redacted values from its endpoint, lets the
@@ -447,6 +457,7 @@ const ConfigClient = () => {
               <Tab label='WhatsApp' />
               <Tab label='Firebase Push' />
               <Tab label='Legal & Terms' />
+              <Tab label='Referrals' />
             </Tabs>
           </Box>
           <CardContent>
@@ -520,6 +531,12 @@ const ConfigClient = () => {
               <>
                 <Chip size='small' label='Manage Terms and Conditions presented to users at checkout' className='mb-4' />
                 <SettingsPanel endpoint='/api/secure-config/settings/legal' fields={LEGAL_FIELDS} />
+              </>
+            )}
+            {tabIndex === 9 && (
+              <>
+                <Chip size='small' label='Configure global default referral rewards, triggers, and payout thresholds' className='mb-4' />
+                <SettingsPanel endpoint='/api/secure-config/settings/referral' fields={REFERRAL_FIELDS} />
               </>
             )}
           </CardContent>

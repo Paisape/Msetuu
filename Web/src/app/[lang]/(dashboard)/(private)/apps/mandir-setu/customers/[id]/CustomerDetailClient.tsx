@@ -20,6 +20,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import TextField from '@mui/material/TextField'
 
 const STATUS_COLORS: Record<string, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
   PENDING: 'warning',
@@ -49,6 +50,12 @@ const CustomerDetailClient = ({ id }: { id: string }) => {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  const [signupOverride, setSignupOverride] = useState<string>('')
+  const [firstOverride, setFirstOverride] = useState<string>('')
+  const [recurringOverride, setRecurringOverride] = useState<string>('')
+  const [overrideSaving, setOverrideSaving] = useState(false)
+  const [overrideSuccess, setOverrideSuccess] = useState(false)
+
   useEffect(() => {
     fetch(`/api/customers/${id}`)
       .then(res => res.json().then(d => ({ ok: res.ok, d })))
@@ -58,7 +65,41 @@ const CustomerDetailClient = ({ id }: { id: string }) => {
       })
       .catch(err => setErrorMsg(err instanceof Error ? err.message : 'Failed to load customer.'))
       .finally(() => setLoading(false))
+
+    fetch(`/api/admin/referrals/user-overrides/${id}`)
+      .then(res => res.json())
+      .then(d => {
+        if (d.success && d.user) {
+          setSignupOverride(d.user.refCommissionSignup !== null && d.user.refCommissionSignup !== undefined ? String(d.user.refCommissionSignup) : '')
+          setFirstOverride(d.user.refCommissionFirst !== null && d.user.refCommissionFirst !== undefined ? String(d.user.refCommissionFirst) : '')
+          setRecurringOverride(d.user.refCommissionRecurring !== null && d.user.refCommissionRecurring !== undefined ? String(d.user.refCommissionRecurring) : '')
+        }
+      })
+      .catch(err => console.error(err))
   }, [id])
+
+  const handleSaveOverrides = async () => {
+    setOverrideSaving(true)
+    setOverrideSuccess(false)
+    try {
+      const res = await fetch(`/api/admin/referrals/user-overrides/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          refCommissionSignup: signupOverride === '' ? null : Number(signupOverride),
+          refCommissionFirst: firstOverride === '' ? null : Number(firstOverride),
+          refCommissionRecurring: recurringOverride === '' ? null : Number(recurringOverride)
+        })
+      })
+      if (!res.ok) throw new Error('Failed to save overrides')
+      setOverrideSuccess(true)
+      setTimeout(() => setOverrideSuccess(false), 3000)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setOverrideSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -118,6 +159,48 @@ const CustomerDetailClient = ({ id }: { id: string }) => {
                   </Typography>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className='mt-6'>
+            <CardHeader title='Referral Commission Overrides' subheader='Set user-specific custom rates. Leave blank to inherit global defaults.' />
+            <CardContent className='flex flex-col gap-4'>
+              {overrideSuccess && <Alert severity='success'>Overrides saved successfully.</Alert>}
+              <TextField
+                label='Signup Reward Override (₹)'
+                type='number'
+                size='small'
+                value={signupOverride}
+                onChange={e => setSignupOverride(e.target.value)}
+                fullWidth
+                placeholder='Inherit global default'
+              />
+              <TextField
+                label='First Order Override (Amount or %)'
+                type='number'
+                size='small'
+                value={firstOverride}
+                onChange={e => setFirstOverride(e.target.value)}
+                fullWidth
+                placeholder='Inherit global default'
+              />
+              <TextField
+                label='Ongoing Orders Override (Amount or %)'
+                type='number'
+                size='small'
+                value={recurringOverride}
+                onChange={e => setRecurringOverride(e.target.value)}
+                fullWidth
+                placeholder='Inherit global default'
+              />
+              <Button
+                variant='contained'
+                onClick={handleSaveOverrides}
+                disabled={overrideSaving}
+                fullWidth
+              >
+                {overrideSaving ? <CircularProgress size={24} color='inherit' /> : 'Save Overrides'}
+              </Button>
             </CardContent>
           </Card>
         </Grid>
