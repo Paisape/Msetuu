@@ -226,6 +226,22 @@ export function welcomeVerificationEmail(opts: { customerName: string; otp: stri
   return { subject, html: renderEmailLayout(body, 'Your registration verification code.') }
 }
 
+export function welcomePhoneVerificationEmail(opts: { customerName: string; phone: string; otp: string }): { subject: string; html: string } {
+  const subject = 'Welcome to Mandirsetuu — Please verify your mobile number'
+
+  const body = `
+    <p>Namaste ${opts.customerName},</p>
+    <p>Welcome to Mandirsetuu! Please verify your mobile number <strong>${opts.phone}</strong> to complete your registration.</p>
+    <p>Enter this one-time code on the verification page under Mobile Code:</p>
+    <div style="text-align:center;margin:24px 0;">
+      <span style="display:inline-block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 32px;font-size:28px;font-weight:800;letter-spacing:8px;color:#006241;">${opts.otp}</span>
+    </div>
+    <p style="color:#ef4444;font-size:13px;">This code expires in 15 minutes.</p>
+  `
+
+  return { subject, html: renderEmailLayout(body, 'Your mobile verification code.') }
+}
+
 export function passwordResetOtpEmail(opts: { customerName: string; otp: string }): { subject: string; html: string } {
   const subject = 'Mandirsetuu — Password Reset Verification Code'
 

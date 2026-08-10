@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/libs/prisma'
 import { enforceRateLimit } from '@/libs/rateLimit'
 import { sendEmail } from '@/libs/email'
-import { welcomeVerificationEmail, passwordlessOtpEmail } from '@/libs/emailTemplates'
+import { welcomeVerificationEmail, welcomePhoneVerificationEmail, passwordlessOtpEmail } from '@/libs/emailTemplates'
 
 export async function POST(req: Request) {
   try {
@@ -79,6 +79,33 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ success: true, message: 'OTP sent successfully.' }, { status: 200 })
     } else {
+      if (purpose === 'REGISTER') {
+        const user = await prisma.user.findFirst({
+          where: { phone: contact }
+        })
+
+        if (user && user.email) {
+          const template = welcomePhoneVerificationEmail({
+            customerName: user.name || 'User',
+            phone: contact,
+            otp
+          })
+
+          try {
+            const emailResult = await sendEmail({ to: user.email, subject: template.subject, html: template.html })
+            if (!emailResult.sent) {
+              console.error('SMTP Email Error for Mobile OTP:', emailResult.reason)
+              return NextResponse.json({ error: 'Failed to send Mobile OTP email.' }, { status: 500 })
+            }
+          } catch (emailError: any) {
+            console.error('SMTP Email Error for Mobile OTP:', emailError)
+            return NextResponse.json({ error: 'Failed to send Mobile OTP email.' }, { status: 500 })
+          }
+
+          return NextResponse.json({ success: true, message: 'Mobile OTP sent via email successfully.' }, { status: 200 })
+        }
+      }
+
       // SMS Flow (Simulated for now until SMS integration)
       console.log(`[SIMULATED SMS] Sending ${purpose} OTP ${otp} to phone number ${contact}`)
       
