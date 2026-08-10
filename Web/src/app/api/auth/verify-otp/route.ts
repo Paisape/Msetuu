@@ -84,7 +84,40 @@ export async function POST(req: Request) {
           .catch(err => console.error('[verify-otp] Welcome email failed:', err))
       }
 
-      return NextResponse.json({ success: true, message: 'Verified successfully.' }, { status: 200 })
+      // Generate mobile tokens for registration login response
+      const tokenEmail = user.email || `${contact}@phone.local`
+      const accessToken = await generateAccessToken({ ...user, email: tokenEmail })
+      const refreshToken = generateRefreshToken()
+
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashRefreshToken(refreshToken),
+          deviceId: typeof deviceId === 'string' ? deviceId.slice(0, 200) : null,
+          deviceName: typeof deviceName === 'string' ? deviceName.slice(0, 200) : null,
+          os: typeof os === 'string' ? os.slice(0, 100) : null,
+          expiresAt: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_SECONDS * 1000)
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Verified successfully.',
+        isNewUser: false,
+        accessToken,
+        expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS,
+        refreshToken,
+        refreshExpiresIn: REFRESH_TOKEN_MAX_AGE_SECONDS,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          image: user.image,
+          referralCode: user.referralCode,
+          referralWalletBalance: user.referralWalletBalance
+        }
+      }, { status: 200 })
     }
 
     // --- LOGIN FLOW ---

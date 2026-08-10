@@ -19,6 +19,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
 
 // Third-party Imports
 import { signIn } from 'next-auth/react'
@@ -94,6 +95,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
   const [agreed, setAgreed] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [countryCode, setCountryCode] = useState('+91')
 
   // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
@@ -137,6 +139,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
     control,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors }
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
@@ -157,36 +160,60 @@ const Register = ({ mode }: { mode: SystemMode }) => {
 
     if (!agreed) {
       setSubmitError('Please agree to the privacy policy & terms to continue.')
-
       return
     }
 
+    // Dynamic country validations
+    if (countryCode === '+91') {
+      if (!data.phone || data.phone.trim().length < 10) {
+        setError('phone', { type: 'manual', message: 'Mobile number is required and must be at least 10 digits for Indian users.' })
+        return
+      }
+    } else {
+      if (!data.email || data.email.trim() === '') {
+        setError('email', { type: 'manual', message: 'Email is compulsory for customers outside India.' })
+        return
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        setError('email', { type: 'manual', message: 'Please enter a valid email address.' })
+        return
+      }
+    }
+
     setSubmitting(true)
+    const fullPhone = data.phone && data.phone.trim() !== '' ? `${countryCode}${data.phone.replace(/^\+/, '').trim()}` : null
 
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          ...data,
+          phone: fullPhone
+        })
       })
 
       const json = await res.json().catch(() => null)
 
       if (!res.ok) {
         setSubmitError(json?.error || 'Unable to register. Please try again.')
-
+        setSubmitting(false)
         return
       }
 
       if (json?.requireVerification) {
-        // Automatically send the registration OTP to mobile (and email if provided)
-        const otpPromises = [
-          fetch('/api/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contact: data.phone, type: 'SMS', purpose: 'REGISTER' })
-          }).catch(() => null)
-        ]
+        // Automatically send the registration OTP (SMS OTP is Indian only)
+        const otpPromises = []
+
+        if (countryCode === '+91' && fullPhone) {
+          otpPromises.push(
+            fetch('/api/auth/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contact: fullPhone, type: 'SMS', purpose: 'REGISTER' })
+            }).catch(() => null)
+          )
+        }
 
         if (data.email && data.email.trim() !== '') {
           otpPromises.push(
@@ -201,11 +228,15 @@ const Register = ({ mode }: { mode: SystemMode }) => {
         await Promise.all(otpPromises)
 
         // Redirect to OTP verification page
-        const emailParam = data.email && data.email.trim() !== '' ? `&email=${encodeURIComponent(data.email.trim())}` : ''
-        router.replace(getLocalizedUrl(`/verify-otp?phone=${encodeURIComponent(data.phone)}${emailParam}`, locale as Locale))
+        const phoneParam = countryCode === '+91' && fullPhone ? `?phone=${encodeURIComponent(fullPhone)}` : ''
+        const emailParam = data.email && data.email.trim() !== ''
+          ? `${phoneParam ? '&' : '?'}email=${encodeURIComponent(data.email.trim())}`
+          : ''
+
+        router.replace(getLocalizedUrl(`/verify-otp${phoneParam}${emailParam}`, locale as Locale))
       } else {
         // Fallback for non-verification mode
-        const signInRes = await signIn('credentials', { email: data.email || data.phone, password: data.password, redirect: false })
+        const signInRes = await signIn('credentials', { email: data.email || fullPhone, password: data.password, redirect: false })
 
         if (signInRes?.ok && signInRes.error === null) {
           router.replace(getLocalizedUrl('/', locale as Locale))
@@ -274,19 +305,46 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 />
               )}
             />
-            <Controller
-              name='phone'
-              control={control}
-              render={({ field }) => (
-                <CustomTextField
-                  {...field}
-                  fullWidth
-                  label='Mobile Number'
-                  placeholder='Enter your 10-digit mobile number'
-                  {...(errors.phone && { error: true, helperText: errors.phone.message })}
-                />
-              )}
-            />
+            <Box className='flex gap-2 items-start'>
+              <CustomTextField
+                select
+                value={countryCode}
+                onChange={e => setCountryCode(e.target.value)}
+                slotProps={{
+                  select: {
+                    native: true
+                  }
+                }}
+                sx={{ minWidth: 90 }}
+              >
+                <option value='+91'>🇮🇳 +91</option>
+                <option value='+1'>🇺🇸 +1</option>
+                <option value='+44'>🇬🇧 +44</option>
+                <option value='+61'>🇦🇺 +61</option>
+                <option value='+971'>🇦🇪 +971</option>
+                <option value='+966'>🇸🇦 +966</option>
+                <option value='+81'>🇯🇵 +81</option>
+                <option value='+86'>🇨🇳 +86</option>
+                <option value='+7'>🇷🇺 +7</option>
+                <option value='+49'>🇩🇪 +49</option>
+              </CustomTextField>
+              <Controller
+                name='phone'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    label='Mobile Number'
+                    placeholder='Enter mobile number'
+                    {...(errors.phone && { error: true, helperText: errors.phone.message })}
+                  />
+                )}
+              />
+            </Box>
+            <Typography variant='caption' className='text-slate-400 block -mt-4'>
+              * Email is compulsory for customers outside India. SMS OTP is only supported for Indian mobile numbers (+91).
+            </Typography>
             <Controller
               name='password'
               control={control}

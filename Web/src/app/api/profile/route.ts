@@ -13,7 +13,20 @@ export async function GET() {
 
     const profile = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { id: true, name: true, email: true, phone: true, image: true, role: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        image: true,
+        role: true,
+        occupation: true,
+        dob: true,
+        tob: true,
+        pob: true,
+        gender: true,
+        gotra: true
+      }
     })
 
     return NextResponse.json(profile)
@@ -31,7 +44,7 @@ export async function PUT(req: Request) {
     if (rateLimited) return rateLimited
 
     const body = await req.json()
-    const { name, email, phone } = body
+    const { name, email, phone, image, occupation, dob, tob, pob, gender, gotra } = body
 
     const data: Record<string, any> = {}
 
@@ -74,6 +87,55 @@ export async function PUT(req: Request) {
       data.phone = trimmedPhone
     }
 
+    if (image !== undefined) {
+      if (image !== null && typeof image !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid image URL.' }, { status: 400 })
+      }
+      data.image = image
+    }
+
+    if (occupation !== undefined) {
+      if (occupation !== null && typeof occupation !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid occupation.' }, { status: 400 })
+      }
+      data.occupation = occupation ? occupation.trim() : null
+    }
+
+    if (dob !== undefined) {
+      if (dob !== null && typeof dob !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid Date of Birth.' }, { status: 400 })
+      }
+      data.dob = dob ? dob.trim() : null
+    }
+
+    if (tob !== undefined) {
+      if (tob !== null && typeof tob !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid Time of Birth.' }, { status: 400 })
+      }
+      data.tob = tob ? tob.trim() : null
+    }
+
+    if (pob !== undefined) {
+      if (pob !== null && typeof pob !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid Place of Birth.' }, { status: 400 })
+      }
+      data.pob = pob ? pob.trim() : null
+    }
+
+    if (gender !== undefined) {
+      if (gender !== null && typeof gender !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid gender.' }, { status: 400 })
+      }
+      data.gender = gender ? gender.trim() : null
+    }
+
+    if (gotra !== undefined) {
+      if (gotra !== null && typeof gotra !== 'string') {
+        return NextResponse.json({ error: 'Please provide a valid Gotra.' }, { status: 400 })
+      }
+      data.gotra = gotra ? gotra.trim() : null
+    }
+
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: 'No fields provided to update.' }, { status: 400 })
     }
@@ -81,7 +143,20 @@ export async function PUT(req: Request) {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data,
-      select: { id: true, name: true, email: true, phone: true, image: true, role: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        image: true,
+        role: true,
+        occupation: true,
+        dob: true,
+        tob: true,
+        pob: true,
+        gender: true,
+        gotra: true
+      }
     })
 
     return NextResponse.json({ success: true, user: updatedUser })

@@ -9,16 +9,64 @@ This document outlines the expected flows, payloads, and integration steps for a
 ---
 
 ## 2. Auth Flow (Login & Registration)
+- **Registration**: `POST /api/auth/register`
+  - Payload: `{ "name": "...", "email": "...", "phone": "...", "password": "...", "referralCode": "..." }`
+  - **Dynamic Validations (Country Code Check)**:
+    - **Indian Users (Phone starts with `+91`)**: `phone` is **compulsory** (minimum 10 digits). `email` is optional.
+    - **International Users (Other prefixes / No phone)**: `email` is **compulsory** (valid email format). `phone` is optional.
+  - **Verification Routing**:
+    - If `email` is provided, an Email OTP is sent via SMTP.
+    - If an Indian phone (`+91`) is provided, an SMS OTP is sent via SMS gateway.
+    - If an International phone is provided, SMS OTP dispatch is **skipped** (verify via email only).
 - **Send OTP**: `POST /api/auth/send-otp` 
-  - Payload: `{ "contact": "email@example.com", "purpose": "LOGIN" }` (purpose can be `LOGIN` or `REGISTER`).
+  - Payload: `{ "contact": "email@example.com", "type": "EMAIL" | "SMS", "purpose": "LOGIN" | "REGISTER" }`
 - **Verify OTP**: `POST /api/auth/verify-otp`
-  - Payload: `{ "contact": "email@example.com", "otp": "123456", "purpose": "LOGIN" }`
-  - Response: Includes your Bearer token and user object.
+  - Payload: `{ "contact": "email@example.com", "otp": "123456", "purpose": "LOGIN" | "REGISTER", "deviceId": "...", "deviceName": "...", "os": "..." }`
+  - Response: Both `LOGIN` and `REGISTER` verification return the same complete authentication payload:
+    ```json
+    {
+      "success": true,
+      "message": "Verified successfully.",
+      "isNewUser": false,
+      "accessToken": "ey...",
+      "expiresIn": 2592000,
+      "refreshToken": "...",
+      "refreshExpiresIn": 31536000,
+      "user": {
+        "id": "...",
+        "name": "...",
+        "email": "...",
+        "phone": "...",
+        "role": "USER",
+        "image": "...",
+        "referralCode": "..."
+      }
+    }
+    ```
 
 ---
 
 ## 3. Profile & Core APIs
-- **Edit Profile**: `PUT /api/profile` (Payload: `name`, `email`, `phone`, `dob`, `gender`)
+- **Fetch Profile**: `GET /api/profile`
+  - Response: Returns all user details, including devotee profile fields:
+    ```json
+    {
+      "id": "...",
+      "name": "...",
+      "email": "...",
+      "phone": "...",
+      "image": "...",
+      "role": "USER",
+      "occupation": "...",
+      "dob": "...",
+      "tob": "...",
+      "pob": "...",
+      "gender": "...",
+      "gotra": "..."
+    }
+    ```
+- **Edit Profile**: `PUT /api/profile`
+  - Payload: Accepts `name`, `email`, `phone`, `image` (avatar URL), `occupation`, `dob`, `tob`, `pob`, `gender`, `gotra`.
 - **My Orders**: `GET /api/my-orders` (Returns a mixed list of all past bookings)
 - **Address Book**: `GET /api/addresses`, `POST /api/addresses`, `PATCH /api/addresses/[id]`, `DELETE /api/addresses/[id]`
 - **Contact Us**: `POST /api/contact`
