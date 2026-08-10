@@ -27,13 +27,22 @@ export async function POST(req: Request) {
 
     if (rateLimited) return rateLimited
 
-    const trimmedEmail = email.trim().toLowerCase()
-    const user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
+    const loginInput = email.trim()
+    const isEmail = loginInput.includes('@')
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: isEmail ? loginInput.toLowerCase() : undefined },
+          { phone: loginInput }
+        ]
+      }
+    })
 
     // User may not exist, or may have registered via Google OAuth (no password set)
     if (!user || !user.password) {
       return NextResponse.json(
-        { message: ['Email or Password is invalid'] },
+        { message: ['Email/Mobile or Password is invalid'] },
         { status: 401, statusText: 'Unauthorized Access' }
       )
     }
@@ -42,7 +51,7 @@ export async function POST(req: Request) {
 
     if (!isValid) {
       return NextResponse.json(
-        { message: ['Email or Password is invalid'] },
+        { message: ['Email/Mobile or Password is invalid'] },
         { status: 401, statusText: 'Unauthorized Access' }
       )
     }
@@ -128,7 +137,7 @@ export async function POST(req: Request) {
     })
   } catch {
     return NextResponse.json(
-      { message: ['Email or Password is invalid'] },
+      { message: ['Email/Mobile or Password is invalid'] },
       { status: 401, statusText: 'Unauthorized Access' }
     )
   }

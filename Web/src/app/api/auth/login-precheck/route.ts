@@ -18,24 +18,33 @@ export async function POST(req: Request) {
 
     if (rateLimited) return rateLimited
 
-    const trimmedEmail = email.trim().toLowerCase()
-    const user = await prisma.user.findUnique({ where: { email: trimmedEmail } })
+    const loginInput = email.trim()
+    const isEmail = loginInput.includes('@')
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: isEmail ? loginInput.toLowerCase() : undefined },
+          { phone: loginInput }
+        ]
+      }
+    })
 
     if (!user || !user.password) {
-      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 })
+      return NextResponse.json({ error: 'Invalid email/mobile or password.' }, { status: 401 })
     }
 
     const isValid = await bcrypt.compare(password, user.password)
 
     if (!isValid) {
       await logActivity({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
+        userId: user?.id,
+        email: user?.email,
+        role: user?.role ?? 'USER',
         action: 'FAILED_LOGIN',
         details: 'Incorrect password attempt.',
       })
-      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 })
+      return NextResponse.json({ error: 'Invalid email/mobile or password.' }, { status: 401 })
     }
 
     if (!user.emailVerified) {

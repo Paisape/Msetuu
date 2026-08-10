@@ -81,7 +81,11 @@ type ErrorType = {
 type FormData = InferInput<typeof schema>
 
 const schema = object({
-  email: pipe(string(), minLength(1, 'This field is required'), email('Email is invalid')),
+  email: pipe(
+    string(),
+    nonEmpty('This field is required'),
+    minLength(4, 'Must be a valid email or mobile number')
+  ),
   password: pipe(
     string(),
     nonEmpty('This field is required'),
@@ -303,7 +307,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
             {showOtpField ? (
               <Box className='flex flex-col gap-6'>
                 <Typography variant='body2' className='text-slate-400'>
-                  Please enter the 6-digit verification code sent to your email to verify your identity.
+                  Please enter the 6-digit verification code sent to your registered email to verify your identity.
                 </Typography>
                 <CustomTextField
                   autoFocus
@@ -352,9 +356,8 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                       {...field}
                       autoFocus
                       fullWidth
-                      type='email'
-                      label='Email'
-                      placeholder='Enter your email'
+                      label='Email or Mobile Number'
+                      placeholder='Enter your email or mobile number'
                       onChange={e => {
                         field.onChange(e.target.value)
                         errorState !== null && setErrorState(null)
