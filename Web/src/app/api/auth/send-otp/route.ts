@@ -80,33 +80,6 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ success: true, message: 'OTP sent successfully.' }, { status: 200 })
     } else {
-      if (purpose === 'REGISTER') {
-        const user = await prisma.user.findFirst({
-          where: { phone: contact }
-        })
-
-        if (user && user.email) {
-          const template = welcomePhoneVerificationEmail({
-            customerName: user.name || 'User',
-            phone: contact,
-            otp
-          })
-
-          try {
-            const emailResult = await sendEmail({ to: user.email, subject: template.subject, html: template.html })
-            if (!emailResult.sent) {
-              console.error('SMTP Email Error for Mobile OTP:', emailResult.reason)
-              return NextResponse.json({ error: 'Failed to send Mobile OTP email.' }, { status: 500 })
-            }
-          } catch (emailError: any) {
-            console.error('SMTP Email Error for Mobile OTP:', emailError)
-            return NextResponse.json({ error: 'Failed to send Mobile OTP email.' }, { status: 500 })
-          }
-
-          return NextResponse.json({ success: true, message: 'Mobile OTP sent via email successfully.' }, { status: 200 })
-        }
-      }
-
       // Real SMS Flow using Textzi integration (for non-registration flows e.g. LOGIN)
       try {
         const smsResult = await sendOtpSms(contact, otp)
