@@ -24,7 +24,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { signIn } from 'next-auth/react'
 import { Controller, useForm } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { email, object, minLength, string, pipe, nonEmpty, optional } from 'valibot'
+import { email, object, minLength, string, pipe, nonEmpty, optional, check } from 'valibot'
 import type { SubmitHandler } from 'react-hook-form'
 import type { InferInput } from 'valibot'
 import classnames from 'classnames'
@@ -75,7 +75,10 @@ type FormData = InferInput<typeof schema>
 
 const schema = object({
   name: pipe(string(), nonEmpty('This field is required')),
-  email: pipe(string(), minLength(1, 'This field is required'), email('Email is invalid')),
+  email: pipe(
+    string(),
+    check((val) => val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), 'Email is invalid')
+  ),
   phone: pipe(string(), nonEmpty('This field is required'), minLength(10, 'Mobile number must be at least 10 digits')),
   password: pipe(
     string(),
@@ -176,25 +179,33 @@ const Register = ({ mode }: { mode: SystemMode }) => {
       }
 
       if (json?.requireVerification) {
-        // Automatically send the registration OTP to both mobile and email
-        await Promise.all([
+        // Automatically send the registration OTP to mobile (and email if provided)
+        const otpPromises = [
           fetch('/api/auth/send-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contact: data.phone, type: 'SMS', purpose: 'REGISTER' })
-          }).catch(() => null),
-          fetch('/api/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contact: data.email, type: 'EMAIL', purpose: 'REGISTER' })
           }).catch(() => null)
-        ])
+        ]
 
-        // Redirect to OTP verification page with both email and phone in query string
-        router.replace(getLocalizedUrl(`/verify-otp?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(data.phone)}`, locale as Locale))
+        if (data.email && data.email.trim() !== '') {
+          otpPromises.push(
+            fetch('/api/auth/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contact: data.email.trim(), type: 'EMAIL', purpose: 'REGISTER' })
+            }).catch(() => null)
+          )
+        }
+
+        await Promise.all(otpPromises)
+
+        // Redirect to OTP verification page
+        const emailParam = data.email && data.email.trim() !== '' ? `&email=${encodeURIComponent(data.email.trim())}` : ''
+        router.replace(getLocalizedUrl(`/verify-otp?phone=${encodeURIComponent(data.phone)}${emailParam}`, locale as Locale))
       } else {
         // Fallback for non-verification mode
-        const signInRes = await signIn('credentials', { email: data.email, password: data.password, redirect: false })
+        const signInRes = await signIn('credentials', { email: data.email || data.phone, password: data.password, redirect: false })
 
         if (signInRes?.ok && signInRes.error === null) {
           router.replace(getLocalizedUrl('/', locale as Locale))
@@ -257,9 +268,8 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 <CustomTextField
                   {...field}
                   fullWidth
-                  type='email'
-                  label='Email'
-                  placeholder='Enter your email'
+                  label='Email (Optional)'
+                  placeholder='Enter your email (optional)'
                   {...(errors.email && { error: true, helperText: errors.email.message })}
                 />
               )}

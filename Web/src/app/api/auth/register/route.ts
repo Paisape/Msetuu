@@ -12,11 +12,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const name = typeof body.name === 'string' ? body.name.trim() : ''
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const emailInput = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const email = emailInput || null
     const password = typeof body.password === 'string' ? body.password : ''
-    const phone = typeof body.phone === 'string' ? body.phone.trim() : undefined
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : null
 
-    const rateLimited = enforceRateLimit(req, 'register', { limit: 6, windowMs: 60 * 60 * 1000, identifier: email || undefined })
+    const rateLimited = enforceRateLimit(req, 'register', { limit: 6, windowMs: 60 * 60 * 1000, identifier: email || phone || undefined })
 
     if (rateLimited) return rateLimited
 
@@ -24,26 +25,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Please provide a valid name.' }, { status: 400 })
     }
 
-    if (!EMAIL_REGEX.test(email)) {
+    if (email && !EMAIL_REGEX.test(email)) {
       return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
+    }
+
+    if (!phone) {
+      return NextResponse.json({ error: 'Please provide a mobile number.' }, { status: 400 })
+    }
+
+    if (phone.length < 10) {
+      return NextResponse.json({ error: 'Mobile number must be at least 10 digits.' }, { status: 400 })
     }
 
     if (password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters long.' }, { status: 400 })
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
+    // Lookup existing user by email or phone
+    let existing = null
+    if (email) {
+      existing = await prisma.user.findUnique({ where: { email } })
+    } else {
+      existing = await prisma.user.findFirst({ where: { phone } })
+    }
 
     if (existing) {
       if (existing.emailVerified !== null) {
-        return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
+        const fieldName = email ? 'email' : 'mobile number'
+        return NextResponse.json({ error: `An account with this ${fieldName} already exists.` }, { status: 409 })
       }
 
       // If the account exists but is unverified, allow updating/overwriting it to re-trigger verification
       const referralCodeInput = typeof body.referralCode === 'string' ? body.referralCode.trim() : ''
       const { generateUniqueReferralCode, validateReferrer } = await import('@/libs/referralEngine')
       
-      const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email, phone) : null
+      const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email || '', phone || '') : null
       const uniqueReferralCode = existing.referralCode || await generateUniqueReferralCode()
       const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -51,6 +67,7 @@ export async function POST(req: Request) {
         where: { id: existing.id },
         data: {
           name,
+          email,
           phone,
           password: hashedPassword,
           referralCode: uniqueReferralCode,
@@ -73,7 +90,7 @@ export async function POST(req: Request) {
     const referralCodeInput = typeof body.referralCode === 'string' ? body.referralCode.trim() : ''
     const { generateUniqueReferralCode, validateReferrer } = await import('@/libs/referralEngine')
     
-    const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email, phone) : null
+    const referredById = referralCodeInput ? await validateReferrer(referralCodeInput, email || '', phone || '') : null
     const uniqueReferralCode = await generateUniqueReferralCode()
 
     const hashedPassword = await bcrypt.hash(password, 12)
