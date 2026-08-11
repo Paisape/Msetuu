@@ -21,11 +21,17 @@ export async function POST(req: Request) {
     const loginInput = email.trim()
     const isEmail = loginInput.includes('@')
 
+    let normalizedPhone = undefined
+    if (!isEmail) {
+      const cleanPhone = loginInput.replace(/\s+/g, '')
+      normalizedPhone = /^\d{10}$/.test(cleanPhone) ? `+91${cleanPhone}` : cleanPhone
+    }
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: isEmail ? loginInput.toLowerCase() : undefined },
-          { phone: loginInput }
+          { phone: normalizedPhone }
         ]
       }
     })
@@ -58,7 +64,8 @@ export async function POST(req: Request) {
 
       if (requireOtp) {
         // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        const { randomInt } = require('crypto')
+        const otp = randomInt(100000, 1000000).toString()
         const hashedOtp = await bcrypt.hash(otp, 12)
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 

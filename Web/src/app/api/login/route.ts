@@ -30,11 +30,17 @@ export async function POST(req: Request) {
     const loginInput = email.trim()
     const isEmail = loginInput.includes('@')
 
+    let normalizedPhone = undefined
+    if (!isEmail) {
+      const cleanPhone = loginInput.replace(/\s+/g, '')
+      normalizedPhone = /^\d{10}$/.test(cleanPhone) ? `+91${cleanPhone}` : cleanPhone
+    }
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: isEmail ? loginInput.toLowerCase() : undefined },
-          { phone: loginInput }
+          { phone: normalizedPhone }
         ]
       }
     })

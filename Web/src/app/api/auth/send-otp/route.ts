@@ -31,7 +31,8 @@ export async function POST(req: Request) {
 
     // Generate 6-digit OTP (or fixed OTP for Google Play Store test account)
     const isTestAccount = contact === 'dev@mandirsetuu.com'
-    const otp = isTestAccount ? '223344' : Math.floor(100000 + Math.random() * 900000).toString()
+    const { randomInt } = require('crypto')
+    const otp = isTestAccount ? '223344' : randomInt(100000, 1000000).toString()
     const otpHash = await bcrypt.hash(otp, 12)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
@@ -80,6 +81,14 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ success: true, message: 'OTP sent successfully.' }, { status: 200 })
     } else {
+      // SMS is only supported for Indian mobile numbers (+91 or starting with 91)
+      const cleanContact = contact.replace(/\s+/g, '')
+      const isIndian = cleanContact.startsWith('+91') || /^[789]\d{9}$/.test(cleanContact) || cleanContact.startsWith('91')
+
+      if (!isIndian) {
+        return NextResponse.json({ error: 'SMS OTP verification is only supported for Indian mobile numbers (+91).' }, { status: 400 })
+      }
+
       // Real SMS Flow using Textzi integration (for non-registration flows e.g. LOGIN)
       try {
         const smsResult = await sendOtpSms(contact, otp)
