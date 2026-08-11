@@ -11,18 +11,48 @@ This document outlines the expected flows, payloads, and integration steps for a
 ## 2. Auth Flow (Login & Registration)
 - **Registration**: `POST /api/auth/register`
   - Payload: `{ "name": "...", "email": "...", "phone": "...", "password": "...", "referralCode": "..." }`
-  - **Dynamic Validations (Country Code Check)**:
-    - **Indian Users (Phone starts with `+91`)**: `phone` is **compulsory** (minimum 10 digits). `email` is optional.
-    - **International Users (Other prefixes / No phone)**: `email` is **compulsory** (valid email format). `phone` is optional.
+  - **Dynamic Validations (Country Code Dropdown)**:
+    - **Indian Users (Country Code `+91`)**: `phone` is **compulsory** (minimum 10 digits). `email` is optional.
+    - **International Users (Other prefixes e.g. +1, +44)**: `email` is **compulsory** (valid email format). `phone` is optional.
   - **Verification Routing**:
     - If `email` is provided, an Email OTP is sent via SMTP.
     - If an Indian phone (`+91`) is provided, an SMS OTP is sent via SMS gateway.
     - If an International phone is provided, SMS OTP dispatch is **skipped** (verify via email only).
+- **Credentials Login**: `POST /api/login`
+  - Payload: `{ "email": "email_or_phone_string", "password": "...", "otp": "...", "deviceId": "...", "deviceName": "...", "os": "..." }`
+  - **Phone Normalization**: If the `email` field receives a 10-digit mobile number (e.g. `9529160004`), the backend automatically prepends `+91` to match the database record format, allowing logins with or without the prefix.
+  - Response: Returns a complete authentication token payload identical to OTP verification:
+    ```json
+    {
+      "success": true,
+      "message": "Logged in successfully.",
+      "isNewUser": false,
+      "accessToken": "eyJhbGciOi...",
+      "expiresIn": 2592000,
+      "refreshToken": "...",
+      "refreshExpiresIn": 31536000,
+      "id": "...",                 // Root fields returned for NextAuth backward compatibility
+      "name": "...",
+      "email": "...",
+      "role": "USER",
+      "image": "...",
+      "user": {                    // Nested user object for your app developer
+        "id": "...",
+        "name": "...",
+        "email": "...",
+        "role": "USER",
+        "image": "...",
+        "referralCode": "...",
+        "referralWalletBalance": 0
+      }
+    }
+    ```
 - **Send OTP**: `POST /api/auth/send-otp` 
-  - Payload: `{ "contact": "email@example.com", "type": "EMAIL" | "SMS", "purpose": "LOGIN" | "REGISTER" }`
+  - Payload: `{ "contact": "email_or_phone", "type": "EMAIL" | "SMS", "purpose": "LOGIN" | "REGISTER" }`
+  - **International SMS block**: If the `contact` parameter is a phone number that is not Indian (i.e. does not start with `+91` or `91`), the API returns a `400 Bad Request` block error immediately to prevent failed SMS dispatches.
 - **Verify OTP**: `POST /api/auth/verify-otp`
-  - Payload: `{ "contact": "email@example.com", "otp": "123456", "purpose": "LOGIN" | "REGISTER", "deviceId": "...", "deviceName": "...", "os": "..." }`
-  - Response: Both `LOGIN` and `REGISTER` verification return the same complete authentication payload:
+  - Payload: `{ "contact": "email_or_phone", "otp": "123456", "purpose": "LOGIN" | "REGISTER", "deviceId": "...", "deviceName": "...", "os": "..." }`
+  - Response: Both `LOGIN` and `REGISTER` verification return the same complete lightweight authentication token payload:
     ```json
     {
       "success": true,
@@ -36,10 +66,10 @@ This document outlines the expected flows, payloads, and integration steps for a
         "id": "...",
         "name": "...",
         "email": "...",
-        "phone": "...",
         "role": "USER",
         "image": "...",
-        "referralCode": "..."
+        "referralCode": "...",
+        "referralWalletBalance": 0
       }
     }
     ```
@@ -66,7 +96,7 @@ This document outlines the expected flows, payloads, and integration steps for a
     }
     ```
 - **Edit Profile**: `PUT /api/profile`
-  - Payload: Accepts `name`, `email`, `phone`, `image` (avatar URL), `occupation`, `dob`, `tob`, `pob`, `gender`, `gotra`.
+  - Payload: Accepts `name`, `email`, `phone`, `image` (avatar URL string), `occupation`, `dob`, `tob`, `pob`, `gender`, `gotra`.
 - **My Orders**: `GET /api/my-orders` (Returns a mixed list of all past bookings)
 - **Address Book**: `GET /api/addresses`, `POST /api/addresses`, `PATCH /api/addresses/[id]`, `DELETE /api/addresses/[id]`
 - **Contact Us**: `POST /api/contact`
