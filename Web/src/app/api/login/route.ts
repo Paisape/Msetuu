@@ -9,7 +9,7 @@ import { enforceRateLimit } from '@/libs/rateLimit'
 
 export async function POST(req: Request) {
   try {
-    const { email, password, otp } = await req.json()
+    const { email, password, otp, deviceId, deviceName, os } = await req.json()
 
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return NextResponse.json(
@@ -133,13 +133,54 @@ export async function POST(req: Request) {
       details: `Successful login session initialized. Role: ${user.role}`
     })
 
-    // Never return the password hash to the client
+    // Generate mobile tokens
+    const {
+      generateAccessToken,
+      generateRefreshToken,
+      hashRefreshToken,
+      ACCESS_TOKEN_MAX_AGE_SECONDS,
+      REFRESH_TOKEN_MAX_AGE_SECONDS
+    } = require('@/libs/mobileAuth')
+
+    const tokenEmail = user.email || `${loginInput}@phone.local`
+    const accessToken = await generateAccessToken({ ...user, email: tokenEmail })
+    const refreshToken = generateRefreshToken()
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashRefreshToken(refreshToken),
+        deviceId: typeof deviceId === 'string' ? deviceId.slice(0, 200) : null,
+        deviceName: typeof deviceName === 'string' ? deviceName.slice(0, 200) : null,
+        os: typeof os === 'string' ? os.slice(0, 100) : null,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_SECONDS * 1000)
+      }
+    })
+
     return NextResponse.json({
+      success: true,
+      message: 'Logged in successfully.',
+      isNewUser: false,
+      accessToken,
+      expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS,
+      refreshToken,
+      refreshExpiresIn: REFRESH_TOKEN_MAX_AGE_SECONDS,
+      // Root level fields for backward compatibility (NextAuth & /api/mobile/login)
       id: user.id,
       name: user.name,
       email: user.email,
       image: user.image,
-      role: user.role
+      role: user.role,
+      // Nested user object for mobile app developer
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+        referralCode: user.referralCode,
+        referralWalletBalance: user.referralWalletBalance
+      }
     })
   } catch {
     return NextResponse.json(
