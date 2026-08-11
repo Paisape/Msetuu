@@ -115,13 +115,7 @@ export async function POST(req: Request) {
           role: user.role,
           image: user.image,
           referralCode: user.referralCode,
-          referralWalletBalance: user.referralWalletBalance,
-          occupation: user.occupation,
-          dob: user.dob,
-          tob: user.tob,
-          pob: user.pob,
-          gender: user.gender,
-          gotra: user.gotra
+          referralWalletBalance: user.referralWalletBalance
         }
       }, { status: 200 })
     }
@@ -198,13 +192,7 @@ export async function POST(req: Request) {
         role: user.role,
         image: user.image,
         referralCode: user.referralCode,
-        referralWalletBalance: user.referralWalletBalance,
-        occupation: user.occupation,
-        dob: user.dob,
-        tob: user.tob,
-        pob: user.pob,
-        gender: user.gender,
-        gotra: user.gotra
+        referralWalletBalance: user.referralWalletBalance
       }
     }, { status: 200 })
 
