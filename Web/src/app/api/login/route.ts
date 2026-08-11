@@ -139,7 +139,13 @@ export async function POST(req: Request) {
       name: user.name,
       email: user.email,
       image: user.image,
-      role: user.role
+      role: user.role,
+      occupation: user.occupation,
+      dob: user.dob,
+      tob: user.tob,
+      pob: user.pob,
+      gender: user.gender,
+      gotra: user.gotra
     })
   } catch {
     return NextResponse.json(
