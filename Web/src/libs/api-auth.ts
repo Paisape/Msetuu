@@ -24,7 +24,7 @@ export type SessionUser = {
  * same NEXTAUTH_SECRET reconstructs the same payload NextAuth would have put in the
  * session cookie, so every route below stays agnostic to which transport was used.
  */
-async function getEmailFromBearerToken(): Promise<string | null> {
+async function getAuthFromBearerToken(): Promise<{ email: string | null; sub: string | null } | null> {
   const headerList = await headers()
   const authHeader = headerList.get('authorization')
 
@@ -37,7 +37,10 @@ async function getEmailFromBearerToken(): Promise<string | null> {
   try {
     const payload = await decode({ token: authHeader.slice('Bearer '.length), secret })
 
-    return typeof payload?.email === 'string' ? payload.email : null
+    return {
+      email: typeof payload?.email === 'string' ? payload.email : null,
+      sub: typeof payload?.sub === 'string' ? payload.sub : null
+    }
   } catch {
     return null
   }
@@ -50,26 +53,40 @@ async function getEmailFromBearerToken(): Promise<string | null> {
  * after the token was issued.
  */
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  const bearerEmail = await getEmailFromBearerToken()
+  const bearerAuth = await getAuthFromBearerToken()
 
-  let email = bearerEmail
+  let email: string | null = null
+  let id: string | null = null
 
-  if (!email) {
+  if (bearerAuth) {
+    email = bearerAuth.email
+    id = bearerAuth.sub
+  } else {
     const session = await getServerSession(authOptions)
 
     email = session?.user?.email ?? null
+    id = (session?.user as any)?.id ?? null
   }
 
-  if (!email) return null
+  if (!id && !email) return null
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, name: true, email: true, role: true }
-  })
+  if (id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, email: true, role: true }
+    })
+    if (user) return user
+  }
 
-  if (!user) return null
+  if (email) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, name: true, email: true, role: true }
+    })
+    if (user) return user
+  }
 
-  return user
+  return null
 }
 
 /** Throws a Response-shaped error the route handler can return directly. */
