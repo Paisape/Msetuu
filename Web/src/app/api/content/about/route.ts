@@ -69,7 +69,7 @@ const DEFAULT_ABOUT_DATA: AboutUsData = {
   ]
 }
 
-function getStoredData(): AboutUsData {
+export function getStoredData(): AboutUsData {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, 'utf8')

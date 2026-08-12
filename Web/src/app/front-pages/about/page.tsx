@@ -56,14 +56,13 @@ const DEFAULT_DATA: AboutUsData = {
   ]
 }
 
+import { getStoredData } from '@/app/api/content/about/route'
+
 async function getAboutData(): Promise<AboutUsData> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/content/about`, { cache: 'no-store' })
-
-    if (res.ok) return await res.json()
+    return getStoredData()
   } catch (err) {
-    console.error('About Page SSR fetch error:', err)
+    console.error('About Page SSR read error:', err)
   }
 
   return DEFAULT_DATA
