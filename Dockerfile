@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY Web/package.json ./
+COPY Web/package.json Web/package-lock.json* ./
 RUN npm config set maxsockets 1 && \
     npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --prefer-offline
 
@@ -19,11 +19,8 @@ COPY Web/ .
 # Generate Prisma Client & build icons
 RUN npx prisma generate && npm run build:icons
 
-# Next.js build
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
-
-# Prune development dependencies to keep the final runner image light
-RUN npm prune --omit=dev --legacy-peer-deps
+# Next.js build (using 1GB max memory to prevent OOM failures on smaller servers)
+RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
