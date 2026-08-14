@@ -56,19 +56,23 @@ export async function PUT(req: Request) {
     }
 
     if (email !== undefined) {
-      if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
-        return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
-      }
-      
-      const trimmedEmail = email.trim().toLowerCase()
-      // Check if email is already taken by someone else
-      if (trimmedEmail !== user.email) {
-        const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } })
-        if (existing) {
-          return NextResponse.json({ error: 'This email is already in use.' }, { status: 400 })
+      if (email === null || (typeof email === 'string' && email.trim() === '')) {
+        data.email = null
+      } else {
+        if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
+          return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
         }
+        
+        const trimmedEmail = email.trim().toLowerCase()
+        // Check if email is already taken by someone else
+        if (trimmedEmail !== user.email) {
+          const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } })
+          if (existing) {
+            return NextResponse.json({ error: 'This email is already in use.' }, { status: 400 })
+          }
+        }
+        data.email = trimmedEmail
       }
-      data.email = trimmedEmail
     }
 
     if (phone !== undefined) {
@@ -85,6 +89,15 @@ export async function PUT(req: Request) {
         }
       }
       data.phone = trimmedPhone
+    }
+
+    // Verify that the user still has at least one valid authentication method (email or +91 phone)
+    const finalEmail = data.email !== undefined ? data.email : user.email
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { phone: true } })
+    const finalPhone = data.phone !== undefined ? data.phone : dbUser?.phone
+
+    if (!finalEmail && (!finalPhone || !finalPhone.startsWith('+91'))) {
+      return NextResponse.json({ error: 'Email is required for international/email-only accounts.' }, { status: 400 })
     }
 
     if (image !== undefined) {
