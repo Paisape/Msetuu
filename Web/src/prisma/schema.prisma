@@ -1115,6 +1115,9 @@ model OfferLinkOrder {
   reconciledStatus    String             @default("UNRECONCILED") // UNRECONCILED, RECONCILED_AUTO, RECONCILED_MANUAL, DISCREPANCY
   reconciledAt        DateTime?
   reconciliationNotes String?
+  ipAddress           String?
+  ipLocation          String?
+  gpsLocation         String?
   createdAt           DateTime           @default(now())
   devotees            OfferLinkDevotee[]
 }

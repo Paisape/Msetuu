@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const adminUser = await requireAdminApi()
     const body = await req.json()
 
-    const { title, message, actionUrl, targetAudience, targetEmail, channels } = body
+    const { title, message, actionUrl, targetAudience, targetEmail, selectedDevoteeIds, channels } = body
 
     if (!title || !message) {
       return NextResponse.json({ error: 'Title and message are required.' }, { status: 400 })
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       actionUrl: actionUrl ? actionUrl.trim() : undefined,
       targetAudience: targetAudience || 'ALL',
       targetEmail: targetEmail ? targetEmail.trim() : undefined,
+      selectedDevoteeIds: Array.isArray(selectedDevoteeIds) ? selectedDevoteeIds : undefined,
       channels,
       sentById: adminUser.id
     })

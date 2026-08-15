@@ -156,7 +156,6 @@ export default function OfferLinksClient() {
               <TableCell className='font-bold'>URL Slug</TableCell>
               <TableCell className='font-bold'>Offer Price (₹)</TableCell>
               <TableCell className='font-bold'>Sale Price (₹)</TableCell>
-              <TableCell className='font-bold text-center'>GST</TableCell>
               <TableCell className='font-bold text-center'>Views</TableCell>
               <TableCell className='font-bold text-center'>Bookings</TableCell>
               <TableCell className='font-bold'>Status</TableCell>
@@ -166,7 +165,7 @@ export default function OfferLinksClient() {
           <TableBody>
             {links.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className='text-center py-8 text-slate-400'>
+                <TableCell colSpan={8} className='text-center py-8 text-slate-400'>
                   No offer links created yet. Click "Create Link" to build one!
                 </TableCell>
               </TableRow>
@@ -184,14 +183,6 @@ export default function OfferLinksClient() {
                   </TableCell>
                   <TableCell className='font-bold text-slate-800'>₹{Number(link.offerPrice).toFixed(2)}</TableCell>
                   <TableCell className='text-slate-400 line-through'>₹{Number(link.salePrice).toFixed(2)}</TableCell>
-                  <TableCell className='text-center'>
-                    <Chip 
-                      label={link.gstIncluded ? `Included (${Number(link.gstRate)}%)` : `Excluded (${Number(link.gstRate)}%)`} 
-                      size='small'
-                      variant='outlined'
-                      className={link.gstIncluded ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 'border-amber-200 text-amber-700 bg-amber-50'}
-                    />
-                  </TableCell>
                   <TableCell className='text-center font-semibold text-slate-600'>{link._count.analytics}</TableCell>
                   <TableCell className='text-center font-bold text-slate-800'>{link._count.orders}</TableCell>
                   <TableCell>

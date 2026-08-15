@@ -22,10 +22,33 @@ async function translateToEnglish(text: string): Promise<string> {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { offerLinkId, devotees, referralCode } = body
+    const { offerLinkId, devotees, referralCode, gpsLocation } = body
 
     if (!offerLinkId || !Array.isArray(devotees) || devotees.length === 0) {
       return NextResponse.json({ error: 'Missing required checkout information.' }, { status: 400 })
+    }
+
+    // Resolve client IP Address from proxy headers
+    const forwarded = req.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1'
+
+    // Retrieve country code from Cloudflare or Vercel edge headers
+    const edgeCountry = req.headers.get('cf-ipcountry') || req.headers.get('x-vercel-ip-country') || 'Unknown'
+    let ipLocation = edgeCountry
+
+    // Fetch granular city/region/country info using ip-api.com in background (with 1.5s timeout safety)
+    if (ip && ip !== '127.0.0.1' && ip !== '::1' && !ip.startsWith('192.168.') && !ip.startsWith('10.')) {
+      try {
+        const geoRes = await Promise.race([
+          fetch(`http://ip-api.com/json/${ip}`).then(r => r.json()),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+        ]) as any
+        if (geoRes && geoRes.status === 'success') {
+          ipLocation = `${geoRes.city || ''}, ${geoRes.regionName || ''}, ${geoRes.country || ''}`.trim().replace(/^,\s*/, '')
+        }
+      } catch (e) {
+        console.warn('[Checkout IP Geo] Resolution failed or timed out:', e)
+      }
     }
 
     // Verify offer link exists and is active
@@ -41,12 +64,6 @@ export async function POST(req: Request) {
     for (const devotee of devotees) {
       if (!devotee.name || devotee.name.trim().length === 0) {
         return NextResponse.json({ error: 'Devotee name is required.' }, { status: 400 })
-      }
-      if (!devotee.gotra || devotee.gotra.trim().length === 0) {
-        return NextResponse.json({ error: 'Devotee Gotra is required.' }, { status: 400 })
-      }
-      if (!devotee.dob || devotee.dob.trim().length === 0) {
-        return NextResponse.json({ error: 'Devotee Date of Birth is required.' }, { status: 400 })
       }
       if (!devotee.phone || devotee.phone.trim().length === 0) {
         return NextResponse.json({ error: 'Primary mobile number is required.' }, { status: 400 })
@@ -92,18 +109,17 @@ export async function POST(req: Request) {
     const razorpayKeyId = await getRazorpayKeyId()
     const rzpOrderId = await createRazorpayOrder(finalAmount, `offer_receipt_${Date.now()}`)
 
-    // Translate devotee names and gotras to English for standard reporting
+    // Translate devotee names to English for standard reporting
     const formattedDevotees = await Promise.all(
       devotees.map(async (devotee, index) => {
         const nameInput = devotee.name.trim()
         const translatedName = await translateToEnglish(nameInput)
-        const translatedGotra = await translateToEnglish(devotee.gotra.trim())
         
         return {
           name: translatedName.trim(),
           nameLocal: nameInput !== translatedName ? nameInput : null,
-          gotra: translatedGotra.trim(),
-          dob: devotee.dob.trim(),
+          gotra: (devotee.gotra || '').trim(),
+          dob: (devotee.dob || '').trim(),
           phone: devotee.phone.trim(),
           email: devotee.email ? devotee.email.trim() : null,
           isPrimary: index === 0
@@ -120,6 +136,9 @@ export async function POST(req: Request) {
         gstAmount,
         paymentStatus: 'PENDING',
         paymentId: rzpOrderId, // Temporary save Razorpay Order ID here for reference lookup
+        ipAddress: ip,
+        ipLocation: ipLocation || null,
+        gpsLocation: gpsLocation || null,
         devotees: {
           create: formattedDevotees
         }

@@ -31,7 +31,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
   const [salePrice, setSalePrice] = useState('')
   const [offerPrice, setOfferPrice] = useState('')
   const [gstIncluded, setGstIncluded] = useState(false)
-  const [gstRate, setGstRate] = useState('18')
+  const [gstRate, setGstRate] = useState('0')
   const [htmlContent, setHtmlContent] = useState('')
   const [isActive, setIsActive] = useState(true)
 
@@ -172,26 +172,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
             helperText='Original struck-through reference price'
           />
 
-          <TextField
-            label='GST Rate (%) *'
-            type='number'
-            value={gstRate}
-            onChange={(e) => setGstRate(e.target.value)}
-            required
-            fullWidth
-          />
-
           <div className='flex items-center gap-4'>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={gstIncluded}
-                  onChange={(e) => setGstIncluded(e.target.checked)}
-                />
-              }
-              label='GST is included in Offer Price'
-            />
-
             <FormControlLabel
               control={
                 <Checkbox

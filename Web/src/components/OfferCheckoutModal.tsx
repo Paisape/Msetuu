@@ -27,9 +27,9 @@ const translations = {
     devoteeDetails: 'Enter Devotee Details',
     primaryContact: 'Primary Contact',
     name: 'Devotee Name *',
-    gotra: 'Gotra *',
-    dob: 'Date of Birth *',
-    phone: 'Mobile No *',
+    gotra: 'Gotra (Optional)',
+    dob: 'Date of Birth (Optional)',
+    phone: 'Mobile / WhatsApp No *',
     email: 'Email ID (Optional)',
     addPerson: 'Add Extra Person',
     price: 'Price',
@@ -41,16 +41,17 @@ const translations = {
     cancel: 'Cancel',
     processing: 'Processing...',
     person: 'Person',
-    sameAsPrimary: 'Same as primary'
+    sameAsPrimary: 'Same as primary',
+    orderIdLabel: 'Order ID'
   },
   hi: {
     bookNow: 'अभी बुक करें',
     devoteeDetails: 'श्रद्धालु का विवरण दर्ज करें',
     primaryContact: 'मुख्य संपर्क',
     name: 'श्रद्धालु का नाम *',
-    gotra: 'गोत्र *',
-    dob: 'जन्म तिथि *',
-    phone: 'मोबाइल नंबर *',
+    gotra: 'गोत्र (वैकल्पिक)',
+    dob: 'जन्म तिथि (वैकल्पिक)',
+    phone: 'मोबाइल / व्हाट्सएप नंबर *',
     email: 'ईमेल आईडी (वैकल्पिक)',
     addPerson: 'अतिरिक्त व्यक्ति जोड़ें',
     price: 'मूल्य',
@@ -62,16 +63,17 @@ const translations = {
     cancel: 'रद्द करें',
     processing: 'प्रक्रिया जारी है...',
     person: 'व्यक्ति',
-    sameAsPrimary: 'मुख्य नंबर के समान'
+    sameAsPrimary: 'मुख्य नंबर के समान',
+    orderIdLabel: 'ऑर्डर आईडी'
   },
   mr: {
     bookNow: 'आताच बुक करा',
     devoteeDetails: 'श्रद्धाळू तपशील प्रविष्ट करा',
     primaryContact: 'मुख्य संपर्क',
     name: 'श्रद्धाळूचे नाव *',
-    gotra: 'गोत्र *',
-    dob: 'जन्म तारीख *',
-    phone: 'मोबाईल नंबर *',
+    gotra: 'गोत्र (पर्यायी)',
+    dob: 'जन्म तारीख (पर्यायी)',
+    phone: 'मोबाईल / व्हॉट्सॲप नंबर *',
     email: 'ईमेल आयडी (वैकल्पिक)',
     addPerson: 'अतिरिक्त व्यक्ती जोडा',
     price: 'किंमत',
@@ -83,16 +85,17 @@ const translations = {
     cancel: 'रद्द करा',
     processing: 'प्रक्रिया सुरू आहे...',
     person: 'व्यक्ती',
-    sameAsPrimary: 'मुख्य नंबर प्रमाणे'
+    sameAsPrimary: 'मुख्य नंबर प्रमाणे',
+    orderIdLabel: 'ऑर्डर आयडी'
   },
   gu: {
     bookNow: 'અત્યારે જ બુક કરો',
     devoteeDetails: 'શ્રદ્ધાળુની વિગત દાખલ કરો',
     primaryContact: 'મુખ્ય સંપર્ક',
     name: 'શ્રદ્ધાળુનું નામ *',
-    gotra: 'ગોત્ર *',
-    dob: 'જન્મ તારીખ *',
-    phone: 'મોબાઇલ નંબર *',
+    gotra: 'ગોત્ર (વૈકલ્પિક)',
+    dob: 'જન્મ તારીખ (વૈકલ્પિક)',
+    phone: 'મોબાઇલ / વોટ્સએપ નંબર *',
     email: 'ઈમેલ આઈડી (વૈકલ્પિક)',
     addPerson: 'વધારાની વ્યક્તિ ઉમેરો',
     price: 'કિંમત',
@@ -104,7 +107,8 @@ const translations = {
     cancel: 'રદ કરો',
     processing: 'પ્રક્રિયા ચાલુ છે...',
     person: 'વ્યક્તિ',
-    sameAsPrimary: 'મુખ્ય નંબર મુજબ'
+    sameAsPrimary: 'મુખ્ય નંબર મુજબ',
+    orderIdLabel: 'ઓર્ડર આઈડી'
   }
 }
 
@@ -116,10 +120,28 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   const [success, setSuccess] = useState(false)
   const [referralCode, setReferralCode] = useState('')
   const [partnerName, setPartnerName] = useState('')
+  const [confirmedOrderId, setConfirmedOrderId] = useState('')
+  const [gpsLocation, setGpsLocation] = useState<string | null>(null)
 
   const [devotees, setDevotees] = useState<Devotee[]>([
     { name: '', gotra: '', dob: '', phone: '', email: '' }
   ])
+
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude
+          const lon = position.coords.longitude
+          setGpsLocation(`${lat.toFixed(6)},${lon.toFixed(6)}`)
+        },
+        (err) => {
+          console.warn('Geolocation permission not granted or error occurred:', err)
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    }
+  }, [isOpen])
 
   // Resolve partner name from code helper
   const resolvePartner = async (code: string) => {
@@ -304,7 +326,8 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
         body: JSON.stringify({
           offerLinkId: offerLink.id,
           devotees,
-          referralCode: referralCode || null
+          referralCode: referralCode || null,
+          gpsLocation: gpsLocation || null
         })
       })
 
@@ -341,6 +364,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
               throw new Error(verifyData.error || 'Payment verification failed.')
             }
 
+            setConfirmedOrderId(orderId)
             setSuccess(true)
             setIsOpen(false)
           } catch (err: any) {
@@ -391,9 +415,6 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
           {parseFloat(offerLink.salePrice) > basePrice && (
             <span className="text-slate-400 line-through text-sm">₹{parseFloat(offerLink.salePrice).toFixed(0)}</span>
           )}
-          <span className="text-xs text-slate-500 font-bold bg-[#FF671F]/10 text-[#FF671F] px-2 py-0.5 rounded-full">
-            {offerLink.gstIncluded ? 'GST Included' : '+ GST'}
-          </span>
         </div>
         
         <div className="flex gap-2 w-full sm:w-auto justify-end flex-grow">
@@ -415,6 +436,16 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             </div>
             <h3 className="text-xl font-bold text-slate-800">{t.successTitle}</h3>
             <p className="text-sm text-slate-600 mt-2">{t.successDesc}</p>
+            {confirmedOrderId && (
+              <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-[11px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">
+                  {t.orderIdLabel}
+                </span>
+                <span className="text-sm font-mono text-[#000080] font-bold block select-all">
+                  {confirmedOrderId}
+                </span>
+              </div>
+            )}
             <button
               onClick={() => setSuccess(false)}
               className="mt-6 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors"
@@ -485,7 +516,6 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                       <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.gotra}</label>
                       <input
                         type="text"
-                        required
                         value={devotee.gotra}
                         onChange={(e) => handleFieldChange(index, 'gotra', e.target.value)}
                         placeholder="e.g. कश्यप / Kashyap"
@@ -497,7 +527,6 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                       <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.dob}</label>
                       <input
                         type="date"
-                        required
                         value={devotee.dob}
                         onChange={(e) => handleFieldChange(index, 'dob', e.target.value)}
                         className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white transition-all shadow-sm"
@@ -559,12 +588,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                   <span>{t.price} ({personCount} {t.person}):</span>
                   <span className="font-semibold text-slate-800">₹{rawTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-slate-600">
-                  <span>{t.gst} ({offerLink.gstRate}%):</span>
-                  <span className="font-semibold text-slate-800">
-                    {offerLink.gstIncluded ? 'Included' : `+ ₹${gstAmount.toFixed(2)}`}
-                  </span>
-                </div>
+
                 <div className="flex justify-between text-base font-extrabold text-slate-800 border-t border-dashed border-[#FF671F]/20 pt-3">
                   <span>{t.total}:</span>
                   <span className="text-[#FF671F] text-lg">₹{finalAmount.toFixed(2)}</span>

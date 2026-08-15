@@ -8,8 +8,9 @@ export type SendNotificationOptions = {
   title: string
   message: string
   actionUrl?: string
-  targetAudience: 'ALL' | 'SPECIFIC' | 'CUSTOMERS'
+  targetAudience: 'ALL' | 'SPECIFIC' | 'CUSTOMERS' | 'DEVOTEES'
   targetEmail?: string
+  selectedDevoteeIds?: string[]
   channels: NotificationChannel[]
   sentById?: string
 }
@@ -212,7 +213,7 @@ export async function notifyUser(
 
 // 6. Combined Multi-Channel Dispatcher
 export async function dispatchNotificationBroadcast(options: SendNotificationOptions) {
-  const { title, message, actionUrl, targetAudience, targetEmail, channels, sentById } = options
+  const { title, message, actionUrl, targetAudience, targetEmail, selectedDevoteeIds, channels, sentById } = options
 
   let targetUsers: { id: string; email: string | null; phone: string | null; fcmToken: string | null }[] = []
 
@@ -225,6 +226,17 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
     })
     if (singleUser) targetUsers = [singleUser]
     else targetUsers = [{ id: 'manual', email: targetEmail, phone: targetEmail, fcmToken: null }]
+  } else if (targetAudience === 'DEVOTEES' && selectedDevoteeIds && Array.isArray(selectedDevoteeIds)) {
+    const devotees = await prisma.offerLinkDevotee.findMany({
+      where: { id: { in: selectedDevoteeIds } },
+      select: { id: true, email: true, phone: true }
+    })
+    targetUsers = devotees.map((d: any) => ({
+      id: d.id,
+      email: d.email, // Devotee email column stores optional WhatsApp No
+      phone: d.phone,
+      fcmToken: null
+    }))
   } else if (targetAudience === 'CUSTOMERS') {
     targetUsers = await prisma.user.findMany({
       where: {
@@ -256,7 +268,10 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
   // Process batch dispatch
   await Promise.all(
     targetUsers.map(async u => {
-      if (hasEmail && u.email) {
+      // Do not email guest devotee if email field actually stores a WhatsApp number starting with + or digits
+      const isEmailWhatsApp = u.email && /^[+\d\s-]+$/.test(u.email)
+      
+      if (hasEmail && u.email && !isEmailWhatsApp) {
         const ok = await sendEmailNotification(u.email, title, message, actionUrl).catch(() => false)
         if (ok) emailSentCount++
       }
@@ -266,9 +281,13 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
         if (ok) smsSentCount++
       }
 
-      if (hasWhatsapp && u.phone) {
-        const ok = await sendWhatsAppNotification(u.phone, title, message, actionUrl).catch(() => false)
-        if (ok) whatsappSentCount++
+      if (hasWhatsapp) {
+        // Resolve WhatsApp target number: prioritize the devotee email column if it contains a phone number
+        const waTarget = (isEmailWhatsApp && u.email) ? u.email : u.phone
+        if (waTarget) {
+          const ok = await sendWhatsAppNotification(waTarget, title, message, actionUrl).catch(() => false)
+          if (ok) whatsappSentCount++
+        }
       }
 
       if (hasFirebase && u.fcmToken) {

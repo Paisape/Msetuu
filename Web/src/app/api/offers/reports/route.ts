@@ -94,7 +94,7 @@ export async function GET(req: Request) {
 
       partner.count++
       partner.totalRevenue += orderAmount
-      partner.commission += (orderAmount * commissionRate) / 100
+      partner.commission += commissionRate
     })
 
     const referrals = Object.values(referralAggMap).filter((p: { count: number }) => p.count > 0)

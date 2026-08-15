@@ -46,8 +46,25 @@ export default function NotificationsClient() {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [actionUrl, setActionUrl] = useState('')
-  const [targetAudience, setTargetAudience] = useState<'ALL' | 'CUSTOMERS' | 'SPECIFIC'>('ALL')
+  const [targetAudience, setTargetAudience] = useState<'ALL' | 'CUSTOMERS' | 'DEVOTEES' | 'SPECIFIC'>('ALL')
   const [targetEmail, setTargetEmail] = useState('')
+
+  // Devotee Selection States
+  const [devoteesList, setDevoteesList] = useState<any[]>([])
+  const [selectedDevoteeIds, setSelectedDevoteeIds] = useState<string[]>([])
+  const [devoteeSearch, setDevoteeSearch] = useState('')
+
+  // Fetch devotee directory list when selected as target
+  useEffect(() => {
+    if (targetAudience === 'DEVOTEES' && devoteesList.length === 0) {
+      fetch('/api/devotees')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setDevoteesList(data)
+        })
+        .catch((err) => console.error('Failed to load devotees for broadcast target:', err))
+    }
+  }, [targetAudience, devoteesList.length])
 
   // Channels
   const [channelEmail, setChannelEmail] = useState(true)
@@ -105,6 +122,11 @@ export default function NotificationsClient() {
       return
     }
 
+    if (targetAudience === 'DEVOTEES' && selectedDevoteeIds.length === 0) {
+      setError('Please select at least one devotee from the directory list.')
+      return
+    }
+
     setSending(true)
     try {
       const res = await fetch('/api/notifications/send', {
@@ -116,6 +138,7 @@ export default function NotificationsClient() {
           actionUrl: actionUrl.trim() || undefined,
           targetAudience,
           targetEmail: targetAudience === 'SPECIFIC' ? targetEmail.trim() : undefined,
+          selectedDevoteeIds: targetAudience === 'DEVOTEES' ? selectedDevoteeIds : undefined,
           channels: selectedChannels
         })
       })
@@ -127,6 +150,7 @@ export default function NotificationsClient() {
         setMessage('')
         setActionUrl('')
         setTargetEmail('')
+        setSelectedDevoteeIds([])
         await loadHistory()
       } else {
         setError(data?.error || 'Failed to dispatch notification broadcast.')
@@ -203,6 +227,7 @@ export default function NotificationsClient() {
             >
               <MenuItem value='ALL'>All Registered Users</MenuItem>
               <MenuItem value='CUSTOMERS'>Customers With Existing Orders</MenuItem>
+              <MenuItem value='DEVOTEES'>Selected Devotees (Offer Campaigns)</MenuItem>
               <MenuItem value='SPECIFIC'>Specific User (Email or Phone)</MenuItem>
             </TextField>
           </div>
@@ -217,6 +242,89 @@ export default function NotificationsClient() {
               size='small'
               placeholder='e.g. user@example.com or +919876543210'
             />
+          )}
+
+          {targetAudience === 'DEVOTEES' && (
+            <Card variant='outlined' className='p-4 space-y-3 border border-slate-200 rounded-xl'>
+              <Box className='flex justify-between items-center gap-4 flex-wrap'>
+                <Typography variant='subtitle2' className='font-bold text-slate-700'>
+                  Select Devotees ({selectedDevoteeIds.length} selected)
+                </Typography>
+                <TextField
+                  size='small'
+                  placeholder='Search by name, phone...'
+                  value={devoteeSearch}
+                  onChange={e => setDevoteeSearch(e.target.value)}
+                  sx={{ minWidth: 200 }}
+                  className='bg-white'
+                />
+              </Box>
+              <TableContainer style={{ maxHeight: 200, overflowY: 'auto' }} className='border rounded-lg'>
+                <Table size='small' stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell padding='checkbox' className='bg-slate-50'>
+                        <Checkbox
+                          indeterminate={selectedDevoteeIds.length > 0 && selectedDevoteeIds.length < devoteesList.length}
+                          checked={devoteesList.length > 0 && selectedDevoteeIds.length === devoteesList.length}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedDevoteeIds(devoteesList.map(d => d.id))
+                            } else {
+                              setSelectedDevoteeIds([])
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell className='font-semibold text-xs bg-slate-50'>Name</TableCell>
+                      <TableCell className='font-semibold text-xs bg-slate-50'>Mobile</TableCell>
+                      <TableCell className='font-semibold text-xs bg-slate-50'>Gotra</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {devoteesList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} align='center' className='py-4 text-slate-400 text-xs'>
+                          Loading devotee list...
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      devoteesList
+                        .filter(d => {
+                          const q = devoteeSearch.toLowerCase()
+                          return !q || 
+                            (d.name && d.name.toLowerCase().includes(q)) || 
+                            (d.mobile && d.mobile.includes(q))
+                        })
+                        .map(d => {
+                          const isChecked = selectedDevoteeIds.includes(d.id)
+                          return (
+                            <TableRow key={d.id} hover>
+                              <TableCell padding='checkbox'>
+                                <Checkbox
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setSelectedDevoteeIds(selectedDevoteeIds.filter(id => id !== d.id))
+                                    } else {
+                                      setSelectedDevoteeIds([...selectedDevoteeIds, d.id])
+                                    }
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell className='text-xs font-bold text-slate-700'>
+                                {d.name} {d.nameLocal ? `(${d.nameLocal})` : ''}
+                              </TableCell>
+                              <TableCell className='text-xs text-slate-600'>{d.mobile}</TableCell>
+                              <TableCell className='text-xs text-slate-500'>{d.gotra}</TableCell>
+                            </TableRow>
+                          )
+                        })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
           )}
 
           <TextField

@@ -54,6 +54,15 @@ export default function ReferralsClient() {
   const [partnerName, setPartnerName] = useState('')
   const [commissionRate, setCommissionRate] = useState('10')
 
+  const generateAutoCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = 'MSETU'
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setCode(result)
+  }
+
   const loadData = async () => {
     try {
       const [refRes, offerRes] = await Promise.all([
@@ -157,6 +166,18 @@ export default function ReferralsClient() {
             placeholder='e.g. SHASTRI10'
             required
             fullWidth
+            InputProps={{
+              endAdornment: (
+                <Button 
+                  size='small' 
+                  variant='text' 
+                  onClick={generateAutoCode}
+                  style={{ color: '#FF671F', minWidth: 'auto', padding: '0 8px', fontWeight: 'bold' }}
+                >
+                  Auto
+                </Button>
+              )
+            }}
           />
           <TextField
             label='Partner Name *'
@@ -167,7 +188,7 @@ export default function ReferralsClient() {
             fullWidth
           />
           <TextField
-            label='Commission Rate (%)'
+            label='Commission per Order (₹)'
             type='number'
             value={commissionRate}
             onChange={(e) => setCommissionRate(e.target.value)}
@@ -221,7 +242,7 @@ export default function ReferralsClient() {
               <TableRow>
                 <TableCell className='font-bold'>Partner Code</TableCell>
                 <TableCell className='font-bold'>Partner Name</TableCell>
-                <TableCell className='font-bold text-center'>Commission</TableCell>
+                <TableCell className='font-bold text-center'>Commission per Order</TableCell>
                 <TableCell className='font-bold'>Date Created</TableCell>
                 <TableCell className='font-bold text-right'>Action</TableCell>
               </TableRow>
@@ -238,7 +259,7 @@ export default function ReferralsClient() {
                   <TableRow key={ref.id} className='hover:bg-slate-50/50'>
                     <TableCell className='font-bold text-[#000080]'>{ref.code}</TableCell>
                     <TableCell className='font-semibold text-slate-700'>{ref.partnerName}</TableCell>
-                    <TableCell className='text-center font-bold text-slate-600'>{Number(ref.commissionRate)}%</TableCell>
+                    <TableCell className='text-center font-bold text-slate-600'>₹{Number(ref.commissionRate).toFixed(2)}</TableCell>
                     <TableCell className='text-slate-500'>
                       {new Date(ref.createdAt).toLocaleDateString()}
                     </TableCell>
