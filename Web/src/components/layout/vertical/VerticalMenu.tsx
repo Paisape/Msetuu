@@ -139,6 +139,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
           <MenuItem href={`/${locale}/apps/mandir-setu/config`} icon={<i className='tabler-settings' />}>
             Settings
           </MenuItem>
+          <MenuItem href={`/${locale}/apps/mandir-setu/offer-links`} icon={<i className='tabler-link' />}>
+            Offer Links
+          </MenuItem>
         </MenuSection>
       </Menu>
       {/* <Menu

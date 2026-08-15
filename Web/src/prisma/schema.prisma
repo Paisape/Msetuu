@@ -1074,6 +1074,85 @@ model PayoutRequest {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// -------------------------------------------------------------
+// OFFER LINKS & PROMOTION BOOKINGS MODULE
+// -------------------------------------------------------------
+
+model OfferLink {
+  id           String               @id @default(uuid())
+  slug         String               @unique
+  title        String
+  salePrice    Decimal              @db.Decimal(10, 2)
+  offerPrice   Decimal              @db.Decimal(10, 2)
+  gstIncluded  Boolean              @default(false)
+  gstRate      Decimal              @default(18.00) @db.Decimal(5, 2)
+  htmlContent  String               @db.Text
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  orders       OfferLinkOrder[]
+  analytics    OfferLinkAnalytics[]
+}
+
+model ReferralCode {
+  id             String               @id @default(uuid())
+  code           String               @unique
+  partnerName    String
+  commissionRate Decimal              @default(10.00) @db.Decimal(5, 2)
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+}
+
+model OfferLinkOrder {
+  id                  String             @id @default(uuid())
+  offerLinkId         String
+  offerLink           OfferLink          @relation(fields: [offerLinkId], references: [id], onDelete: Cascade)
+  referralCode        String?
+  amount              Decimal            @db.Decimal(10, 2)
+  gstAmount           Decimal            @db.Decimal(10, 2)
+  paymentStatus       String             @default("PENDING") // PENDING, SUCCESS, FAILED
+  paymentId           String?            @unique
+  reconciledStatus    String             @default("UNRECONCILED") // UNRECONCILED, RECONCILED_AUTO, RECONCILED_MANUAL, DISCREPANCY
+  reconciledAt        DateTime?
+  reconciliationNotes String?
+  createdAt           DateTime           @default(now())
+  devotees            OfferLinkDevotee[]
+}
+
+model OfferLinkDevotee {
+  id             String          @id @default(uuid())
+  orderId        String
+  order          OfferLinkOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name           String          // English translated/transliterated name
+  nameLocal      String?         // User's original entered name (local language)
+  gotra          String
+  dob            String
+  phone          String
+  email          String?
+  isPrimary      Boolean         @default(false)
+}
+
+model OfferLinkAnalytics {
+  id          String      @id @default(uuid())
+  offerLinkId String
+  offerLink   OfferLink   @relation(fields: [offerLinkId], references: [id], onDelete: Cascade)
+  ipAddress   String
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+}
+
+model ReconciliationRun {
+  id             String      @id @default(uuid())
+  fileName       String
+  gatewayType    String      // RAZORPAY or PHONEPE
+  totalProcessed Int
+  totalMatched   Int
+  totalDiscrepant Int
+  runByAdminId   String
+  createdAt      DateTime    @default(now())
+}
+
+
 
 
 

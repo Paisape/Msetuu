@@ -100,6 +100,16 @@ export async function createRazorpayOrder(amountRupees: number, receipt: string)
   return order.id
 }
 
+export async function getRazorpayPaymentAmount(paymentId: string): Promise<number> {
+  const client = await getClient()
+  const payment = await withTimeout(
+    client.payments.fetch(paymentId),
+    RAZORPAY_TIMEOUT_MS,
+    'Razorpay payment fetch'
+  )
+  return Number(payment.amount) / 100 // Convert Paise to Rupees
+}
+
 // Verifies the HMAC-SHA256 signature Razorpay returns after a successful Checkout payment —
 // the only proof that a given (order_id, payment_id) pair was genuinely paid. Returns false
 // (never throws, never defaults to true) for any missing/malformed input, mismatched
