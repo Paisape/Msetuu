@@ -53,8 +53,6 @@ const horizontalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>
           { label: 'Astrologers', href: '/apps/mandir-setu/content/astrologers' },
           { label: 'Jyotish Categories', href: '/apps/mandir-setu/content/jyotish-categories' },
           { label: 'Jyotish Time Slots', href: '/apps/mandir-setu/content/jyotish-time-slots' },
-          { label: 'Darshan', href: '/apps/mandir-setu/content/darshan-daily' },
-          { label: '3D Darshan', href: '/apps/mandir-setu/content/darshan-temples' },
           { label: 'FAQs', href: '/apps/mandir-setu/content/faqs' },
           { label: 'How It Works', href: '/apps/mandir-setu/content/how-it-works' },
           { label: 'Reviews', href: '/apps/mandir-setu/content/reviews' },
