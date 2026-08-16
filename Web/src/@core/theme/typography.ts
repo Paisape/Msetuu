@@ -24,32 +24,38 @@ const typography = (fontFamily: string): Theme['typography'] =>
     h1: {
       fontSize: '2.875rem',
       fontWeight: 500,
-      lineHeight: 1.47826
+      lineHeight: 1.47826,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     h2: {
       fontSize: '2.375rem',
       fontWeight: 500,
-      lineHeight: 1.47368421
+      lineHeight: 1.47368421,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     h3: {
       fontSize: '1.75rem',
       fontWeight: 500,
-      lineHeight: 1.5
+      lineHeight: 1.5,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     h4: {
       fontSize: '1.5rem',
       fontWeight: 500,
-      lineHeight: 1.58334
+      lineHeight: 1.58334,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     h5: {
       fontSize: '1.125rem',
       fontWeight: 500,
-      lineHeight: 1.5556
+      lineHeight: 1.5556,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     h6: {
       fontSize: '0.9375rem',
       fontWeight: 500,
-      lineHeight: 1.46667
+      lineHeight: 1.46667,
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     },
     subtitle1: {
       fontSize: '0.9375rem',

@@ -41,6 +41,7 @@ export async function PUT(req: Request) {
     const user = await requireUser()
 
     const rateLimited = enforceRateLimit(req, 'profile-update', { limit: 10, windowMs: 60 * 60 * 1000, identifier: user.id, skipIp: true })
+
     if (rateLimited) return rateLimited
 
     const body = await req.json()
@@ -52,6 +53,7 @@ export async function PUT(req: Request) {
       if (typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
         return NextResponse.json({ error: 'Please provide a valid name.' }, { status: 400 })
       }
+
       data.name = name.trim()
     }
 
@@ -64,13 +66,17 @@ export async function PUT(req: Request) {
         }
         
         const trimmedEmail = email.trim().toLowerCase()
+
+
         // Check if email is already taken by someone else
         if (trimmedEmail !== user.email) {
           const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } })
+
           if (existing) {
             return NextResponse.json({ error: 'This email is already in use.' }, { status: 400 })
           }
         }
+
         data.email = trimmedEmail
       }
     }
@@ -80,15 +86,33 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 })
       }
       
-      const trimmedPhone = phone ? phone.trim() : null
+      let normalizedPhone: string | null = null
+
+      if (phone) {
+        const clean = phone.trim().replace(/\s+/g, '')
+
+        normalizedPhone = /^\d{10}$/.test(clean) ? `+91${clean}` : clean
+      }
+
       // Check if phone is already taken by someone else
-      if (trimmedPhone) {
-        const existing = await prisma.user.findFirst({ where: { phone: trimmedPhone } })
+      if (normalizedPhone) {
+        const existing = await prisma.user.findFirst({ where: { phone: normalizedPhone } })
+
         if (existing && existing.id !== user.id) {
           return NextResponse.json({ error: 'This phone number is already in use.' }, { status: 400 })
         }
       }
-      data.phone = trimmedPhone
+
+      data.phone = normalizedPhone
+    }
+
+    // Helper to verify if a number is an Indian mobile format (10 digits or 12 digits starting with 91)
+    const isIndianPhone = (ph: string | null | undefined): boolean => {
+      if (!ph) return false
+      const clean = ph.replace(/\D/g, '')
+
+      
+return clean.length === 10 || (clean.length === 12 && clean.startsWith('91'))
     }
 
     // Verify that the user still has at least one valid authentication method (email or +91 phone)
@@ -96,7 +120,7 @@ export async function PUT(req: Request) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { phone: true } })
     const finalPhone = data.phone !== undefined ? data.phone : dbUser?.phone
 
-    if (!finalEmail && (!finalPhone || !finalPhone.startsWith('+91'))) {
+    if (!finalEmail && !isIndianPhone(finalPhone)) {
       return NextResponse.json({ error: 'Email is required for international/email-only accounts.' }, { status: 400 })
     }
 
@@ -104,6 +128,7 @@ export async function PUT(req: Request) {
       if (image !== null && typeof image !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid image URL.' }, { status: 400 })
       }
+
       data.image = image
     }
 
@@ -111,6 +136,7 @@ export async function PUT(req: Request) {
       if (occupation !== null && typeof occupation !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid occupation.' }, { status: 400 })
       }
+
       data.occupation = occupation ? occupation.trim() : null
     }
 
@@ -118,6 +144,7 @@ export async function PUT(req: Request) {
       if (dob !== null && typeof dob !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid Date of Birth.' }, { status: 400 })
       }
+
       data.dob = dob ? dob.trim() : null
     }
 
@@ -125,6 +152,7 @@ export async function PUT(req: Request) {
       if (tob !== null && typeof tob !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid Time of Birth.' }, { status: 400 })
       }
+
       data.tob = tob ? tob.trim() : null
     }
 
@@ -132,6 +160,7 @@ export async function PUT(req: Request) {
       if (pob !== null && typeof pob !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid Place of Birth.' }, { status: 400 })
       }
+
       data.pob = pob ? pob.trim() : null
     }
 
@@ -139,6 +168,7 @@ export async function PUT(req: Request) {
       if (gender !== null && typeof gender !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid gender.' }, { status: 400 })
       }
+
       data.gender = gender ? gender.trim() : null
     }
 
@@ -146,6 +176,7 @@ export async function PUT(req: Request) {
       if (gotra !== null && typeof gotra !== 'string') {
         return NextResponse.json({ error: 'Please provide a valid Gotra.' }, { status: 400 })
       }
+
       data.gotra = gotra ? gotra.trim() : null
     }
 

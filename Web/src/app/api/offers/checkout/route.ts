@@ -1,20 +1,45 @@
 import { NextResponse } from 'next/server'
+
 import prisma from '@/libs/prisma'
 import { createRazorpayOrder, isRazorpayConfigured, getRazorpayKeyId } from '@/libs/razorpay'
 import { handleApiError } from '@/libs/api-auth'
 
-// Free Translation/Transliteration helper calling Google Translate API to convert localized text to English
+// Free Translation/Transliteration helper calling Google Translate API to convert localized text to English.
+// Performance safeguards: skips remote call if text is ASCII, and enforces a strict 1.2s timeout.
 async function translateToEnglish(text: string): Promise<string> {
+  const trimmed = text.trim()
+
+  if (!trimmed) return ''
+
+  // Skip remote request if the input contains only standard ASCII characters
+  const isAscii = /^[\x00-\x7F]*$/.test(trimmed)
+
+  if (isAscii) return trimmed
+
   try {
-    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`)
-    if (!res.ok) return text
-    const data = await res.json()
-    if (data && data[0] && data[0][0] && data[0][0][0]) {
-      return data[0][0][0]
-    }
-    return text
-  } catch {
-    return text
+    const translatePromise = fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(trimmed)}`
+    ).then(async res => {
+      if (!res.ok) return trimmed
+      const data = await res.json()
+
+      if (data && data[0] && data[0][0] && data[0][0][0]) {
+        return data[0][0][0]
+      }
+
+      
+return trimmed
+    })
+
+    const timeoutPromise = new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error('Translation timeout')), 1200)
+    )
+
+    return await Promise.race([translatePromise, timeoutPromise])
+  } catch (err) {
+    console.warn('[Translation API] Skipped or timed out:', err)
+    
+return trimmed
   }
 }
 
@@ -43,6 +68,7 @@ export async function POST(req: Request) {
           fetch(`http://ip-api.com/json/${ip}`).then(r => r.json()),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
         ]) as any
+
         if (geoRes && geoRes.status === 'success') {
           ipLocation = `${geoRes.city || ''}, ${geoRes.regionName || ''}, ${geoRes.country || ''}`.trim().replace(/^,\s*/, '')
         }
@@ -65,6 +91,7 @@ export async function POST(req: Request) {
       if (!devotee.name || devotee.name.trim().length === 0) {
         return NextResponse.json({ error: 'Devotee name is required.' }, { status: 400 })
       }
+
       if (!devotee.phone || devotee.phone.trim().length === 0) {
         return NextResponse.json({ error: 'Primary mobile number is required.' }, { status: 400 })
       }
@@ -72,10 +99,12 @@ export async function POST(req: Request) {
 
     // Validate Referral Code if provided
     let activeRefCode: string | null = null
+
     if (referralCode) {
       const ref = await prisma.referralCode.findUnique({
         where: { code: referralCode.trim().toUpperCase() }
       })
+
       if (ref && ref.isActive) {
         activeRefCode = ref.code
       }

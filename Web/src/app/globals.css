@@ -1,5 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=chillax@1&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=synonym@1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme) important;
@@ -131,18 +130,18 @@ html {
   display: flex;
   inline-size: 100%;
   min-block-size: 100%;
-  font-family: 'Synonym Variable', 'Synonym', 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
-  font-family: 'Synonym Variable', 'Synonym', 'Inter', sans-serif !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
 }
 
-/* Chillax for all headings */
+/* Helvetica for all headings */
 h1, h2, h3, h4, h5, h6,
 .MuiTypography-h1, .MuiTypography-h2, .MuiTypography-h3,
 .MuiTypography-h4, .MuiTypography-h5, .MuiTypography-h6 {
-  font-family: 'Chillax Variable', 'Chillax', Georgia, serif !important;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 
 a {

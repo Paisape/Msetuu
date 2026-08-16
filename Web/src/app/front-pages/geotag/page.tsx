@@ -192,6 +192,33 @@ const TagSection = () => {
     ctx.fillText('🕉️ MANDIR SETU', width / 2, height - 24)
   }
 
+  const [submittedImageUrl, setSubmittedImageUrl] = useState<string | null>(null)
+
+  const shareToWhatsApp = async () => {
+    if (!submittedImageUrl) return
+
+    const shareText = `🚩 I just visited and checked in at ${templeName.trim()}! Tag your temple visits and earn rewards on Mandir Setuu!`
+    const shareUrl = `${window.location.origin}/front-pages/geotag`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Mandir Setuu Geotag',
+          text: `${shareText}\n\nPhoto Link: ${submittedImageUrl}`,
+          url: shareUrl
+        })
+        
+return
+      } catch (err) {
+        console.warn('Native share failed, falling back to WhatsApp link redirect:', err)
+      }
+    }
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + "\n\nPhoto: " + submittedImageUrl + "\n\nVisit: " + shareUrl)}`
+
+    window.open(whatsappUrl, '_blank')
+  }
+
   const handleShare = async () => {
     if (!capturedImg) return
 
@@ -233,6 +260,7 @@ const TagSection = () => {
       if (!response.ok) throw new Error(data?.error || 'Failed to share photo.')
 
       setSuccess(true)
+      setSubmittedImageUrl(uploadData.url)
     } catch (err) {
       setShareError(err instanceof Error ? err.message : 'Failed to share photo. Please try again.')
     } finally {
@@ -284,10 +312,22 @@ const TagSection = () => {
       )}
 
       {success ? (
-        <Alert severity='success' className='w-full mb-6'>
-          Photo submitted! Once our team approves your tag you'll earn {pointsPerTag ?? 'your'} points — check the My
-          Rewards tab.
-        </Alert>
+        <div className='w-full mb-6'>
+          <Alert severity='success' className='w-full mb-4'>
+            Photo submitted! Once our team approves your tag you&apos;ll earn {pointsPerTag ?? 'your'} points — check the My
+            Rewards tab.
+          </Alert>
+          {submittedImageUrl && (
+            <Button
+              variant='contained'
+              onClick={shareToWhatsApp}
+              className='w-full font-bold text-white flex items-center justify-center gap-2 py-3'
+              style={{ backgroundColor: '#25D366', textTransform: 'none' }}
+            >
+              <i className='tabler-brand-whatsapp text-lg' /> Share on WhatsApp Status
+            </Button>
+          )}
+        </div>
       ) : (
         captured && (
           <div className='w-full mb-6'>
@@ -321,7 +361,7 @@ const TagSection = () => {
 
       {captured && !success && locationDenied && (
         <Typography variant='caption' className='mb-4 text-center' style={{ color: '#6b7280' }}>
-          Location access wasn't granted — please enter the temple name manually.
+          Location access wasn&apos;t granted — please enter the temple name manually.
         </Typography>
       )}
 
@@ -374,7 +414,7 @@ const GeotagPage = () => {
         >
           <Tab label='Tag Yourself' value='tag' />
           <Tab label='My Rewards' value='rewards' />
-          <Tab label='Community Map' value='map' />
+          <Tab label='My Devotional Map' value='map' />
         </Tabs>
 
         {tab === 'tag' && <TagSection />}
