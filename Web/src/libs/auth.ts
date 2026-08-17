@@ -2,11 +2,10 @@
 import CredentialProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { PrismaClient } from '@prisma/client'
 import type { NextAuthOptions } from 'next-auth'
 import type { Adapter } from 'next-auth/adapters'
 
-const prisma = new PrismaClient()
+import prisma from './prisma'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -38,6 +37,7 @@ export const authOptions: NextAuthOptions = {
           if (isPasswordless === 'true') {
             // ** Passwordless OTP Login API Call
             const apiUrl = process.env.INTERNAL_API_URL || process.env.API_URL || 'http://127.0.0.1:3000/api'
+
             const res = await fetch(`${apiUrl}/auth/verify-otp`, {
               method: 'POST',
               headers: {
@@ -47,8 +47,10 @@ export const authOptions: NextAuthOptions = {
             })
 
             const contentType = res.headers.get('content-type')
+
             if (!contentType || !contentType.includes('application/json')) {
               const text = await res.text()
+
               console.error(`[NextAuth verify-otp] Expected JSON, got HTTP ${res.status}:`, text.substring(0, 200))
               throw new Error(JSON.stringify({ message: ['Server connection error. Please try again.'] }))
             }
@@ -67,6 +69,7 @@ export const authOptions: NextAuthOptions = {
           } else {
             // ** Standard Password Login API Call to match the user credentials and receive user data in response
             const apiUrl = process.env.INTERNAL_API_URL || process.env.API_URL || 'http://127.0.0.1:3000/api'
+
             const res = await fetch(`${apiUrl}/login`, {
               method: 'POST',
               headers: {
@@ -76,8 +79,10 @@ export const authOptions: NextAuthOptions = {
             })
 
           const contentType = res.headers.get('content-type')
+
           if (!contentType || !contentType.includes('application/json')) {
             const text = await res.text()
+
             console.error(`[NextAuth login] Expected JSON, got HTTP ${res.status}:`, text.substring(0, 200))
             throw new Error(JSON.stringify({ message: ['Server connection error. Please try again.'] }))
           }
