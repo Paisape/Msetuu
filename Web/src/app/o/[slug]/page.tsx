@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+
 import prisma from '@/libs/prisma'
 import OfferCheckoutModal from '@/components/OfferCheckoutModal'
 
@@ -6,10 +7,25 @@ type Props = {
   params: Promise<{ slug: string }>
 }
 
-// Disable global header/footer layout styling for this route (chrome-free page)
-export const metadata = {
-  title: 'Special Offering - Mandir Setuu',
-  description: 'Book your devotional offerings and pujas'
+// Dynamically generate SEO metadata based on the loaded offering details
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params
+
+  const offer = await prisma.offerLink.findUnique({
+    where: { slug: slug.toLowerCase() },
+    select: { title: true }
+  })
+
+  if (!offer) {
+    return {
+      title: 'Offering Not Found - Mandir Setuu'
+    }
+  }
+
+  return {
+    title: `${offer.title} - Mandir Setuu`,
+    description: `Book your ${offer.title} and check out custom devotional offerings on Mandir Setuu.`
+  }
 }
 
 export default async function OfferPage({ params }: Props) {
