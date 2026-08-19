@@ -1,3 +1,5 @@
+import crypto from 'crypto'
+
 import prisma from '@/libs/prisma'
 import { sendEmail } from '@/libs/email'
 import { getResolvedSettings } from '@/libs/secureConfigSettings'
@@ -40,7 +42,9 @@ export async function sendEmailNotification(toEmail: string, title: string, mess
       </div>
     </div>
   `
-  return sendEmail({ to: toEmail, subject: title, html, category: 'NOTIFICATION_EMAIL' })
+
+  
+return sendEmail({ to: toEmail, subject: title, html, category: 'NOTIFICATION_EMAIL' })
 }
 
 // 2. SMS Channel Dispatcher (MSG91 / Twilio / Custom HTTP)
@@ -54,6 +58,7 @@ export async function sendSmsNotification(phone: string, title: string, message:
 
     // MSG91 / Standard HTTP SMS Payload
     const textMessage = `${title}: ${message}`
+
     const response = await fetch(`https://api.msg91.com/api/v2/sendsms`, {
       method: 'POST',
       headers: {
@@ -71,7 +76,8 @@ export async function sendSmsNotification(phone: string, title: string, message:
     return response ? response.ok : true
   } catch (err) {
     console.error('[NotificationSystem SMS] Error:', err)
-    return false
+    
+return false
   }
 }
 
@@ -86,6 +92,7 @@ export async function sendWhatsAppNotification(phone: string, title: string, mes
 
     // Meta WhatsApp Cloud API endpoint call
     const cleanPhone = phone.replace(/\D/g, '')
+
     const url = phoneId
       ? `https://graph.facebook.com/v18.0/${phoneId}/messages`
       : 'https://api.interakt.ai/v1/public/track/users/'
@@ -107,19 +114,113 @@ export async function sendWhatsAppNotification(phone: string, title: string, mes
     return response ? response.ok : true
   } catch (err) {
     console.error('[NotificationSystem WhatsApp] Error:', err)
-    return false
+    
+return false
   }
+}
+
+// Helper to generate Google OAuth2 Access Token using Service Account private key
+async function getAccessToken(serviceAccount: { client_email: string; private_key: string }): Promise<string> {
+  const jwtHeader = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
+
+  const now = Math.floor(Date.now() / 1000)
+
+  const jwtClaim = Buffer.from(
+    JSON.stringify({
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now
+    })
+  ).toString('base64url')
+
+  const signatureInput = `${jwtHeader}.${jwtClaim}`
+  const signer = crypto.createSign('RSA-SHA256')
+
+  signer.update(signatureInput)
+  const signature = signer.sign(serviceAccount.private_key, 'base64url')
+
+  const signedJwt = `${signatureInput}.${signature}`
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: signedJwt
+    })
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.error_description || data.error || 'Failed to obtain access token from Google OAuth2')
+  }
+
+  return data.access_token as string
 }
 
 // 4. Firebase Push Notification Channel Dispatcher (FCM HTTP v1 / Server Key)
 export async function sendFirebasePushNotification(fcmToken: string, title: string, message: string, actionUrl?: string) {
   try {
     const fbSettings = await getResolvedSettings('FIREBASE')
+    const serviceAccountJson = fbSettings.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+
+    // If Service Account JSON is configured, use the modern FCM HTTP v1 API
+    if (serviceAccountJson) {
+      try {
+        const serviceAccount = JSON.parse(serviceAccountJson)
+        const projectId = serviceAccount.project_id
+
+        if (!projectId || !serviceAccount.client_email || !serviceAccount.private_key) {
+          console.error('[NotificationSystem Firebase v1] Invalid service account JSON structure (missing project_id, client_email, or private_key)')
+          
+return false
+        }
+
+        const accessToken = await getAccessToken(serviceAccount)
+
+        const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            message: {
+              token: fcmToken,
+              notification: {
+                title,
+                body: message
+              },
+              data: {
+                title,
+                message,
+                actionUrl: actionUrl || '/'
+              },
+              android: {
+                notification: {
+                  click_action: actionUrl || '/'
+                }
+              }
+            }
+          })
+        }).catch(() => null)
+
+        return response ? response.ok : true
+      } catch (err: any) {
+        console.error('[NotificationSystem Firebase v1] Error sending push notification:', err)
+        
+return false
+      }
+    }
+
+    // Fallback: Legacy FCM / Direct HTTP API
     const serverKey = fbSettings.FIREBASE_SERVER_KEY || process.env.FIREBASE_SERVER_KEY || process.env.FCM_SERVER_KEY
 
     if (!serverKey || !fcmToken) return false
 
-    // FCM Legacy / Direct HTTP API
     const response = await fetch('https://fcm.googleapis.com/fcm/send', {
       method: 'POST',
       headers: {
@@ -144,7 +245,8 @@ export async function sendFirebasePushNotification(fcmToken: string, title: stri
     return response ? response.ok : true
   } catch (err) {
     console.error('[NotificationSystem Firebase] Error:', err)
-    return false
+    
+return false
   }
 }
 
@@ -224,6 +326,7 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       },
       select: { id: true, email: true, phone: true, fcmToken: true }
     })
+
     if (singleUser) targetUsers = [singleUser]
     else targetUsers = [{ id: 'manual', email: targetEmail, phone: targetEmail, fcmToken: null }]
   } else if (targetAudience === 'DEVOTEES' && selectedDevoteeIds && Array.isArray(selectedDevoteeIds)) {
@@ -231,6 +334,7 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       where: { id: { in: selectedDevoteeIds } },
       select: { id: true, email: true, phone: true }
     })
+
     targetUsers = devotees.map((d: any) => ({
       id: d.id,
       email: d.email, // Devotee email column stores optional WhatsApp No
@@ -273,25 +377,30 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       
       if (hasEmail && u.email && !isEmailWhatsApp) {
         const ok = await sendEmailNotification(u.email, title, message, actionUrl).catch(() => false)
+
         if (ok) emailSentCount++
       }
 
       if (hasSms && u.phone) {
         const ok = await sendSmsNotification(u.phone, title, message).catch(() => false)
+
         if (ok) smsSentCount++
       }
 
       if (hasWhatsapp) {
         // Resolve WhatsApp target number: prioritize the devotee email column if it contains a phone number
         const waTarget = (isEmailWhatsApp && u.email) ? u.email : u.phone
+
         if (waTarget) {
           const ok = await sendWhatsAppNotification(waTarget, title, message, actionUrl).catch(() => false)
+
           if (ok) whatsappSentCount++
         }
       }
 
       if (hasFirebase && u.fcmToken) {
         const ok = await sendFirebasePushNotification(u.fcmToken, title, message, actionUrl).catch(() => false)
+
         if (ok) firebaseSentCount++
       }
     })

@@ -94,7 +94,8 @@ const WHATSAPP_FIELDS: FieldMeta[] = [
 
 const FIREBASE_FIELDS: FieldMeta[] = [
   { key: 'FIREBASE_PROJECT_ID', label: 'Firebase Project ID', secret: false, placeholder: 'mandirsetuu-app' },
-  { key: 'FIREBASE_SERVER_KEY', label: 'Firebase FCM Server Key', secret: true }
+  { key: 'FIREBASE_SERVER_KEY', label: 'Firebase FCM Server Key', secret: true },
+  { key: 'FIREBASE_SERVICE_ACCOUNT_JSON', label: 'Firebase Service Account JSON', secret: true }
 ]
 
 const LEGAL_FIELDS: FieldMeta[] = [
@@ -237,8 +238,8 @@ const SettingsPanel = ({
             fullWidth
             size='small'
             autoComplete='new-password'
-            multiline={f.key.includes('TERMS')}
-            minRows={f.key.includes('TERMS') ? 10 : undefined}
+            multiline={f.key.includes('TERMS') || f.key.includes('JSON')}
+            minRows={f.key.includes('TERMS') ? 10 : f.key.includes('JSON') ? 6 : undefined}
           />
         )
       })}
@@ -467,7 +468,7 @@ const ConfigClient = () => {
                   There is no separate sandbox/production switch — Razorpay determines the mode from which key
                   pair you paste below. Use your <strong>Test Mode</strong> keys (Razorpay Dashboard → Settings →
                   API Keys → Test Mode) while building/testing, and swap in your <strong>Live Mode</strong> keys
-                  (only issued after Razorpay activates your account) when you're ready to accept real payments.
+                  (only issued after Razorpay activates your account) when you&apos;re ready to accept real payments.
                 </Typography>
                 <SettingsPanel
                   endpoint='/api/secure-config/settings/pg'

@@ -37,6 +37,7 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
     { key: 'SMTP_FROM_NAME', secret: false, label: 'From Name' },
     { key: 'SMTP_FROM_EMAIL', secret: false, label: 'From Email' }
   ],
+
   // Separate SMTP account used only for the notification system (manual admin broadcasts + the
   // automatic new-listing/welcome/order-accepted/video-uploaded triggers) — kept independent of
   // the main EMAIL config above, which continues to handle OTP, password reset, receipts, etc.
@@ -65,7 +66,8 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
   ],
   FIREBASE: [
     { key: 'FIREBASE_PROJECT_ID', secret: false, label: 'Firebase Project ID' },
-    { key: 'FIREBASE_SERVER_KEY', secret: true, label: 'Firebase Server Key (FCM Cloud Messaging)' }
+    { key: 'FIREBASE_SERVER_KEY', secret: true, label: 'Firebase Server Key (FCM Cloud Messaging)' },
+    { key: 'FIREBASE_SERVICE_ACCOUNT_JSON', secret: true, label: 'Firebase Service Account JSON' }
   ],
   LEGAL: [
     { key: 'TERMS_AND_CONDITIONS', secret: false, label: 'Terms and Conditions (Checkout)' }
