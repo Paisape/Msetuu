@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { notifyUser } from '@/libs/notificationSystem'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -52,6 +53,25 @@ export async function PATCH(req: Request, { params }: Params) {
         }
       })
     })
+
+    // Notify the user about payout status update (non-blocking best-effort)
+    try {
+      let message = ''
+
+      if (status === 'APPROVED') {
+        message = `Your payout request of ₹${request.amount} has been approved.`
+      } else if (status === 'PAID') {
+        message = `Your payout request of ₹${request.amount} has been successfully paid to your account.`
+      } else if (status === 'REJECTED') {
+        message = `Your payout request of ₹${request.amount} was rejected and refunded to your wallet.`
+      }
+
+      if (message) {
+        await notifyUser(request.userId, 'Referral Payout Update', message, ['email', 'firebase', 'whatsapp'])
+      }
+    } catch (e) {
+      console.error('[Payout Notification] Failed to notify user:', e)
+    }
 
     return NextResponse.json({
       success: true,
