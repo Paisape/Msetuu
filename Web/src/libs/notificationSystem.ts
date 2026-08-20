@@ -17,6 +17,14 @@ export type SendNotificationOptions = {
   sentById?: string
 }
 
+type NotificationRecipient = {
+  id: string
+  userId: string | null
+  email: string | null
+  phone: string | null
+  fcmToken: string | null
+}
+
 // 1. Email Channel Dispatcher
 export async function sendEmailNotification(toEmail: string, title: string, message: string, actionUrl?: string) {
   const html = `
@@ -317,7 +325,7 @@ export async function notifyUser(
 export async function dispatchNotificationBroadcast(options: SendNotificationOptions) {
   const { title, message, actionUrl, targetAudience, targetEmail, selectedDevoteeIds, channels, sentById } = options
 
-  let targetUsers: { id: string; email: string | null; phone: string | null; fcmToken: string | null }[] = []
+  let targetUsers: NotificationRecipient[] = []
 
   if (targetAudience === 'SPECIFIC' && targetEmail) {
     const singleUser = await prisma.user.findFirst({
@@ -327,8 +335,11 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       select: { id: true, email: true, phone: true, fcmToken: true }
     })
 
-    if (singleUser) targetUsers = [singleUser]
-    else targetUsers = [{ id: 'manual', email: targetEmail, phone: targetEmail, fcmToken: null }]
+    if (singleUser) {
+      targetUsers = [{ ...singleUser, userId: singleUser.id }]
+    } else {
+      targetUsers = [{ id: 'manual', userId: null, email: targetEmail, phone: targetEmail, fcmToken: null }]
+    }
   } else if (targetAudience === 'DEVOTEES' && selectedDevoteeIds && Array.isArray(selectedDevoteeIds)) {
     const devotees = await prisma.offerLinkDevotee.findMany({
       where: { id: { in: selectedDevoteeIds } },
@@ -337,12 +348,13 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
 
     targetUsers = devotees.map((d: any) => ({
       id: d.id,
+      userId: null,
       email: d.email, // Devotee email column stores optional WhatsApp No
       phone: d.phone,
       fcmToken: null
     }))
   } else if (targetAudience === 'CUSTOMERS') {
-    targetUsers = await prisma.user.findMany({
+    const customerUsers = await prisma.user.findMany({
       where: {
         OR: [
           { chadhavaOrders: { some: {} } },
@@ -352,10 +364,55 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       },
       select: { id: true, email: true, phone: true, fcmToken: true }
     })
+
+    targetUsers = customerUsers.map(user => ({ ...user, userId: user.id }))
   } else {
     // ALL Users
-    targetUsers = await prisma.user.findMany({
+    const allUsers = await prisma.user.findMany({
       select: { id: true, email: true, phone: true, fcmToken: true }
+    })
+
+    targetUsers = allUsers.map(user => ({ ...user, userId: user.id }))
+  }
+
+  const log = await prisma.notificationLog.create({
+    data: {
+      title,
+      message,
+      actionUrl: actionUrl || null,
+      targetAudience,
+      targetEmail: targetEmail || null,
+      channels,
+      status: 'SENT',
+      stats: {
+        emailSent: 0,
+        smsSent: 0,
+        whatsappSent: 0,
+        firebaseSent: 0,
+        totalRecipients: targetUsers.length
+      },
+      sentById: sentById || null
+    }
+  })
+
+  const userNotificationRows = targetUsers
+    .filter((user): user is NotificationRecipient & { userId: string } => !!user.userId)
+    .map(user => ({
+      notificationId: log.id,
+      userId: user.userId,
+      title,
+      message,
+      actionUrl: actionUrl || null,
+      channels,
+      sentById: sentById || null,
+      sourceType: 'ADMIN_BROADCAST',
+      sourceId: null as string | null
+    }))
+
+  if (userNotificationRows.length > 0) {
+    await prisma.userNotification.createMany({
+      data: userNotificationRows,
+      skipDuplicates: true
     })
   }
 
@@ -414,18 +471,10 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
     totalRecipients: targetUsers.length
   }
 
-  // Create NotificationLog record in database
-  const log = await prisma.notificationLog.create({
+  await prisma.notificationLog.update({
+    where: { id: log.id },
     data: {
-      title,
-      message,
-      actionUrl: actionUrl || null,
-      targetAudience,
-      targetEmail: targetEmail || null,
-      channels: JSON.stringify(channels),
-      status: 'SENT',
-      stats: JSON.stringify(stats),
-      sentById: sentById || null
+      stats
     }
   })
 

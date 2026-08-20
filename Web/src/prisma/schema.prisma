@@ -73,6 +73,8 @@ model User {
   reviews            Review[]
   offerOrders        OfferOrder[]
   refreshTokens      RefreshToken[]
+  receivedNotifications UserNotification[] @relation("UserNotificationsUser")
+  sentNotifications     UserNotification[] @relation("UserNotificationsSentBy")
 
   // Geotag rewards — cached running balance (source of truth is the sum of
   // PointsTransaction rows below; this column is updated atomically alongside every
@@ -1013,6 +1015,32 @@ model NotificationLog {
   errorDetails   String?
   sentById       String?
   createdAt      DateTime @default(now())
+
+  userNotifications UserNotification[]
+}
+
+model UserNotification {
+  notificationId String   @map("notification_id")
+  userId         String   @map("user_id")
+  title          String
+  message        String
+  actionUrl      String?
+  channels       Json
+  sentById       String?
+  readAt         DateTime?
+  sourceType     String?
+  sourceId       String?
+  createdAt      DateTime @default(now())
+
+  notificationLog NotificationLog @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user            User            @relation("UserNotificationsUser", fields: [userId], references: [id], onDelete: Cascade)
+  sentBy          User?           @relation("UserNotificationsSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+
+  @@id([notificationId, userId])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([notificationId])
+  @@map("UserNotifications")
 }
 
 // Master table for DLT registered SMS Templates (e.g. Textzi DLT Templates)
@@ -1154,7 +1182,6 @@ model ReconciliationRun {
   runByAdminId   String
   createdAt      DateTime    @default(now())
 }
-
 
 
 
