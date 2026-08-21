@@ -205,11 +205,11 @@ return false
               data: {
                 title,
                 message,
-                actionUrl: actionUrl || '/'
+                actionUrl: actionUrl || ''
               },
               android: {
                 notification: {
-                  click_action: actionUrl || '/'
+                  click_action: actionUrl || ''
                 }
               }
             }
@@ -240,12 +240,12 @@ return false
         notification: {
           title,
           body: message,
-          click_action: actionUrl || '/'
+          click_action: actionUrl || ''
         },
         data: {
           title,
           message,
-          actionUrl: actionUrl || '/'
+          actionUrl: actionUrl || ''
         }
       })
     }).catch(() => null)
