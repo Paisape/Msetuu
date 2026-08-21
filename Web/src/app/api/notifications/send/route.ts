@@ -15,12 +15,12 @@ export async function POST(req: Request) {
 
     const normalizedActionUrl = normalizeNotificationActionUrl(actionUrl)
 
-    if (typeof actionUrl === 'string' && actionUrl.trim() && !normalizedActionUrl) {
-      return NextResponse.json(
-        { error: 'Action URL must be a valid allowed URL on mandirsetuu.com or www.mandirsetuu.com.' },
-        { status: 400 }
-      )
-    }
+    // if (typeof actionUrl === 'string' && actionUrl.trim() && !normalizedActionUrl) {
+    //   return NextResponse.json(
+    //     { error: 'Action URL must be a valid allowed URL on mandirsetuu.com or www.mandirsetuu.com.' },
+    //     { status: 400 }
+    //   )
+    // }
 
     if (!channels || !Array.isArray(channels) || channels.length === 0) {
       return NextResponse.json({ error: 'Please select at least one notification channel (Email, SMS, WhatsApp, or Firebase).' }, { status: 400 })

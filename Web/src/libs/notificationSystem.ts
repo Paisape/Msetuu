@@ -55,19 +55,20 @@ export function normalizeNotificationActionUrl(actionUrl?: string): string | und
       return undefined
     }
 
-    if (DEFAULT_ALLOWED_NOTIFICATION_URL_HOSTS.has(normalizedHost)) {
-      return parsedUrl.toString()
-    }
+    // if (DEFAULT_ALLOWED_NOTIFICATION_URL_HOSTS.has(normalizedHost)) {
+    //   return parsedUrl.toString()
+    // }
 
-    if (configuredAppUrl) {
-      const configuredOrigin = new URL(configuredAppUrl).origin
-
-      if (parsedUrl.origin === configuredOrigin) {
-        return parsedUrl.toString()
-      }
-    }
-
-    return undefined
+    // if (configuredAppUrl) {
+    //   const configuredOrigin = new URL(configuredAppUrl).origin
+            
+    //   if (parsedUrl.origin === configuredOrigin) {
+    //     return parsedUrl.toString()
+    //   }
+    // }
+    
+    return parsedUrl.toString()
+    // return undefined
   } catch {
     return undefined
   }
