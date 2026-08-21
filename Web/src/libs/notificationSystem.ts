@@ -25,6 +25,54 @@ type NotificationRecipient = {
   fcmToken: string | null
 }
 
+const DEFAULT_ALLOWED_NOTIFICATION_URL_HOSTS = new Set(['mandirsetuu.com', 'www.mandirsetuu.com'])
+
+export function normalizeNotificationActionUrl(actionUrl?: string): string | undefined {
+  if (typeof actionUrl !== 'string') {
+    return undefined
+  }
+
+  const trimmedUrl = actionUrl.trim()
+
+  if (!trimmedUrl) {
+    return undefined
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl)
+    const normalizedHost = parsedUrl.hostname.toLowerCase()
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim()
+
+    if (parsedUrl.protocol !== 'https:') {
+      if (configuredAppUrl) {
+        const configuredOrigin = new URL(configuredAppUrl).origin
+
+        if (parsedUrl.origin === configuredOrigin) {
+          return parsedUrl.toString()
+        }
+      }
+
+      return undefined
+    }
+
+    if (DEFAULT_ALLOWED_NOTIFICATION_URL_HOSTS.has(normalizedHost)) {
+      return parsedUrl.toString()
+    }
+
+    if (configuredAppUrl) {
+      const configuredOrigin = new URL(configuredAppUrl).origin
+
+      if (parsedUrl.origin === configuredOrigin) {
+        return parsedUrl.toString()
+      }
+    }
+
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
 // 1. Email Channel Dispatcher
 export async function sendEmailNotification(toEmail: string, title: string, message: string, actionUrl?: string) {
   const html = `
@@ -174,6 +222,7 @@ export async function sendFirebasePushNotification(fcmToken: string, title: stri
   try {
     const fbSettings = await getResolvedSettings('FIREBASE')
     const serviceAccountJson = fbSettings.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    const normalizedActionUrl = normalizeNotificationActionUrl(actionUrl)
 
     // If Service Account JSON is configured, use the modern FCM HTTP v1 API
     if (serviceAccountJson) {
@@ -205,12 +254,7 @@ return false
               data: {
                 title,
                 message,
-                actionUrl: actionUrl || ''
-              },
-              android: {
-                notification: {
-                  click_action: actionUrl || ''
-                }
+                actionUrl: normalizedActionUrl || ''
               }
             }
           })
@@ -239,13 +283,12 @@ return false
         to: fcmToken,
         notification: {
           title,
-          body: message,
-          click_action: actionUrl || ''
+          body: message
         },
         data: {
           title,
           message,
-          actionUrl: actionUrl || ''
+          actionUrl: normalizedActionUrl || ''
         }
       })
     }).catch(() => null)

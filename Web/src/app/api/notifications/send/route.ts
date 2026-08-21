@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdminApi } from '@/libs/api-auth'
-import { dispatchNotificationBroadcast } from '@/libs/notificationSystem'
+import { dispatchNotificationBroadcast, normalizeNotificationActionUrl } from '@/libs/notificationSystem'
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +13,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Title and message are required.' }, { status: 400 })
     }
 
+    const normalizedActionUrl = normalizeNotificationActionUrl(actionUrl)
+
+    if (typeof actionUrl === 'string' && actionUrl.trim() && !normalizedActionUrl) {
+      return NextResponse.json(
+        { error: 'Action URL must be a valid allowed URL on mandirsetuu.com or www.mandirsetuu.com.' },
+        { status: 400 }
+      )
+    }
+
     if (!channels || !Array.isArray(channels) || channels.length === 0) {
       return NextResponse.json({ error: 'Please select at least one notification channel (Email, SMS, WhatsApp, or Firebase).' }, { status: 400 })
     }
@@ -20,7 +29,7 @@ export async function POST(req: Request) {
     const result = await dispatchNotificationBroadcast({
       title: title.trim(),
       message: message.trim(),
-      actionUrl: actionUrl ? actionUrl.trim() : undefined,
+      actionUrl: normalizedActionUrl,
       targetAudience: targetAudience || 'ALL',
       targetEmail: targetEmail ? targetEmail.trim() : undefined,
       selectedDevoteeIds: Array.isArray(selectedDevoteeIds) ? selectedDevoteeIds : undefined,
