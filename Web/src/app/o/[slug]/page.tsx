@@ -75,11 +75,11 @@ export default async function OfferPage({ params }: Props) {
 
   return (
     <div className="relative min-h-screen bg-[#FAF8EB] flex flex-col items-center justify-start">
-      {/* 1. Paste raw HTML design content dynamically, centralized with max-width and shadow */}
+      {/* 1. Paste raw HTML design content dynamically, layout-independent */}
       <div 
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: cleanedHtmlContent }} 
-        className="w-full max-w-[1200px] min-h-screen shadow-2xl bg-white flex-grow"
+        className="w-full min-h-screen flex-grow"
       />
 
       {/* 2. Mount the floating modal checkout form */}
