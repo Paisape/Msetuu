@@ -79,6 +79,35 @@ export default function PayoutRequestsPage() {
     loadPayouts()
   }, [])
 
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Customer Name', 'Customer Email', 'Customer Phone', 'Amount (INR)', 'Bank Holder Name', 'Bank Name', 'Account Number', 'IFSC Code', 'UPI ID', 'Status', 'Requested Date', 'Admin Notes']
+    const rows = payouts.map(row => [
+      row.id,
+      row.user?.name || '',
+      row.user?.email || '',
+      row.user?.phone || '',
+      row.amount,
+      row.bankHolderName,
+      row.bankName,
+      row.accountNumber,
+      row.ifscCode,
+      row.upiId || '',
+      row.status,
+      new Date(row.createdAt).toLocaleDateString('en-IN'),
+      row.adminNotes || ''
+    ])
+
+    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", `Referral_Payout_Requests.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const handleOpenDialog = (payout: Payout, action: 'APPROVE' | 'REJECT' | 'PAY') => {
     setSelectedPayout(payout)
     setDialogAction(action)
@@ -138,6 +167,9 @@ export default function PayoutRequestsPage() {
             Review and settle customer withdrawal requests to bank accounts or UPI IDs.
           </Typography>
         </div>
+        <Button variant='contained' color='primary' onClick={handleExportCSV}>
+          Export CSV
+        </Button>
       </div>
 
       {error && <Alert severity='error' className='mb-6'>{error}</Alert>}

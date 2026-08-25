@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { verifyRazorpaySignature, getRazorpayPaymentAmount } from '@/libs/razorpay'
 import { handleApiError } from '@/libs/api-auth'
+import { createInvoiceForOrder } from '@/libs/invoice'
+import { paymentSuccessEmail } from '@/libs/emailTemplates'
+import { sendEmail } from '@/libs/email'
 
 // POST /api/offers/checkout/verify - Verify payment transaction signature and amount integrity
 export async function POST(req: Request) {
@@ -79,6 +82,46 @@ export async function POST(req: Request) {
         reconciliationNotes: `Payment verified and settled successfully online. Amount matched: ₹${paidAmount}.`
       }
     })
+
+    // 4. Retrieve primary devotee details & offer link configuration to generate invoice & receipt
+    try {
+      const dbOrder = await prisma.offerLinkOrder.findUnique({
+        where: { id: orderId },
+        include: { devotees: true, offerLink: true }
+      })
+
+      if (dbOrder) {
+        const primaryDevotee = dbOrder.devotees.find((d: any) => d.isPrimary) || dbOrder.devotees[0]
+        const customerName = primaryDevotee?.name || 'Devotee'
+        const customerEmail = primaryDevotee?.email || null
+
+        const invoice = await createInvoiceForOrder({
+          orderType: 'OFFER',
+          orderId: dbOrder.id,
+          userId: 'guest',
+          customerName,
+          customerEmail,
+          itemLabel: `Offer booking: ${dbOrder.offerLink.title}`,
+          amountCharged: Number(dbOrder.amount),
+          gstPercentage: Number(dbOrder.offerLink.gstRate),
+          gstInclusive: dbOrder.offerLink.gstIncluded
+        })
+
+        // Email receipt to devotee if email is valid and present
+        if (customerEmail && customerEmail.includes('@')) {
+          const { subject, html } = paymentSuccessEmail({
+            customerName,
+            itemLabel: `Offer booking: ${dbOrder.offerLink.title}`,
+            amount: Number(dbOrder.amount),
+            orderId: dbOrder.id,
+            invoiceNumber: invoice.invoiceNumber
+          })
+          await sendEmail({ to: customerEmail, subject, html })
+        }
+      }
+    } catch (invErr) {
+      console.error('[Invoice Generation] Failed best-effort invoice:', invErr)
+    }
 
     return NextResponse.json({ success: true, order: updated })
   } catch (err) {
