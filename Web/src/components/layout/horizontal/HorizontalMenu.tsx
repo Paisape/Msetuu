@@ -101,6 +101,7 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
             <MenuItem href={`/${locale}/apps/mandir-setu/orders/ecommerce`}>Ecommerce Orders</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/orders/yatra`}>Yatra Orders</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/orders/offer`}>Offer Orders</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/offer-links/reports`}>Offer Link Bookings</MenuItem>
           </SubMenu>
           <MenuItem href={`/${locale}/apps/mandir-setu/customers`} icon={<i className='tabler-users' />}>
             Customers
