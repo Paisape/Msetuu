@@ -22,7 +22,8 @@ const verticalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>>)
           { label: 'Jyotish Consultations', href: '/apps/mandir-setu/orders/jyotish' },
           { label: 'Kundli Requests', href: '/apps/mandir-setu/orders/kundli' },
           { label: 'Ecommerce Orders', href: '/apps/mandir-setu/orders/ecommerce' },
-          { label: 'Yatra Orders', href: '/apps/mandir-setu/orders/yatra' }
+          { label: 'Yatra Orders', href: '/apps/mandir-setu/orders/yatra' },
+          { label: 'Offer Link Orders', href: '/apps/mandir-setu/orders/offer' }
         ]
       },
       {

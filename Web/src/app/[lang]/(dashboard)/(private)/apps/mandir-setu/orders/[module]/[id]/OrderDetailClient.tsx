@@ -79,8 +79,9 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
     setErrorMsg(null)
 
     try {
+      const fetchUrl = module === 'offer' ? `/api/offer/orders/${id}` : `/api/${module}/${id}`
       const [orderRes, trailRes, invoiceRes] = await Promise.all([
-        fetch(`/api/${module}/${id}`),
+        fetch(fetchUrl),
         fetch(`/api/orders/trail?type=${orderType}&id=${id}`),
         fetch(`/api/invoices?orderType=${orderType}&orderId=${id}`)
       ])
@@ -243,6 +244,71 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
         </Grid>
 
         <Grid size={{ xs: 12, md: 5 }}>
+          <Card className='mb-6'>
+            <CardHeader title='💳 Payment Information' subheader='Gateway transaction details & breakdown' />
+            <CardContent className='flex flex-col gap-3'>
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>Payment Status</Typography>
+                <Chip
+                  label={order.paymentStatus || 'PENDING'}
+                  color={STATUS_COLORS[order.paymentStatus] || 'warning'}
+                  size='small'
+                  className='font-bold'
+                />
+              </div>
+
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>Payment Mode</Typography>
+                <Typography variant='body2' className='font-bold'>
+                  {order.razorpayPaymentId || order.razorpayOrderId ? 'Online Payment (Razorpay)' : 'Direct Booking'}
+                </Typography>
+              </div>
+
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>Total Amount Paid</Typography>
+                <Typography variant='subtitle1' className='font-black text-emerald-600 dark:text-emerald-400'>
+                  ₹{Number(order.amountPaid || order.totalAmount || order.price || 0).toFixed(2)}
+                </Typography>
+              </div>
+
+              {order.gstPercentage !== undefined && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>GST Rate</Typography>
+                  <Typography variant='body2' className='font-bold'>
+                    {order.gstPercentage}% ({order.gstInclusive ? 'Inclusive' : 'Exclusive'})
+                  </Typography>
+                </div>
+              )}
+
+              {order.razorpayOrderId && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Razorpay Order ID</Typography>
+                  <code className='px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-xs font-bold'>
+                    {order.razorpayOrderId}
+                  </code>
+                </div>
+              )}
+
+              {order.razorpayPaymentId && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Razorpay Payment ID</Typography>
+                  <code className='px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-xs font-bold'>
+                    {order.razorpayPaymentId}
+                  </code>
+                </div>
+              )}
+
+              {order.ipAddress && (
+                <div className='flex justify-between items-center'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Customer IP</Typography>
+                  <Typography variant='caption' className='font-mono'>
+                    {order.ipAddress}
+                  </Typography>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader title='Order Trail' subheader='Status history, timestamps, and who made each change' />
             <CardContent>

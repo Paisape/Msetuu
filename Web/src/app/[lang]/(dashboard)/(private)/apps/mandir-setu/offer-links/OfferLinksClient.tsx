@@ -111,6 +111,14 @@ export default function OfferLinksClient() {
         <div className='flex gap-3 flex-wrap'>
           <Button
             variant='outlined'
+            onClick={() => router.push(`/${locale}/apps/mandir-setu/orders/offer`)}
+            startIcon={<i className='tabler-shopping-cart' />}
+            className="border-slate-300 text-slate-700"
+          >
+            All Orders
+          </Button>
+          <Button
+            variant='outlined'
             onClick={() => router.push(`/${locale}/apps/mandir-setu/offer-links/referrals`)}
             startIcon={<i className='tabler-users' />}
             className="border-slate-300 text-slate-700"
@@ -194,7 +202,16 @@ export default function OfferLinksClient() {
                   </TableCell>
                   <TableCell className='text-right space-x-1'>
                     <IconButton 
+                      onClick={() => router.push(`/${locale}/apps/mandir-setu/orders/offer`)}
+                      title='View Campaign Bookings'
+                      size='small'
+                      className='text-slate-500 hover:text-blue-600'
+                    >
+                      <i className='tabler-eye text-lg' />
+                    </IconButton>
+                    <IconButton 
                       onClick={() => router.push(`/${locale}/apps/mandir-setu/offer-links/edit/${link.id}`)}
+                      title='Edit Link'
                       size='small'
                       className='text-slate-500 hover:text-amber-600'
                     >
