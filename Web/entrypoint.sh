@@ -31,13 +31,13 @@ else
     || echo "ERROR: DB Push failed - see output above."
 fi
 
-# Attempt database seed
-echo "=== Running Prisma DB Seed ==="
-if [ -f "$PRISMA_BIN" ]; then
-  "$PRISMA_BIN" db seed 2>&1 || echo "WARNING: DB Seed encountered an issue (may be expected)."
-else
-  npx --yes prisma@6.19.0 db seed 2>&1 || echo "WARNING: DB Seed encountered an issue (may be expected)."
-fi
+# Attempt database seed (Disabled in production to prevent injecting dummy data on every redeploy)
+# echo "=== Running Prisma DB Seed ==="
+# if [ -f "$PRISMA_BIN" ]; then
+#   "$PRISMA_BIN" db seed 2>&1 || echo "WARNING: DB Seed encountered an issue (may be expected)."
+# else
+#   npx --yes prisma@6.19.0 db seed 2>&1 || echo "WARNING: DB Seed encountered an issue (may be expected)."
+# fi
 
 echo "=== Starting Next.js Server ==="
 exec node server.js
