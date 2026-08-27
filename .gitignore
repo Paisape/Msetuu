@@ -13,3 +13,7 @@ dist/
 .expo/
 build/
 mandir-setuu-firebase-adminsdk-fbsvc-c30a388ad5.json
+
+# SQL Database backups and metadata
+*.sql
+._*

@@ -42,3 +42,11 @@ src/assets/iconify-icons/generated-icons.css
 # sqlite database
 *.db
 
+# SQL backups
+*.sql
+
+# Uploads folder
+/public/uploads/
+/public/uploads.zip
+
+
