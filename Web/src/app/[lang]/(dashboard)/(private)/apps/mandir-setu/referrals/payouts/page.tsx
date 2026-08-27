@@ -53,7 +53,7 @@ export default function PayoutRequestsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Dialog controls
   const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null)
   const [dialogAction, setDialogAction] = useState<'APPROVE' | 'REJECT' | 'PAY' | null>(null)
