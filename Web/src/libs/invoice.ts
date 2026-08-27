@@ -19,14 +19,29 @@ type CreateInvoiceInput = {
 
 async function nextInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear()
-  const count = await prisma.invoice.count({ where: { invoiceNumber: { startsWith: `INV-${year}-` } } })
 
-  return `INV-${year}-${String(count + 1).padStart(5, '0')}`
+  for (let i = 0; i < 10; i++) {
+    const count = await prisma.invoice.count({ where: { invoiceNumber: { startsWith: `INV-${year}-` } } })
+    const candidate = `INV-${year}-${String(count + 1 + i).padStart(5, '0')}`
+
+    const existing = await prisma.invoice.findUnique({ where: { invoiceNumber: candidate } })
+    if (!existing) return candidate
+  }
+
+  // Fallback to timestamp + random suffix if count-based sequence collides
+  const rand = Math.floor(1000 + Math.random() * 9000)
+  return `INV-${year}-${Date.now().toString().slice(-6)}${rand}`
 }
 
 // Generates a GST invoice for an order whose payment has just succeeded. No-op-safe to call
 // once per order — callers should only invoke this right after setting paymentStatus PAID.
 export async function createInvoiceForOrder(input: CreateInvoiceInput) {
+  // 1. Idempotency check — if an invoice already exists for this order, return it
+  const existingInvoice = await prisma.invoice.findFirst({
+    where: { orderType: input.orderType, orderId: input.orderId }
+  })
+  if (existingInvoice) return existingInvoice
+
   const gst = input.gstPercentage || 0
   const inclusive = input.gstInclusive !== false
   const amount = input.amountCharged
@@ -48,24 +63,48 @@ export async function createInvoiceForOrder(input: CreateInvoiceInput) {
     gstAmount = 0
   }
 
-  const invoiceNumber = await nextInvoiceNumber()
-
-  return prisma.invoice.create({
-    data: {
-      invoiceNumber,
-      orderType: input.orderType,
-      orderId: input.orderId,
-      userId: input.userId,
-      customerName: input.customerName,
-      customerEmail: input.customerEmail,
-      itemLabel: input.itemLabel,
-      subtotal,
-      gstPercentage: gst,
-      gstAmount,
-      total: inclusive ? total : subtotal + gstAmount,
-      status: 'PAID'
+  try {
+    const invoiceNumber = await nextInvoiceNumber()
+    return await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderType: input.orderType,
+        orderId: input.orderId,
+        userId: input.userId,
+        customerName: input.customerName,
+        customerEmail: input.customerEmail,
+        itemLabel: input.itemLabel,
+        subtotal,
+        gstPercentage: gst,
+        gstAmount,
+        total: inclusive ? total : subtotal + gstAmount,
+        status: 'PAID'
+      }
+    })
+  } catch (err: any) {
+    // Unique constraint collision fallback
+    if (err?.code === 'P2002' || String(err?.message || '').includes('invoiceNumber')) {
+      const year = new Date().getFullYear()
+      const fallbackInvoiceNumber = `INV-${year}-${Date.now().toString().slice(-6)}${Math.floor(1000 + Math.random() * 9000)}`
+      return await prisma.invoice.create({
+        data: {
+          invoiceNumber: fallbackInvoiceNumber,
+          orderType: input.orderType,
+          orderId: input.orderId,
+          userId: input.userId,
+          customerName: input.customerName,
+          customerEmail: input.customerEmail,
+          itemLabel: input.itemLabel,
+          subtotal,
+          gstPercentage: gst,
+          gstAmount,
+          total: inclusive ? total : subtotal + gstAmount,
+          status: 'PAID'
+        }
+      })
     }
-  })
+    throw err
+  }
 }
 
 // Called when an admin cancels an order that already has a PAID invoice — flips the invoice
