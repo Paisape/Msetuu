@@ -43,7 +43,8 @@ const translations = {
     processing: 'Processing...',
     person: 'Person',
     sameAsPrimary: 'Same as primary',
-    orderIdLabel: 'Order ID'
+    orderIdLabel: 'Order ID',
+    supportContact: 'For details contact:'
   },
   hi: {
     bookNow: 'अभी बुक करें',
@@ -65,7 +66,8 @@ const translations = {
     processing: 'प्रक्रिया जारी है...',
     person: 'व्यक्ति',
     sameAsPrimary: 'मुख्य नंबर के समान',
-    orderIdLabel: 'ऑर्डर आईडी'
+    orderIdLabel: 'ऑर्डर आईडी',
+    supportContact: 'विवरण के लिए संपर्क करें:'
   },
   mr: {
     bookNow: 'आताच बुक करा',
@@ -87,7 +89,8 @@ const translations = {
     processing: 'प्रक्रिया सुरू आहे...',
     person: 'व्यक्ती',
     sameAsPrimary: 'मुख्य नंबर प्रमाणे',
-    orderIdLabel: 'ऑर्डर आयडी'
+    orderIdLabel: 'ऑर्डर आयडी',
+    supportContact: 'अधिक माहितीसाठी संपर्क करा:'
   },
   gu: {
     bookNow: 'અત્યારે જ બુક કરો',
@@ -109,7 +112,8 @@ const translations = {
     processing: 'પ્રક્રિયા ચાલુ છે...',
     person: 'વ્યક્તિ',
     sameAsPrimary: 'મુખ્ય નંબર મુજબ',
-    orderIdLabel: 'ઓર્ડર આઈડી'
+    orderIdLabel: 'ઓર્ડર આઈડી',
+    supportContact: 'વિગતો માટે સંપર્ક કરો:'
   }
 }
 
@@ -410,22 +414,34 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   return (
     <>
       {/* 1. Permanent, Beautiful Sticky Footer "Book Now" Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 z-[99] shadow-2xl max-w-4xl mx-auto rounded-t-2xl">
-        <div className="flex flex-col">
+      <div 
+        suppressHydrationWarning
+        className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 z-[99] shadow-2xl max-w-4xl mx-auto rounded-t-2xl"
+      >
+        <div className="flex flex-col items-center sm:items-start">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-[#FF671F]">₹{basePrice.toFixed(0)}</span>
             {parseFloat(offerLink.salePrice) > basePrice && (
               <span className="text-slate-400 line-through text-sm">₹{parseFloat(offerLink.salePrice).toFixed(0)}</span>
             )}
           </div>
-          {offerLink.supportPhone && (
-            <span className="text-[11px] text-slate-500 font-semibold mt-0.5">
-              For details contact: <a href={`tel:${offerLink.supportPhone}`} className="text-[#FF671F] font-black hover:underline">{offerLink.supportPhone}</a>
-            </span>
-          )}
         </div>
+
+        {offerLink.supportPhone && (
+          <div className="text-center bg-[#FF671F]/10 border border-[#FF671F]/20 px-4 py-1.5 rounded-xl shadow-sm">
+            <span className="text-xs font-bold text-slate-700 mr-1.5">
+              {t.supportContact}
+            </span>
+            <a 
+              href={`tel:${offerLink.supportPhone}`} 
+              className="text-[#FF671F] font-black text-sm hover:underline inline-flex items-center gap-1"
+            >
+              <i className="tabler-phone text-xs" /> {offerLink.supportPhone}
+            </a>
+          </div>
+        )}
         
-        <div className="flex gap-2 w-full sm:w-auto justify-end flex-grow">
+        <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end flex-shrink-0">
           <button
             onClick={() => setIsOpen(true)}
             className="w-full sm:w-auto px-16 py-3 bg-[#FF671F] hover:bg-[#e05615] active:scale-[0.98] text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all text-center flex items-center justify-center gap-2"
