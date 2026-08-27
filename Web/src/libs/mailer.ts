@@ -47,26 +47,18 @@ async function resolveSmtpConfig(category: SmtpCategory = 'EMAIL'): Promise<Smtp
   return { host, port, secure, user, pass, fromName, fromEmail }
 }
 
-const transporterCache = new Map<string, nodemailer.Transporter>()
-
 async function getTransporter(category: SmtpCategory): Promise<{ transporter: nodemailer.Transporter; from: string } | null> {
   const config = await resolveSmtpConfig(category)
 
   if (!config) return null
 
-  const cacheKey = `${config.host}:${config.port}:${config.user}`
-
-  let transporter = transporterCache.get(cacheKey)
-
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: { user: config.user, pass: config.pass }
-    })
-    transporterCache.set(cacheKey, transporter)
-  }
+  // Re-create nodemailer transporter on every call so that changes made in the Admin Config take effect immediately.
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass }
+  })
 
   return { transporter, from: `"${config.fromName}" <${config.fromEmail}>` }
 }
