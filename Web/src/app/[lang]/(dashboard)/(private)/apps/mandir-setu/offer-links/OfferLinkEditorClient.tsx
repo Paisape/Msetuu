@@ -34,6 +34,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
   const [gstRate, setGstRate] = useState('0')
   const [htmlContent, setHtmlContent] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [supportPhone, setSupportPhone] = useState('')
 
   // Autogenerate slug from title on creation
   const handleTitleChange = (val: string) => {
@@ -64,6 +65,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         setGstRate(offer.gstRate.toString())
         setHtmlContent(offer.htmlContent)
         setIsActive(offer.isActive)
+        setSupportPhone(offer.supportPhone || '')
       } catch (err: any) {
         setErrorMsg(err.message || 'Error loading offer link.')
       } finally {
@@ -88,7 +90,8 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         gstIncluded,
         gstRate: Number(gstRate),
         htmlContent,
-        isActive
+        isActive,
+        supportPhone: supportPhone.trim() || null
       }
 
       const url = editId ? `/api/offers/${editId}` : '/api/offers'
@@ -170,6 +173,15 @@ export default function OfferLinkEditorClient({ editId }: Props) {
             required
             fullWidth
             helperText='Original struck-through reference price'
+          />
+
+          <TextField
+            label='Support Contact Phone Number (Optional)'
+            value={supportPhone}
+            onChange={(e) => setSupportPhone(e.target.value)}
+            fullWidth
+            placeholder="e.g. +91 8976876305"
+            helperText="Displays a custom 'For details contact' number at the bottom of this campaign checkout bar."
           />
 
           <div className='flex items-center gap-4'>

@@ -63,7 +63,8 @@ export default async function OfferPage({ params }: Props) {
     offerPrice: offer.offerPrice.toString(),
     salePrice: offer.salePrice.toString(),
     gstIncluded: offer.gstIncluded,
-    gstRate: offer.gstRate.toString()
+    gstRate: offer.gstRate.toString(),
+    supportPhone: offer.supportPhone || ''
   }
 
   // Clean raw HTML content from structural wrappers (DOCTYPE, html, body) to match browser parse behavior

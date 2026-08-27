@@ -1116,6 +1116,7 @@ model OfferLink {
   gstRate      Decimal              @default(18.00) @db.Decimal(5, 2)
   htmlContent  String               @db.Text
   isActive     Boolean              @default(true)
+  supportPhone String?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   orders       OfferLinkOrder[]

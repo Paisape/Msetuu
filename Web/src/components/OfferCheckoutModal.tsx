@@ -18,6 +18,7 @@ type Props = {
     salePrice: string
     gstIncluded: boolean
     gstRate: string
+    supportPhone?: string
   }
 }
 
@@ -410,10 +411,17 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
     <>
       {/* 1. Permanent, Beautiful Sticky Footer "Book Now" Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 z-[99] shadow-2xl max-w-4xl mx-auto rounded-t-2xl">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-black text-[#FF671F]">₹{basePrice.toFixed(0)}</span>
-          {parseFloat(offerLink.salePrice) > basePrice && (
-            <span className="text-slate-400 line-through text-sm">₹{parseFloat(offerLink.salePrice).toFixed(0)}</span>
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black text-[#FF671F]">₹{basePrice.toFixed(0)}</span>
+            {parseFloat(offerLink.salePrice) > basePrice && (
+              <span className="text-slate-400 line-through text-sm">₹{parseFloat(offerLink.salePrice).toFixed(0)}</span>
+            )}
+          </div>
+          {offerLink.supportPhone && (
+            <span className="text-[11px] text-slate-500 font-semibold mt-0.5">
+              For details contact: <a href={`tel:${offerLink.supportPhone}`} className="text-[#FF671F] font-black hover:underline">{offerLink.supportPhone}</a>
+            </span>
           )}
         </div>
         
