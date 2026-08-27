@@ -1,6 +1,36 @@
 import { dispatchNotificationBroadcast, notifyUser } from '@/libs/notificationSystem'
 import type { NotificationChannel } from '@/libs/notificationSystem'
 import { getResolvedSettings } from '@/libs/secureConfigSettings'
+import prisma from '@/libs/prisma'
+
+function formatDltTemplate(template: string, values: string[], namedReplacements: Record<string, string>): string {
+  let result = template
+  for (const [key, val] of Object.entries(namedReplacements)) {
+    result = result.replaceAll(`{${key}}`, val)
+  }
+  let index = 0
+  result = result.replace(/\{#var#\}/g, () => {
+    const replacement = values[index] !== undefined ? values[index] : '{#var#}'
+    index++
+    return replacement
+  })
+  return result
+}
+
+async function getDbSmsTemplate(keywords: string[]): Promise<{ content: string; templateId: string } | null> {
+  for (const keyword of keywords) {
+    const tpl = await prisma.smsTemplate.findFirst({
+      where: {
+        name: { contains: keyword, mode: 'insensitive' },
+        active: true
+      }
+    })
+    if (tpl) {
+      return { content: tpl.content, templateId: tpl.templateId }
+    }
+  }
+  return null
+}
 
 // Business-event notification triggers — thin wrappers around notificationSystem.ts that decide
 // *who* gets notified and with *what message* for a given app event. Every function here is
@@ -57,23 +87,38 @@ export async function notifyOrderAccepted(userId: string, moduleLabel: string, o
 
     // 1. Resolve SMS template
     let smsMessage = `Good news! Your ${moduleLabel} order (#${orderId.slice(-8)}) has been accepted and is now being processed.`
-    const customSmsTemplate = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE
-    if (customSmsTemplate) {
-      smsMessage = customSmsTemplate
-        .replace(/{campaign}/g, moduleLabel)
-        .replace(/{orderId}/g, orderId)
-        .replace(/{trackLink}/g, trackLink)
+    let smsTemplateId = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE_ID || null
+
+    // Look up in database DLT templates master first
+    const dbSmsTemplate = await getDbSmsTemplate(['order', 'confirm', 'accept'])
+    if (dbSmsTemplate) {
+      smsMessage = formatDltTemplate(dbSmsTemplate.content, [moduleLabel, orderId, trackLink], {
+        campaign: moduleLabel,
+        orderId,
+        trackLink
+      })
+      smsTemplateId = dbSmsTemplate.templateId
+    } else {
+      // Fallback to secure settings override config
+      const customSmsTemplate = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE
+      if (customSmsTemplate) {
+        smsMessage = formatDltTemplate(customSmsTemplate, [moduleLabel, orderId, trackLink], {
+          campaign: moduleLabel,
+          orderId,
+          trackLink
+        })
+      }
     }
-    const smsTemplateId = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE_ID || null
 
     // 2. Resolve WhatsApp template
     let waMessage = smsMessage
     const customWaTemplate = waSettings.WHATSAPP_ORDER_ACCEPTED_TEMPLATE
     if (customWaTemplate) {
-      waMessage = customWaTemplate
-        .replace(/{campaign}/g, moduleLabel)
-        .replace(/{orderId}/g, orderId)
-        .replace(/{trackLink}/g, trackLink)
+      waMessage = formatDltTemplate(customWaTemplate, [moduleLabel, orderId, trackLink], {
+        campaign: moduleLabel,
+        orderId,
+        trackLink
+      })
     }
 
     // Email + Firebase Push Notification
@@ -119,23 +164,38 @@ export async function notifyVideoUploaded(userId: string, moduleLabel: string, o
 
     // 1. Resolve SMS template
     let smsMessage = `The video of your ${moduleLabel} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`
-    const customSmsTemplate = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE
-    if (customSmsTemplate) {
-      smsMessage = customSmsTemplate
-        .replace(/{campaign}/g, moduleLabel)
-        .replace(/{orderId}/g, orderId)
-        .replace(/{videoLink}/g, videoLink)
+    let smsTemplateId = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE_ID || null
+
+    // Look up in database DLT templates master first
+    const dbSmsTemplate = await getDbSmsTemplate(['video', 'upload', 'proof'])
+    if (dbSmsTemplate) {
+      smsMessage = formatDltTemplate(dbSmsTemplate.content, [moduleLabel, orderId, videoLink], {
+        campaign: moduleLabel,
+        orderId,
+        videoLink
+      })
+      smsTemplateId = dbSmsTemplate.templateId
+    } else {
+      // Fallback to secure settings override config
+      const customSmsTemplate = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE
+      if (customSmsTemplate) {
+        smsMessage = formatDltTemplate(customSmsTemplate, [moduleLabel, orderId, videoLink], {
+          campaign: moduleLabel,
+          orderId,
+          videoLink
+        })
+      }
     }
-    const smsTemplateId = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE_ID || null
 
     // 2. Resolve WhatsApp template
     let waMessage = smsMessage
     const customWaTemplate = waSettings.WHATSAPP_VIDEO_UPLOADED_TEMPLATE
     if (customWaTemplate) {
-      waMessage = customWaTemplate
-        .replace(/{campaign}/g, moduleLabel)
-        .replace(/{orderId}/g, orderId)
-        .replace(/{videoLink}/g, videoLink)
+      waMessage = formatDltTemplate(customWaTemplate, [moduleLabel, orderId, videoLink], {
+        campaign: moduleLabel,
+        orderId,
+        videoLink
+      })
     }
 
     // Email + Firebase Push Notification
