@@ -28,7 +28,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      items: items.map(item => ({
+      items: items.map((item: any) => ({
         notification_id: item.notificationId,
         title: item.title,
         message: item.message,

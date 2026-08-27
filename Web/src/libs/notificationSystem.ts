@@ -409,14 +409,14 @@ export async function dispatchNotificationBroadcast(options: SendNotificationOpt
       select: { id: true, email: true, phone: true, fcmToken: true }
     })
 
-    targetUsers = customerUsers.map(user => ({ ...user, userId: user.id }))
+    targetUsers = customerUsers.map((user: any) => ({ ...user, userId: user.id }))
   } else {
     // ALL Users
     const allUsers = await prisma.user.findMany({
       select: { id: true, email: true, phone: true, fcmToken: true }
     })
 
-    targetUsers = allUsers.map(user => ({ ...user, userId: user.id }))
+    targetUsers = allUsers.map((user: any) => ({ ...user, userId: user.id }))
   }
 
   const log = await prisma.notificationLog.create({
