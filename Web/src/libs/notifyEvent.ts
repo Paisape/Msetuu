@@ -17,7 +17,19 @@ function formatDltTemplate(template: string, values: string[], namedReplacements
   return result
 }
 
-async function getDbSmsTemplate(keywords: string[]): Promise<{ content: string; templateId: string } | null> {
+async function getDbSmsTemplate(categoryName: string, keywords: string[]): Promise<{ content: string; templateId: string } | null> {
+  // 1. Try exact category match first
+  const catTpl = await prisma.smsTemplate.findFirst({
+    where: {
+      category: categoryName,
+      active: true
+    }
+  })
+  if (catTpl) {
+    return { content: catTpl.content, templateId: catTpl.templateId }
+  }
+
+  // 2. Fallback to keyword matching on name
   for (const keyword of keywords) {
     const tpl = await prisma.smsTemplate.findFirst({
       where: {
@@ -90,7 +102,7 @@ export async function notifyOrderAccepted(userId: string, moduleLabel: string, o
     let smsTemplateId = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE_ID || null
 
     // Look up in database DLT templates master first
-    const dbSmsTemplate = await getDbSmsTemplate(['order', 'confirm', 'accept'])
+    const dbSmsTemplate = await getDbSmsTemplate('ORDER_CONFIRMATION', ['order', 'confirm', 'accept'])
     if (dbSmsTemplate) {
       smsMessage = formatDltTemplate(dbSmsTemplate.content, [moduleLabel, orderId, trackLink], {
         campaign: moduleLabel,
@@ -167,7 +179,7 @@ export async function notifyVideoUploaded(userId: string, moduleLabel: string, o
     let smsTemplateId = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE_ID || null
 
     // Look up in database DLT templates master first
-    const dbSmsTemplate = await getDbSmsTemplate(['video', 'upload', 'proof'])
+    const dbSmsTemplate = await getDbSmsTemplate('VIDEO_UPLOADED', ['video', 'upload', 'proof'])
     if (dbSmsTemplate) {
       smsMessage = formatDltTemplate(dbSmsTemplate.content, [moduleLabel, orderId, videoLink], {
         campaign: moduleLabel,

@@ -1052,6 +1052,7 @@ model SmsTemplate {
   name        String
   templateId  String   @unique // DLT Template ID (e.g. 1177178593496518428)
   content     String   // Template content text with variable placeholders like {#num#}
+  category    String   @default("GENERAL") // "OTP", "ORDER_CONFIRMATION", "VIDEO_UPLOADED", "GENERAL"
   senderId    String?
   active      Boolean  @default(true)
   isDefault   Boolean  @default(false)

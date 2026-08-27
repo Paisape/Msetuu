@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       return NextResponse.json(result)
     }
 
-    const { id, name, templateId, content, senderId, active, isDefault } = body
+    const { id, name, templateId, content, category, senderId, active, isDefault } = body
 
     if (!name || !templateId || !content) {
       return NextResponse.json(
@@ -66,8 +66,8 @@ export async function POST(req: Request) {
       )
     }
 
-    // If setting as default, clear default flag on other templates
-    if (isDefault) {
+    // If setting as default or OTP, clear default flag on other templates
+    if (isDefault || category === 'OTP') {
       await prisma.smsTemplate.updateMany({
         where: { id: { not: id || '' } },
         data: { isDefault: false }
@@ -82,9 +82,10 @@ export async function POST(req: Request) {
           name,
           templateId,
           content,
+          category: category || 'GENERAL',
           senderId: senderId || null,
           active: active !== undefined ? active : true,
-          isDefault: isDefault !== undefined ? isDefault : false
+          isDefault: isDefault !== undefined ? isDefault : (category === 'OTP')
         }
       })
     } else {
@@ -93,9 +94,10 @@ export async function POST(req: Request) {
           name,
           templateId,
           content,
+          category: category || 'GENERAL',
           senderId: senderId || null,
           active: active !== undefined ? active : true,
-          isDefault: isDefault !== undefined ? isDefault : false
+          isDefault: isDefault !== undefined ? isDefault : (category === 'OTP')
         }
       })
     }

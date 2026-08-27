@@ -29,12 +29,17 @@ import Box from '@mui/material/Box'
 import Pagination from '@mui/material/Pagination'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 
 type SmsTemplate = {
   id: string
   name: string
   templateId: string
   content: string
+  category?: string
   senderId?: string | null
   active: boolean
   isDefault: boolean
@@ -319,9 +324,13 @@ export default function SmsTemplatesClient() {
                         <TableRow key={tpl.id}>
                           <TableCell className='font-medium'>
                             {tpl.name}
-                            {tpl.isDefault && (
-                              <Chip label='Default OTP' size='small' color='primary' className='ml-2 text-xs' />
-                            )}
+                            {tpl.category === 'OTP' || tpl.isDefault ? (
+                              <Chip label='OTP Verification' size='small' color='primary' className='ml-2 text-xs' />
+                            ) : tpl.category === 'ORDER_CONFIRMATION' ? (
+                              <Chip label='Order Confirmation' size='small' color='info' className='ml-2 text-xs' />
+                            ) : tpl.category === 'VIDEO_UPLOADED' ? (
+                              <Chip label='Video Uploaded' size='small' color='secondary' className='ml-2 text-xs' />
+                            ) : null}
                           </TableCell>
                           <TableCell>
                             <code className='px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-mono text-sm'>
@@ -466,6 +475,20 @@ export default function SmsTemplatesClient() {
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth='sm' fullWidth>
         <DialogTitle>{editingTemplate?.id ? 'Edit DLT SMS Template' : 'Add New DLT SMS Template'}</DialogTitle>
         <DialogContent className='flex flex-col gap-4 mt-2'>
+          <FormControl fullWidth size='small'>
+            <InputLabel id='tpl-category-label'>Template Role / Category</InputLabel>
+            <Select
+              labelId='tpl-category-label'
+              label='Template Role / Category'
+              value={editingTemplate?.category || 'GENERAL'}
+              onChange={e => setEditingTemplate(prev => ({ ...prev, category: e.target.value, isDefault: e.target.value === 'OTP' ? true : prev?.isDefault || false }))}
+            >
+              <MenuItem value='GENERAL'>General / Custom Template</MenuItem>
+              <MenuItem value='OTP'>OTP Verification Code</MenuItem>
+              <MenuItem value='ORDER_CONFIRMATION'>Order Confirmation / Booking Accepted</MenuItem>
+              <MenuItem value='VIDEO_UPLOADED'>Completion Proof Video Uploaded</MenuItem>
+            </Select>
+          </FormControl>
           <TextField
             label='Template Name'
             placeholder='e.g. Paisape OTP Verification'
