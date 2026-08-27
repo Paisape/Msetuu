@@ -959,6 +959,8 @@ model OfferOrder {
   razorpayOrderId   String?
   razorpayPaymentId String?
   razorpaySignature String?
+  paymentMethod     String?  // UPI, Card, NetBanking, Wallet, etc.
+  paymentDetails    Json?    // Detailed breakdown (bank, UPI VPA, card last4/network, fee/tax)
   gstPercentage     Float    @default(18)
   gstInclusive      Boolean  @default(true)
   ipAddress         String?
@@ -1145,6 +1147,8 @@ model OfferLinkOrder {
   gstAmount           Decimal            @db.Decimal(10, 2)
   paymentStatus       String             @default("PENDING") // PENDING, SUCCESS, FAILED
   paymentId           String?            @unique
+  paymentMethod       String?            // UPI, Card, NetBanking, Wallet, etc.
+  paymentDetails      Json?              // Detailed breakdown (bank, UPI VPA, card last4/network, fee/tax)
   reconciledStatus    String             @default("UNRECONCILED") // UNRECONCILED, RECONCILED_AUTO, RECONCILED_MANUAL, DISCREPANCY
   reconciledAt        DateTime?
   reconciliationNotes String?

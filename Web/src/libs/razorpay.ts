@@ -132,3 +132,68 @@ export async function verifyRazorpaySignature(razorpayOrderId: string, razorpayP
     return false
   }
 }
+
+export type RazorpayPaymentDetails = {
+  amountRupees: number
+  method: string // 'upi' | 'card' | 'netbanking' | 'wallet' | 'emi'
+  formattedMethod: string // e.g. "UPI (user@okhdfcbank)" or "Card (Visa Debit ****4242)"
+  bank?: string
+  wallet?: string
+  vpa?: string
+  card?: {
+    last4?: string
+    network?: string
+    type?: string
+    issuer?: string
+  }
+  feeRupees?: number
+  taxRupees?: number
+  email?: string
+  contact?: string
+}
+
+export async function getRazorpayPaymentDetails(paymentId: string): Promise<RazorpayPaymentDetails> {
+  const client = await getClient()
+  const payment: any = await withTimeout(
+    client.payments.fetch(paymentId),
+    RAZORPAY_TIMEOUT_MS,
+    'Razorpay payment fetch'
+  )
+
+  const method = String(payment.method || 'online').toLowerCase()
+  let formattedMethod = method.toUpperCase()
+
+  if (method === 'upi' && payment.vpa) {
+    formattedMethod = `UPI (${payment.vpa})`
+  } else if (method === 'card' && payment.card) {
+    const cardNet = payment.card.network || 'Card'
+    const cardType = payment.card.type ? payment.card.type.toUpperCase() : ''
+    const last4 = payment.card.last4 ? `****${payment.card.last4}` : ''
+    formattedMethod = `${cardNet} ${cardType} ${last4}`.trim()
+  } else if (method === 'netbanking' && payment.bank) {
+    formattedMethod = `NetBanking (${payment.bank})`
+  } else if (method === 'wallet' && payment.wallet) {
+    formattedMethod = `Wallet (${payment.wallet})`
+  }
+
+  return {
+    amountRupees: Number(payment.amount) / 100,
+    method,
+    formattedMethod,
+    bank: payment.bank || payment.card?.bank || undefined,
+    wallet: payment.wallet || undefined,
+    vpa: payment.vpa || undefined,
+    card: payment.card
+      ? {
+          last4: payment.card.last4,
+          network: payment.card.network,
+          type: payment.card.type,
+          issuer: payment.card.issuer
+        }
+      : undefined,
+    feeRupees: payment.fee ? Number(payment.fee) / 100 : undefined,
+    taxRupees: payment.tax ? Number(payment.tax) / 100 : undefined,
+    email: payment.email || undefined,
+    contact: payment.contact || undefined
+  }
+}

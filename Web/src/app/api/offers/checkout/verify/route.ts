@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { verifyRazorpaySignature, getRazorpayPaymentAmount } from '@/libs/razorpay'
+import { verifyRazorpaySignature, getRazorpayPaymentDetails } from '@/libs/razorpay'
 import { handleApiError } from '@/libs/api-auth'
 import { createInvoiceForOrder } from '@/libs/invoice'
 import { paymentSuccessEmail } from '@/libs/emailTemplates'
@@ -47,12 +47,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Payment signature verification failed.' }, { status: 400 })
     }
 
-    // 3. Amount integrity check — retrieve paid amount from gateway and assert matches database order amount
+    // 3. Amount integrity & payment method breakdown check
     let paidAmount = 0
+    let paymentDetailsObj: any = null
     try {
-      paidAmount = await getRazorpayPaymentAmount(razorpayPaymentId)
+      paymentDetailsObj = await getRazorpayPaymentDetails(razorpayPaymentId)
+      paidAmount = paymentDetailsObj.amountRupees
     } catch (err: any) {
-      return NextResponse.json({ error: `Could not verify payment amount with Razorpay: ${err.message}` }, { status: 400 })
+      return NextResponse.json({ error: `Could not verify payment details with Razorpay: ${err.message}` }, { status: 400 })
     }
 
     const expectedAmount = Number(order.amount)
@@ -77,9 +79,11 @@ export async function POST(req: Request) {
       data: {
         paymentStatus: 'SUCCESS',
         paymentId: razorpayPaymentId,
+        paymentMethod: paymentDetailsObj?.formattedMethod || paymentDetailsObj?.method || 'ONLINE',
+        paymentDetails: paymentDetailsObj || undefined,
         reconciledStatus: 'RECONCILED_AUTO',
         reconciledAt: new Date(),
-        reconciliationNotes: `Payment verified and settled successfully online. Amount matched: ₹${paidAmount}.`
+        reconciliationNotes: `Payment verified via ${paymentDetailsObj?.formattedMethod || 'Online'}. Amount matched: ₹${paidAmount}.`
       }
     })
 

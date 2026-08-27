@@ -258,16 +258,65 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
               </div>
 
               <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
-                <Typography variant='body2' className='text-textSecondary font-medium'>Payment Mode</Typography>
-                <Typography variant='body2' className='font-bold'>
-                  {order.razorpayPaymentId || order.razorpayOrderId ? 'Online Payment (Razorpay)' : 'Direct Booking'}
-                </Typography>
+                <Typography variant='body2' className='text-textSecondary font-medium'>Payment Method</Typography>
+                <Chip
+                  label={order.paymentMethod || (order.razorpayPaymentId || order.razorpayOrderId ? 'Online (Razorpay)' : 'Direct Booking')}
+                  color='primary'
+                  size='small'
+                  variant='outlined'
+                  className='font-bold'
+                />
               </div>
+
+              {order.paymentDetails?.vpa && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>UPI VPA ID</Typography>
+                  <Typography variant='body2' className='font-mono font-bold text-slate-700 dark:text-slate-300'>
+                    {order.paymentDetails.vpa}
+                  </Typography>
+                </div>
+              )}
+
+              {order.paymentDetails?.card && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Card Details</Typography>
+                  <Typography variant='body2' className='font-bold text-slate-700 dark:text-slate-300'>
+                    {order.paymentDetails.card.network} {order.paymentDetails.card.type?.toUpperCase()} ****{order.paymentDetails.card.last4}
+                  </Typography>
+                </div>
+              )}
+
+              {order.paymentDetails?.bank && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Bank Name</Typography>
+                  <Typography variant='body2' className='font-bold text-slate-700 dark:text-slate-300'>
+                    {order.paymentDetails.bank}
+                  </Typography>
+                </div>
+              )}
+
+              {order.paymentDetails?.wallet && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Wallet Provider</Typography>
+                  <Typography variant='body2' className='font-bold text-slate-700 dark:text-slate-300'>
+                    {order.paymentDetails.wallet}
+                  </Typography>
+                </div>
+              )}
+
+              {order.paymentDetails?.feeRupees !== undefined && (
+                <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>Gateway Fee & Tax</Typography>
+                  <Typography variant='caption' className='font-mono text-slate-600 dark:text-slate-400'>
+                    Fee: ₹{order.paymentDetails.feeRupees.toFixed(2)} (Tax: ₹{(order.paymentDetails.taxRupees || 0).toFixed(2)})
+                  </Typography>
+                </div>
+              )}
 
               <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
                 <Typography variant='body2' className='text-textSecondary font-medium'>Total Amount Paid</Typography>
                 <Typography variant='subtitle1' className='font-black text-emerald-600 dark:text-emerald-400'>
-                  ₹{Number(order.amountPaid || order.totalAmount || order.price || 0).toFixed(2)}
+                  ₹{Number(order.amountPaid || order.totalAmount || order.price || order.amount || 0).toFixed(2)}
                 </Typography>
               </div>
 
@@ -289,11 +338,11 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
                 </div>
               )}
 
-              {order.razorpayPaymentId && (
+              {(order.razorpayPaymentId || order.paymentId) && (
                 <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
                   <Typography variant='body2' className='text-textSecondary font-medium'>Razorpay Payment ID</Typography>
                   <code className='px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-xs font-bold'>
-                    {order.razorpayPaymentId}
+                    {order.razorpayPaymentId || order.paymentId}
                   </code>
                 </div>
               )}

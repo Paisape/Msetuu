@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireUser, handleApiError } from '@/libs/api-auth'
-import { verifyRazorpaySignature } from '@/libs/razorpay'
+import { verifyRazorpaySignature, getRazorpayPaymentDetails } from '@/libs/razorpay'
 import { createInvoiceForOrder } from '@/libs/invoice'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { sendEmail } from '@/libs/email'
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'This order has already been paid for.' }, { status: 409 })
     }
 
-    // 5. Verify payment signature
+    // 5. Verify payment signature and fetch method details
     const isValid = await verifyRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)
 
     if (!isValid) {
@@ -114,9 +114,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Payment verification failed. If money was deducted, it will be refunded — please contact support.' }, { status: 400 })
     }
 
-    // 6. Atomically flip PENDING -> PAID. The where clause guards against a race where two
-    // requests verify the same order concurrently — only one can win, so step 7 (invoice
-    // creation) below only ever runs once per order.
+    let pDetails: any = null
+    try {
+      pDetails = await getRazorpayPaymentDetails(razorpayPaymentId)
+    } catch {
+      // Non-fatal if fetch fails
+    }
+
+    // 6. Atomically flip PENDING -> PAID.
     let statusToSet = 'PROCESSING'
     if (orderType === 'JYOTISH') {
       statusToSet = 'CONFIRMED'
@@ -126,7 +131,15 @@ export async function POST(req: Request) {
 
     const claim = await model.updateMany({
       where: { id: orderId, paymentStatus: { not: 'PAID' } },
-      data: { paymentStatus: 'PAID', status: statusToSet, razorpayOrderId, razorpayPaymentId, razorpaySignature }
+      data: {
+        paymentStatus: 'PAID',
+        status: statusToSet,
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature,
+        paymentMethod: pDetails?.formattedMethod || pDetails?.method || 'ONLINE',
+        paymentDetails: pDetails || undefined
+      }
     })
 
     if (claim.count === 0) {
