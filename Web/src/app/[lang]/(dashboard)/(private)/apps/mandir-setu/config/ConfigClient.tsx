@@ -65,7 +65,11 @@ const SMS_FIELDS: FieldMeta[] = [
   { key: 'TEXTZI_API_KEY', label: 'Textzi API Key', secret: true },
   { key: 'TEXTZI_USER_ID', label: 'Textzi User ID', secret: false, placeholder: 'Your Textzi User ID' },
   { key: 'TEXTZI_TEMPLATE_ID', label: 'Default DLT Template ID', secret: false, placeholder: '1177178593496518428' },
-  { key: 'SMS_SENDER_ID', label: 'Sender ID (Optional)', secret: false, placeholder: '6-character sender ID' }
+  { key: 'SMS_SENDER_ID', label: 'Sender ID (Optional)', secret: false, placeholder: '6-character sender ID' },
+  { key: 'SMS_ORDER_ACCEPTED_TEMPLATE', label: 'Order Confirmation SMS Template', secret: false, placeholder: 'Use {campaign}, {orderId}, and {trackLink} placeholders' },
+  { key: 'SMS_ORDER_ACCEPTED_TEMPLATE_ID', label: 'Order Confirmation DLT Template ID', secret: false },
+  { key: 'SMS_VIDEO_UPLOADED_TEMPLATE', label: 'Video Uploaded SMS Template', secret: false, placeholder: 'Use {campaign}, {orderId}, and {videoLink} placeholders' },
+  { key: 'SMS_VIDEO_UPLOADED_TEMPLATE_ID', label: 'Video Uploaded DLT Template ID', secret: false }
 ]
 
 const ASTROLOGY_FIELDS: FieldMeta[] = [
@@ -89,7 +93,9 @@ const ADSENSE_FIELDS: FieldMeta[] = [
 const WHATSAPP_FIELDS: FieldMeta[] = [
   { key: 'WHATSAPP_PROVIDER', label: 'WhatsApp Provider', secret: false, placeholder: 'Meta Cloud API, Interakt, AiSensy' },
   { key: 'WHATSAPP_API_KEY', label: 'WhatsApp API Key / Access Token', secret: true },
-  { key: 'WHATSAPP_PHONE_NUMBER_ID', label: 'WhatsApp Phone Number ID', secret: false }
+  { key: 'WHATSAPP_PHONE_NUMBER_ID', label: 'WhatsApp Phone Number ID', secret: false },
+  { key: 'WHATSAPP_ORDER_ACCEPTED_TEMPLATE', label: 'Order Confirmation WhatsApp Template', secret: false, placeholder: 'Use {campaign}, {orderId}, and {trackLink} placeholders' },
+  { key: 'WHATSAPP_VIDEO_UPLOADED_TEMPLATE', label: 'Video Uploaded WhatsApp Template', secret: false, placeholder: 'Use {campaign}, {orderId}, and {videoLink} placeholders' }
 ]
 
 const FIREBASE_FIELDS: FieldMeta[] = [

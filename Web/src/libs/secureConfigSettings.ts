@@ -57,12 +57,18 @@ const FIELD_DEFS: Record<SettingsCategory, FieldDef[]> = {
     { key: 'TEXTZI_API_KEY', secret: true, label: 'Textzi API Key' },
     { key: 'TEXTZI_USER_ID', secret: false, label: 'Textzi User ID' },
     { key: 'TEXTZI_TEMPLATE_ID', secret: false, label: 'Default DLT Template ID' },
-    { key: 'SMS_SENDER_ID', secret: false, label: 'Sender ID' }
+    { key: 'SMS_SENDER_ID', secret: false, label: 'Sender ID' },
+    { key: 'SMS_ORDER_ACCEPTED_TEMPLATE', secret: false, label: 'Order Confirmation SMS Template' },
+    { key: 'SMS_ORDER_ACCEPTED_TEMPLATE_ID', secret: false, label: 'Order Confirmation DLT Template ID' },
+    { key: 'SMS_VIDEO_UPLOADED_TEMPLATE', secret: false, label: 'Video Uploaded SMS Template' },
+    { key: 'SMS_VIDEO_UPLOADED_TEMPLATE_ID', secret: false, label: 'Video Uploaded DLT Template ID' }
   ],
   WHATSAPP: [
     { key: 'WHATSAPP_PROVIDER', secret: false, label: 'WhatsApp Provider (e.g. Meta Cloud API, Interakt, AiSensy)' },
     { key: 'WHATSAPP_API_KEY', secret: true, label: 'WhatsApp API Key / Access Token' },
-    { key: 'WHATSAPP_PHONE_NUMBER_ID', secret: false, label: 'WhatsApp Phone Number ID' }
+    { key: 'WHATSAPP_PHONE_NUMBER_ID', secret: false, label: 'WhatsApp Phone Number ID' },
+    { key: 'WHATSAPP_ORDER_ACCEPTED_TEMPLATE', secret: false, label: 'Order Confirmation WhatsApp Template' },
+    { key: 'WHATSAPP_VIDEO_UPLOADED_TEMPLATE', secret: false, label: 'Video Uploaded WhatsApp Template' }
   ],
   FIREBASE: [
     { key: 'FIREBASE_PROJECT_ID', secret: false, label: 'Firebase Project ID' },

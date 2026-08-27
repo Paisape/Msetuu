@@ -1,5 +1,6 @@
 import { dispatchNotificationBroadcast, notifyUser } from '@/libs/notificationSystem'
 import type { NotificationChannel } from '@/libs/notificationSystem'
+import { getResolvedSettings } from '@/libs/secureConfigSettings'
 
 // Business-event notification triggers — thin wrappers around notificationSystem.ts that decide
 // *who* gets notified and with *what message* for a given app event. Every function here is
@@ -49,12 +50,58 @@ export async function notifyUserWelcome(userId: string, name?: string) {
 // request," regardless of the exact status label each module uses.
 export async function notifyOrderAccepted(userId: string, moduleLabel: string, orderId: string) {
   try {
+    const smsSettings = await getResolvedSettings('SMS')
+    const waSettings = await getResolvedSettings('WHATSAPP')
+
+    const trackLink = `${APP_URL}/t/${orderId}`
+
+    // 1. Resolve SMS template
+    let smsMessage = `Good news! Your ${moduleLabel} order (#${orderId.slice(-8)}) has been accepted and is now being processed.`
+    const customSmsTemplate = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE
+    if (customSmsTemplate) {
+      smsMessage = customSmsTemplate
+        .replace(/{campaign}/g, moduleLabel)
+        .replace(/{orderId}/g, orderId)
+        .replace(/{trackLink}/g, trackLink)
+    }
+    const smsTemplateId = smsSettings.SMS_ORDER_ACCEPTED_TEMPLATE_ID || null
+
+    // 2. Resolve WhatsApp template
+    let waMessage = smsMessage
+    const customWaTemplate = waSettings.WHATSAPP_ORDER_ACCEPTED_TEMPLATE
+    if (customWaTemplate) {
+      waMessage = customWaTemplate
+        .replace(/{campaign}/g, moduleLabel)
+        .replace(/{orderId}/g, orderId)
+        .replace(/{trackLink}/g, trackLink)
+    }
+
+    // Email + Firebase Push Notification
     await notifyUser(
       userId,
       `Your ${moduleLabel} Order Has Been Accepted`,
       `Good news! Your ${moduleLabel} order (#${orderId.slice(-8)}) has been accepted and is now being processed.`,
-      DEFAULT_CHANNELS,
+      ['email', 'firebase'],
       `${APP_URL}/front-pages/my-orders`
+    )
+
+    // SMS (with short tracking link and DLT ID)
+    await notifyUser(
+      userId,
+      `Order Accepted`,
+      smsMessage,
+      ['sms'],
+      undefined,
+      smsTemplateId
+    )
+
+    // WhatsApp (with short tracking link)
+    await notifyUser(
+      userId,
+      `Your ${moduleLabel} Order Has Been Accepted`,
+      waMessage,
+      ['whatsapp'],
+      trackLink
     )
   } catch (err) {
     console.error('[notifyEvent] notifyOrderAccepted failed:', err)
@@ -65,12 +112,58 @@ export async function notifyOrderAccepted(userId: string, moduleLabel: string, o
 // batch Google Drive-link tool, or a video URL set directly on the order).
 export async function notifyVideoUploaded(userId: string, moduleLabel: string, orderId: string) {
   try {
+    const smsSettings = await getResolvedSettings('SMS')
+    const waSettings = await getResolvedSettings('WHATSAPP')
+
+    const videoLink = `${APP_URL}/v/${orderId}`
+
+    // 1. Resolve SMS template
+    let smsMessage = `The video of your ${moduleLabel} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`
+    const customSmsTemplate = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE
+    if (customSmsTemplate) {
+      smsMessage = customSmsTemplate
+        .replace(/{campaign}/g, moduleLabel)
+        .replace(/{orderId}/g, orderId)
+        .replace(/{videoLink}/g, videoLink)
+    }
+    const smsTemplateId = smsSettings.SMS_VIDEO_UPLOADED_TEMPLATE_ID || null
+
+    // 2. Resolve WhatsApp template
+    let waMessage = smsMessage
+    const customWaTemplate = waSettings.WHATSAPP_VIDEO_UPLOADED_TEMPLATE
+    if (customWaTemplate) {
+      waMessage = customWaTemplate
+        .replace(/{campaign}/g, moduleLabel)
+        .replace(/{orderId}/g, orderId)
+        .replace(/{videoLink}/g, videoLink)
+    }
+
+    // Email + Firebase Push Notification
     await notifyUser(
       userId,
       `Your ${moduleLabel} Video Is Ready`,
       `The video of your ${moduleLabel} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`,
-      DEFAULT_CHANNELS,
+      ['email', 'firebase'],
       `${APP_URL}/front-pages/my-orders`
+    )
+
+    // SMS (with short video redirect link and DLT ID)
+    await notifyUser(
+      userId,
+      `Video Ready`,
+      smsMessage,
+      ['sms'],
+      undefined,
+      smsTemplateId
+    )
+
+    // WhatsApp (with short video link)
+    await notifyUser(
+      userId,
+      `Your ${moduleLabel} Video Is Ready`,
+      waMessage,
+      ['whatsapp'],
+      videoLink
     )
   } catch (err) {
     console.error('[notifyEvent] notifyVideoUploaded failed:', err)

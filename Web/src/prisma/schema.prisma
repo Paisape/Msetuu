@@ -963,6 +963,9 @@ model OfferOrder {
   gstInclusive      Boolean  @default(true)
   ipAddress         String?
   userAgent         String?
+  videoUrl          String?
+  videoUploadedAt   DateTime?
+  videoExpired      Boolean  @default(false)
   createdAt         DateTime @default(now())
 
   offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)

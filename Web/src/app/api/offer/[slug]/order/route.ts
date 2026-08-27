@@ -59,8 +59,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     // Mint a new Razorpay order
     const rzpOrderId = await createRazorpayOrder(amountPaid, `offer_${offer.id}`)
 
+    // Generate unique short order ID (e.g., MS7B8C9P)
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    let shortOrderId = ''
+    while (true) {
+      let tempId = 'MS'
+      for (let i = 0; i < 6; i++) {
+        tempId += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      const exists = await prisma.offerOrder.findUnique({ where: { id: tempId } })
+      if (!exists) {
+        shortOrderId = tempId
+        break
+      }
+    }
+
     const order = await prisma.offerOrder.create({
       data: {
+        id: shortOrderId,
         offerId: offer.id,
         userId: user?.id || null,
         name,

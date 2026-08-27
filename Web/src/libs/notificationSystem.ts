@@ -105,9 +105,21 @@ return sendEmail({ to: toEmail, subject: title, html, category: 'NOTIFICATION_EM
 }
 
 // 2. SMS Channel Dispatcher (MSG91 / Twilio / Custom HTTP)
-export async function sendSmsNotification(phone: string, title: string, message: string) {
+export async function sendSmsNotification(phone: string, title: string, message: string, templateId?: string | null) {
   try {
     const smsSettings = await getResolvedSettings('SMS')
+    const provider = smsSettings.SMS_PROVIDER || process.env.SMS_PROVIDER || 'DISABLED'
+
+    if (provider.toUpperCase() === 'TEXTZI') {
+      const { sendTextziSms } = require('@/libs/sms')
+      const res = await sendTextziSms(phone, message, templateId)
+      return res.success
+    }
+
+    if (provider.toUpperCase() === 'DISABLED') {
+      return false
+    }
+
     const apiKey = smsSettings.SMS_API_KEY || process.env.SMS_API_KEY
     const senderId = smsSettings.SMS_SENDER_ID || process.env.SMS_SENDER_ID || 'MNDRST'
 
@@ -134,7 +146,7 @@ export async function sendSmsNotification(phone: string, title: string, message:
   } catch (err) {
     console.error('[NotificationSystem SMS] Error:', err)
     
-return false
+    return false
   }
 }
 
@@ -311,7 +323,8 @@ export async function notifyUser(
   title: string,
   message: string,
   channels: NotificationChannel[],
-  actionUrl?: string
+  actionUrl?: string,
+  templateId?: string | null
 ) {
   try {
     const user = await prisma.user.findUnique({
@@ -331,7 +344,7 @@ export async function notifyUser(
     }
 
     if (channels.includes('sms') && user.phone) {
-      smsSent = await sendSmsNotification(user.phone, title, message).catch(() => false)
+      smsSent = await sendSmsNotification(user.phone, title, message, templateId).catch(() => false)
     }
 
     if (channels.includes('whatsapp') && user.phone) {
