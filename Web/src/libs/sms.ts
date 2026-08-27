@@ -190,8 +190,28 @@ export async function sendOtpSms(
   otp: string | number,
   templateId?: string | null
 ): Promise<SendSmsResult> {
-  const message = renderOtpSms(otp)
-  const activeTemplateId = templateId || DEFAULT_OTP_TEMPLATE_ID
+  let activeTemplateId = templateId || null
+
+  if (!activeTemplateId) {
+    // 1. Check if configured in Admin Config SMS settings (TEXTZI_TEMPLATE_ID)
+    const configuredTemplateId = await getSettingOrEnv('SMS', 'TEXTZI_TEMPLATE_ID', 'TEXTZI_TEMPLATE_ID')
+    if (configuredTemplateId) {
+      activeTemplateId = configuredTemplateId
+    } else {
+      // 2. Check if a default template is marked in database smsTemplate table
+      const defaultDbTpl = await prisma.smsTemplate.findFirst({ where: { isDefault: true, active: true } })
+      activeTemplateId = defaultDbTpl?.templateId || DEFAULT_OTP_TEMPLATE_ID
+    }
+  }
+
+  // Look up custom template content text from DB if available
+  let customContent: string | undefined
+  const dbTpl = await prisma.smsTemplate.findFirst({ where: { templateId: activeTemplateId, active: true } })
+  if (dbTpl) {
+    customContent = dbTpl.content
+  }
+
+  const message = renderOtpSms(otp, customContent)
 
   return sendTextziSms(mobile, message, activeTemplateId)
 }

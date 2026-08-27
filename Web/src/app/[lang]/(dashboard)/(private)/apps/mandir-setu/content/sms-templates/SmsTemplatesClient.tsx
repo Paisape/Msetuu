@@ -27,6 +27,8 @@ import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import Box from '@mui/material/Box'
 import Pagination from '@mui/material/Pagination'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Checkbox from '@mui/material/Checkbox'
 
 type SmsTemplate = {
   id: string
@@ -491,6 +493,15 @@ export default function SmsTemplatesClient() {
             fullWidth
             required
             helperText='Use {#num#} for OTP or custom {#var#} for dynamic values'
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={editingTemplate?.isDefault || false}
+                onChange={e => setEditingTemplate(prev => ({ ...prev, isDefault: e.target.checked }))}
+              />
+            }
+            label='Set as Default OTP Verification Template'
           />
         </DialogContent>
         <DialogActions>

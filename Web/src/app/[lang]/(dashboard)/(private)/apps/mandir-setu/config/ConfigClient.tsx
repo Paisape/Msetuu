@@ -14,6 +14,11 @@ import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormHelperText from '@mui/material/FormHelperText'
 
 import AdminCredentialsPanel from '@/components/admin/AdminCredentialsPanel'
 
@@ -138,12 +143,18 @@ const SettingsPanel = ({
   // that needs to react as the admin types, e.g. the Razorpay mode badge below.
   renderExtra?: (values: Record<string, string>) => React.ReactNode
 }) => {
-  const [loading, setLoading] = useState(true)
-  const [values, setValues] = useState<Record<string, string>>({})
-  const [meta, setMeta] = useState<Record<string, FieldEntry>>({})
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [dltTemplates, setDltTemplates] = useState<{ id: string; name: string; templateId: string; content: string }[]>([])
+
+  useEffect(() => {
+    if (endpoint.includes('sms')) {
+      fetch('/api/admin/sms-templates')
+        .then(r => r.json())
+        .then(data => {
+          if (data?.templates) setDltTemplates(data.templates)
+        })
+        .catch(() => null)
+    }
+  }, [endpoint])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -232,6 +243,46 @@ const SettingsPanel = ({
             : `Source: ${entry.source === 'db' ? 'admin panel' : 'server .env'}`
           : 'Not configured yet.'
 
+        const isDltTemplateField = f.key === 'TEXTZI_TEMPLATE_ID' || f.key === 'SMS_ORDER_ACCEPTED_TEMPLATE_ID' || f.key === 'SMS_VIDEO_UPLOADED_TEMPLATE_ID'
+
+        if (isDltTemplateField && dltTemplates.length > 0) {
+          return (
+            <FormControl key={f.key} fullWidth size='small'>
+              <InputLabel id={`label-${f.key}`}>{f.label} (Select Registered DLT Template)</InputLabel>
+              <Select
+                labelId={`label-${f.key}`}
+                label={`${f.label} (Select Registered DLT Template)`}
+                value={values[f.key] || ''}
+                onChange={e => {
+                  const selectedId = e.target.value
+                  setValues(prev => {
+                    const next = { ...prev, [f.key]: selectedId }
+                    const matched = dltTemplates.find(t => t.templateId === selectedId)
+                    if (matched) {
+                      if (f.key === 'SMS_ORDER_ACCEPTED_TEMPLATE_ID') {
+                        next['SMS_ORDER_ACCEPTED_TEMPLATE'] = matched.content
+                      } else if (f.key === 'SMS_VIDEO_UPLOADED_TEMPLATE_ID') {
+                        next['SMS_VIDEO_UPLOADED_TEMPLATE'] = matched.content
+                      }
+                    }
+                    return next
+                  })
+                }}
+              >
+                <MenuItem value=''>
+                  <em>-- Select Registered DLT Template --</em>
+                </MenuItem>
+                {dltTemplates.map(t => (
+                  <MenuItem key={t.id} value={t.templateId}>
+                    {t.name} (ID: {t.templateId})
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>{helperText}</FormHelperText>
+            </FormControl>
+          )
+        }
+
         return (
           <TextField
             key={f.key}
@@ -244,8 +295,8 @@ const SettingsPanel = ({
             fullWidth
             size='small'
             autoComplete='new-password'
-            multiline={f.key.includes('TERMS') || f.key.includes('JSON')}
-            minRows={f.key.includes('TERMS') ? 10 : f.key.includes('JSON') ? 6 : undefined}
+            multiline={f.key.includes('TERMS') || f.key.includes('JSON') || f.key.includes('TEMPLATE')}
+            minRows={f.key.includes('TERMS') ? 10 : f.key.includes('JSON') ? 6 : f.key.includes('TEMPLATE') ? 3 : undefined}
           />
         )
       })}
