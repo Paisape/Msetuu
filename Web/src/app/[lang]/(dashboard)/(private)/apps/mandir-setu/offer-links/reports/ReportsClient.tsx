@@ -418,8 +418,10 @@ export default function ReportsClient() {
                   <TableRow key={row.id} className='hover:bg-slate-50/50'>
                     <TableCell className='text-slate-500 font-bold'>{row.sNo}</TableCell>
                     <TableCell className='text-slate-500'>{row.date}</TableCell>
-                    <TableCell className='font-semibold text-slate-700'>
-                      {row.name}
+                    <TableCell className='font-semibold text-slate-700 cursor-pointer' onClick={() => handleOpenOrderDetails(row.parentOrder)}>
+                      <span className='hover:underline hover:text-[#FF671F] flex items-center gap-1'>
+                        {row.name} <i className='tabler-eye text-xs text-[#FF671F]' />
+                      </span>
                       {row.nameLocal ? (
                         <span className='block text-xs font-normal text-slate-400'>({row.nameLocal})</span>
                       ) : null}
@@ -444,14 +446,16 @@ export default function ReportsClient() {
                       />
                     </TableCell>
                     <TableCell className='text-right'>
-                      <IconButton 
+                      <Button 
                         size='small' 
+                        variant='outlined'
                         onClick={() => handleOpenOrderDetails(row.parentOrder)}
-                        style={{ color: '#FF671F' }}
-                        aria-label='View Order Details'
+                        startIcon={<i className='tabler-eye text-sm' />}
+                        style={{ color: '#FF671F', borderColor: '#FF671F' }}
+                        className='font-medium text-xs px-2 py-0.5 min-w-0'
                       >
-                        <i className='tabler-eye text-lg' />
-                      </IconButton>
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -583,8 +587,16 @@ export default function ReportsClient() {
             </>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailOpen(false)} style={{ color: '#FF671F' }} className='font-bold'>
+        <DialogActions className='justify-between px-6 pb-4'>
+          <Button 
+            variant='outlined' 
+            onClick={() => { setDetailOpen(false); router.push(`/${locale}/apps/mandir-setu/orders/offer/${selectedOrder?.id}`); }} 
+            startIcon={<i className='tabler-external-link' />}
+            className='border-slate-300 text-slate-700 font-medium text-xs'
+          >
+            Full Order Details Page
+          </Button>
+          <Button onClick={() => setDetailOpen(false)} style={{ color: '#FF671F' }} className='font-bold text-xs'>
             Close
           </Button>
         </DialogActions>
