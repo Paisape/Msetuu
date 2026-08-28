@@ -20,15 +20,28 @@ type CreateInvoiceInput = {
 async function nextInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear()
 
-  for (let i = 0; i < 10; i++) {
-    const count = await prisma.invoice.count({ where: { invoiceNumber: { startsWith: `INV-${year}-` } } })
-    const candidate = `INV-${year}-${String(count + 1 + i).padStart(5, '0')}`
+  // Find the latest invoice created this year to extract the highest sequence number
+  const lastInvoice = await prisma.invoice.findFirst({
+    where: { invoiceNumber: { startsWith: `INV-${year}-` } },
+    orderBy: { createdAt: 'desc' }
+  })
 
+  let nextSeq = 1
+  if (lastInvoice) {
+    const parts = lastInvoice.invoiceNumber.split('-')
+    const lastNum = parseInt(parts[parts.length - 1], 10)
+    if (!isNaN(lastNum)) {
+      nextSeq = lastNum + 1
+    }
+  }
+
+  for (let i = 0; i < 20; i++) {
+    const candidate = `INV-${year}-${String(nextSeq + i).padStart(5, '0')}`
     const existing = await prisma.invoice.findUnique({ where: { invoiceNumber: candidate } })
     if (!existing) return candidate
   }
 
-  // Fallback to timestamp + random suffix if count-based sequence collides
+  // Fallback to timestamp + random suffix if sequence collides
   const rand = Math.floor(1000 + Math.random() * 9000)
   return `INV-${year}-${Date.now().toString().slice(-6)}${rand}`
 }
