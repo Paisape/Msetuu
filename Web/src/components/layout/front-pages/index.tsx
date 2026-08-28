@@ -5,7 +5,6 @@ import type { ChildrenType } from '@core/types'
 import Footer from '@components/layout/front-pages/Footer'
 import Header from '@components/layout/front-pages/Header'
 import FloatingAudioPlayer from './FloatingAudioPlayer'
-import IndependenceBanner from './IndependenceBanner'
 
 // Server Action Imports
 import { getServerMode } from '@core/utils/serverHelpers'
@@ -19,7 +18,6 @@ const FrontLayout = async ({ children }: ChildrenType) => {
 
   return (
     <div className={frontLayoutClasses.root}>
-      <IndependenceBanner />
       <Header mode={mode} />
       {children}
       <Footer mode={mode} />
