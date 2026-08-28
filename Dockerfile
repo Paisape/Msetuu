@@ -19,8 +19,8 @@ COPY Web/ .
 # Generate Prisma Client & build icons
 RUN npx prisma generate && npm run build:icons
 
-# Next.js build (using 1GB max memory to prevent OOM failures on smaller servers)
-RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
+# Next.js build (using 4GB max memory to allow smooth compilation of Next.js 16 + Material-UI)
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
