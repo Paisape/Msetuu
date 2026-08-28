@@ -13,14 +13,16 @@ RUN npm config set maxsockets 1 && \
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY Web/ .
 
 # Generate Prisma Client & build icons
 RUN npx prisma generate && npm run build:icons
 
-# Next.js build (using 4GB max memory to allow smooth compilation of Next.js 16 + Material-UI)
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+# Next.js build (using 2GB max memory to fit within standard VPS container limits)
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

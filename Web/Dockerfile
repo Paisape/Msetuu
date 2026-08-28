@@ -12,6 +12,8 @@ RUN npm install --legacy-peer-deps --ignore-scripts
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -19,7 +21,7 @@ COPY . .
 RUN npx prisma generate && npm run build:icons
 
 # Next.js build
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Prune development dependencies to keep the final runner image light
 RUN npm prune --omit=dev --legacy-peer-deps
