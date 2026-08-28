@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       }, { status: 400 })
     }
 
-    // 2. Perform cascade delete of all test transaction & order tables
+    // 2. Perform cascade delete of all test orders, test invoices, audit records, and test customer accounts (role: USER)
     const results = await prisma.$transaction([
       prisma.orderTrail.deleteMany({}),
       prisma.refund.deleteMany({}),
@@ -32,7 +32,8 @@ export async function POST(req: Request) {
       prisma.consultationBooking.deleteMany({}),
       prisma.kundliOrder.deleteMany({}),
       prisma.productOrder.deleteMany({}),
-      prisma.yatraBooking.deleteMany({})
+      prisma.yatraBooking.deleteMany({}),
+      prisma.user.deleteMany({ where: { role: 'USER' } })
     ])
 
     const summary = {
@@ -46,7 +47,8 @@ export async function POST(req: Request) {
       consultationBookingCount: results[7].count,
       kundliOrderCount: results[8].count,
       productOrderCount: results[9].count,
-      yatraBookingCount: results[10].count
+      yatraBookingCount: results[10].count,
+      testCustomersCount: results[11].count
     }
 
     return NextResponse.json({

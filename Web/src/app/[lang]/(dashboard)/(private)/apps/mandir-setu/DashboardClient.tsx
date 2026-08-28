@@ -201,10 +201,10 @@ const DashboardClient = () => {
         </DialogTitle>
         <DialogContent dividers className='space-y-3 text-sm text-slate-600'>
           <Typography variant='body2'>
-            This action will permanently delete all <strong>test orders</strong>, <strong>test invoices</strong>, and <strong>test audit trails</strong> created during development so your live sales counter starts fresh at ₹0.
+            This action will permanently delete all <strong>test orders</strong>, <strong>test customer accounts</strong>, <strong>test invoices</strong>, and <strong>test audit trails</strong> created during development so your live sales counter starts fresh at ₹0.
           </Typography>
           <Alert severity='info' className='text-xs'>
-            🛡️ <strong>100% Safe:</strong> Your Offers, Puja listings, Chadhava listings, Products, SMS Templates, and User accounts will <strong>NOT</strong> be deleted.
+            🛡️ <strong>100% Safe:</strong> Your Offers, Puja listings, Chadhava listings, Products, SMS Templates, Astrologers, and Admin accounts will <strong>NOT</strong> be deleted.
           </Alert>
         </DialogContent>
         <DialogActions className='px-6 pb-4 justify-between'>
