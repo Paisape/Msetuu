@@ -139,6 +139,12 @@ const SettingsPanel = ({
   // that needs to react as the admin types, e.g. the Razorpay mode badge below.
   renderExtra?: (values: Record<string, string>) => React.ReactNode
 }) => {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [meta, setMeta] = useState<Record<string, FieldEntry>>({})
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [dltTemplates, setDltTemplates] = useState<{ id: string; name: string; templateId: string; content: string }[]>([])
 
   useEffect(() => {
