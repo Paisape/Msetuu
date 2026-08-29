@@ -576,6 +576,18 @@ export default function ReportsClient() {
                     color={selectedOrder.reconciledStatus.startsWith('RECONCILED') ? 'success' : 'default'}
                   />
                 </div>
+                {selectedOrder.paymentMethod && (
+                  <div>
+                    <span className='text-xs text-slate-400 font-bold block'>PAYMENT METHOD</span>
+                    <Chip label={selectedOrder.paymentMethod} size='small' color='primary' variant='outlined' className='font-bold' />
+                  </div>
+                )}
+                {selectedOrder.reconciliationNotes && (
+                  <div className='col-span-2 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100'>
+                    <span className='text-xs text-emerald-800 font-bold block mb-0.5'>GATEWAY VERIFICATION LOG</span>
+                    <span className='text-xs text-emerald-950 font-medium'>{selectedOrder.reconciliationNotes}</span>
+                  </div>
+                )}
                 {selectedOrder.ipAddress && (
                   <div>
                     <span className='text-xs text-slate-400 font-bold block'>🌐 USER IP ADDRESS</span>
