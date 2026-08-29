@@ -278,6 +278,27 @@ export default function ReportsClient() {
     setDetailOpen(true)
   }
 
+  const [sendingDailyReport, setSendingDailyReport] = useState(false)
+  const [dailyReportStatus, setDailyReportStatus] = useState<string | null>(null)
+
+  const handleSendDailyReport = async () => {
+    setSendingDailyReport(true)
+    setDailyReportStatus(null)
+    try {
+      const res = await fetch('/api/cron/daily-report', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setDailyReportStatus('✓ Daily Summary Report dispatched to amit@mandirsetuu.com & bmrjjn@gmail.com via Main SMTP!')
+      } else {
+        setDailyReportStatus(`Failed: ${data.error || 'Could not send report.'}`)
+      }
+    } catch (err: any) {
+      setDailyReportStatus(`Error: ${err.message || 'Network error'}`)
+    } finally {
+      setSendingDailyReport(false)
+    }
+  }
+
   if (loading) {
     return (
       <Box className='flex justify-center p-12'>
@@ -406,16 +427,38 @@ export default function ReportsClient() {
             </Typography>
           </div>
 
-          <Button
-            variant='contained'
-            onClick={handleExportCSV}
-            startIcon={<i className='tabler-download' />}
-            style={{ backgroundColor: '#FF671F' }}
-            className="font-bold text-white"
-          >
-            Export CSV
-          </Button>
+          <div className='flex items-center gap-3'>
+            <Button
+              variant='outlined'
+              onClick={handleSendDailyReport}
+              disabled={sendingDailyReport}
+              startIcon={sendingDailyReport ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-mail-fast' />}
+              className="font-bold border-orange-200 text-[#FF671F] hover:bg-orange-50"
+            >
+              {sendingDailyReport ? 'Sending Report...' : 'Email 12 AM Summary'}
+            </Button>
+
+            <Button
+              variant='contained'
+              onClick={handleExportCSV}
+              startIcon={<i className='tabler-download' />}
+              style={{ backgroundColor: '#FF671F' }}
+              className="font-bold text-white"
+            >
+              Export CSV
+            </Button>
+          </div>
         </Box>
+
+        {dailyReportStatus && (
+          <Alert 
+            severity={dailyReportStatus.startsWith('✓') ? 'success' : 'error'}
+            className='mb-4'
+            onClose={() => setDailyReportStatus(null)}
+          >
+            {dailyReportStatus}
+          </Alert>
+        )}
 
         {/* Filters Box */}
         <Box className='grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100'>
