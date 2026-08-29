@@ -5,6 +5,7 @@ import { handleApiError } from '@/libs/api-auth'
 import { createInvoiceForOrder } from '@/libs/invoice'
 import { paymentSuccessEmail } from '@/libs/emailTemplates'
 import { sendEmail } from '@/libs/email'
+import { sendOrderConfirmationSms } from '@/libs/sms'
 
 // POST /api/offers/checkout/verify - Verify payment transaction signature and amount integrity
 export async function POST(req: Request) {
@@ -120,7 +121,19 @@ export async function POST(req: Request) {
             orderId: dbOrder.id,
             invoiceNumber: invoice.invoiceNumber
           })
-          await sendEmail({ to: customerEmail, subject, html })
+          await sendEmail({ to: customerEmail, subject, html }).catch(e => console.error('[Email] Failed to send receipt:', e))
+        }
+
+        // DLT SMS Order Confirmation to devotee's mobile
+        const customerPhone = primaryDevotee?.phone || null
+        if (customerPhone && customerPhone.trim()) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
+          const trackLink = `${appUrl}/front-pages/track-order?id=${dbOrder.id}`
+          await sendOrderConfirmationSms({
+            mobile: customerPhone,
+            orderId: dbOrder.id,
+            trackLink
+          }).catch(smsErr => console.error('[SMS Order Confirmation] Failed best-effort SMS:', smsErr))
         }
       }
     } catch (invErr) {

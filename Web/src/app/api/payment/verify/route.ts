@@ -6,6 +6,7 @@ import { verifyRazorpaySignature, getRazorpayPaymentDetails } from '@/libs/razor
 import { createInvoiceForOrder } from '@/libs/invoice'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { sendEmail } from '@/libs/email'
+import { sendOrderConfirmationSms } from '@/libs/sms'
 import { paymentSuccessEmail } from '@/libs/emailTemplates'
 
 // POST /api/payment/verify — checks the Razorpay signature for a completed Checkout payment
@@ -178,7 +179,19 @@ export async function POST(req: Request) {
         invoiceNumber: invoice.invoiceNumber
       })
 
-      await sendEmail({ to: order.user.email, subject, html })
+      await sendEmail({ to: order.user.email, subject, html }).catch(e => console.error('[Email] Failed to send receipt:', e))
+    }
+
+    // 7c. DLT SMS Order Confirmation to customer's mobile
+    const customerPhone = order.phone || order.user?.phone
+    if (customerPhone && customerPhone.trim()) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
+      const trackLink = `${appUrl}/front-pages/track-order?id=${orderId}`
+      await sendOrderConfirmationSms({
+        mobile: customerPhone,
+        orderId,
+        trackLink
+      }).catch(smsErr => console.error('[SMS Order Confirmation] Failed best-effort SMS:', smsErr))
     }
 
     // 8. Log order trail

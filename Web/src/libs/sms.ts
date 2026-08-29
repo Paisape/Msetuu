@@ -216,6 +216,63 @@ export async function sendOtpSms(
   return sendTextziSms(mobile, message, activeTemplateId)
 }
 
+/**
+ * Dispatch Order Confirmation SMS using DLT Template (Textzi Gateway)
+ *
+ * Registered DLT Template ID: 1177178781863763226
+ * Content: "Dear Devotee, Your offering has been successfully booked. Your Order ID is {#alp#}. You can track your booking details here: {#urg#}.Team Mandirsetuu"
+ */
+export async function sendOrderConfirmationSms({
+  mobile,
+  orderId,
+  trackLink
+}: {
+  mobile: string
+  orderId: string
+  trackLink?: string
+}): Promise<SendSmsResult> {
+  if (!mobile || !mobile.trim()) {
+    return { success: false, message: 'Missing mobile number.' }
+  }
+
+  try {
+    let template = await prisma.smsTemplate.findFirst({
+      where: {
+        active: true,
+        OR: [
+          { category: 'ORDER_CONFIRMATION' },
+          { templateId: '1177178781863763226' },
+          { name: { contains: 'Order Confirmation', mode: 'insensitive' } },
+          { name: { contains: 'oRDE', mode: 'insensitive' } }
+        ]
+      }
+    })
+
+    const templateId = template?.templateId || '1177178781863763226'
+    const defaultContent =
+      'Dear Devotee, Your offering has been successfully booked. Your Order ID is {#alp#}. You can track your booking details here: {#urg#}.Team Mandirsetuu'
+    const rawContent = template?.content || defaultContent
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
+    const finalTrackLink = trackLink || `${appUrl}/front-pages/track-order?id=${orderId}`
+    const shortOrderId = orderId.length > 8 ? orderId.slice(0, 8).toUpperCase() : orderId.toUpperCase()
+
+    let message = rawContent
+      .replace(/\{#alp#\}/g, shortOrderId)
+      .replace(/\{#urg#\}/g, finalTrackLink)
+      .replace(/\{#orderId#\}/g, shortOrderId)
+      .replace(/\{#trackLink#\}/g, finalTrackLink)
+      .replace(/\{orderId\}/g, shortOrderId)
+      .replace(/\{trackLink\}/g, finalTrackLink)
+
+    return await sendTextziSms(mobile, message, templateId)
+  } catch (err: any) {
+    console.error('[SMS] Failed to send order confirmation SMS:', err)
+    return { success: false, message: err.message || 'Failed to send SMS.' }
+  }
+}
+
 // Snake-case aliases matching core/sms.php specs
 export const send_textzi_sms = sendTextziSms
 export const send_otp_sms = sendOtpSms
+export const send_order_confirmation_sms = sendOrderConfirmationSms
