@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { requireUser, handleApiError } from '@/libs/api-auth'
+import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
 // POST /api/offers/reconcile/manual - Manually reconcile/confirm a pending order
 export async function POST(req: Request) {
   try {
-    const admin = await requireUser()
+    const admin = await requireAdmin()
 
     const body = await req.json()
     const { orderId, paymentId, notes, forceSuccess } = body

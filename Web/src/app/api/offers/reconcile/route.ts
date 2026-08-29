@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { requireUser, handleApiError } from '@/libs/api-auth'
+import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
 // GET /api/offers/reconcile - Fetch pending orders and reconciliation run logs (Admin only)
 export async function GET() {
   try {
-    await requireUser()
+    await requireAdmin()
 
     const [runs, pendingOrders] = await Promise.all([
       prisma.reconciliationRun.findMany({

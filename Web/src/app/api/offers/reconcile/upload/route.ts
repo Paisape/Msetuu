@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { requireUser, handleApiError } from '@/libs/api-auth'
+import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
 // POST /api/offers/reconcile/upload - Parse CSV settlement reports and reconcile orders
 export async function POST(req: Request) {
   try {
-    const admin = await requireUser()
+    const admin = await requireAdmin()
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null

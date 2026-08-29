@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { requireUser, handleApiError } from '@/libs/api-auth'
+import { requireAdmin, handleApiError } from '@/libs/api-auth'
 
 // GET /api/offers/reports - Fetch campaign reports, bookings, and referral statistics (Admin only)
 export async function GET(req: Request) {
   try {
-    await requireUser()
+    await requireAdmin()
 
     const { searchParams } = new URL(req.url)
     const offerLinkId = searchParams.get('offerLinkId')
