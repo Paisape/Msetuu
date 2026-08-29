@@ -126,40 +126,39 @@ export default function ReportsClient() {
     loadReports(campaignId)
   }
 
-  // Devotee Row Flattening
-  const devoteeRows: any[] = []
-  let globalIndex = 1
-  orders.forEach((order) => {
-    if (order.devotees && Array.isArray(order.devotees)) {
-      order.devotees.forEach((devotee) => {
-        devoteeRows.push({
-          id: `${order.id}-${devotee.phone || ''}-${devotee.name || ''}`,
-          orderId: order.id,
-          sNo: globalIndex++,
-          date: new Date(order.createdAt).toLocaleDateString(),
-          rawDate: new Date(order.createdAt),
-          name: devotee.name,
-          nameLocal: devotee.nameLocal,
-          mobile: devotee.phone || '—',
-          gotra: devotee.gotra || '—',
-          dob: devotee.dob || '—',
-          whatsapp: devotee.email || '—', // Conceptual field reuse
-          referredBy: order.referralCode || '—',
-          amountPaid: order.amount,
-          paymentId: order.paymentId || '—',
-          reconciledStatus: order.reconciledStatus,
-          parentOrder: order
-        })
-      })
+  // Order Row Construction (1 row per Order transaction)
+  const orderRows: any[] = orders.map((order, index) => {
+    const devotees = order.devotees || []
+    const primaryDevotee = devotees.find(d => d.isPrimary) || devotees[0]
+    const devoteesSummary = devotees.map(d => d.name).filter(Boolean).join(', ')
+
+    return {
+      id: order.id,
+      sNo: index + 1,
+      date: new Date(order.createdAt).toLocaleDateString('en-IN'),
+      rawDate: new Date(order.createdAt),
+      primaryName: primaryDevotee?.name || 'Devotee',
+      primaryNameLocal: primaryDevotee?.nameLocal || null,
+      devoteeCount: devotees.length || 1,
+      devoteesSummary: devoteesSummary || primaryDevotee?.name || 'Devotee',
+      devotees: devotees,
+      mobile: primaryDevotee?.phone || devotees[0]?.phone || '—',
+      gotra: primaryDevotee?.gotra || '—',
+      dob: primaryDevotee?.dob || '—',
+      referredBy: order.referralCode || '—',
+      amountPaid: Number(order.amount),
+      paymentId: order.paymentId || '—',
+      reconciledStatus: order.reconciledStatus || 'RECONCILED_AUTO',
+      parentOrder: order
     }
   })
 
-  // Devotee Filtering (Name, Gotra, Phone, Referral Code, and Dates)
-  const filteredDevotees = devoteeRows.filter(row => {
+  // Order Filtering (Search by Name, Mobile, Gotra, Referral Code, or Dates)
+  const filteredOrders = orderRows.filter(row => {
     const q = searchTerm.trim().toLowerCase()
     const matchesSearch = !q || 
-      (row.name && row.name.toLowerCase().includes(q)) || 
-      (row.nameLocal && row.nameLocal.toLowerCase().includes(q)) || 
+      (row.primaryName && row.primaryName.toLowerCase().includes(q)) || 
+      (row.devoteesSummary && row.devoteesSummary.toLowerCase().includes(q)) || 
       (row.mobile && row.mobile.includes(q)) || 
       (row.gotra && row.gotra.toLowerCase().includes(q)) || 
       (row.referredBy && row.referredBy.toLowerCase().includes(q))
@@ -178,7 +177,7 @@ export default function ReportsClient() {
   })
 
   // Pagination slicing
-  const slicedRows = filteredDevotees.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  const slicedRows = filteredOrders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage)
@@ -189,18 +188,18 @@ export default function ReportsClient() {
     setPage(0)
   }
 
-  // CSV Export
+  // CSV Export (Exporting Orders with full Devotee details)
   const handleExportCSV = () => {
-    const headers = ['S.No', 'Date', 'Name', 'Name (Local)', 'Mobile No', 'Gotra', 'DOB', 'WhatsApp No', 'Referred By', 'Amount Paid (INR)', 'Payment Gateway ID', 'Reconciled']
-    const rows = filteredDevotees.map(row => [
+    const headers = ['S.No', 'Order ID', 'Date', 'Primary Devotee', 'All Devotees', 'Total Devotees', 'Mobile No', 'Gotra', 'Referred By', 'Amount Paid (INR)', 'Payment Gateway ID', 'Reconciled']
+    const rows = filteredOrders.map(row => [
       row.sNo,
+      row.id,
       row.date,
-      row.name || '',
-      row.nameLocal || '',
+      row.primaryName || '',
+      row.devoteesSummary || '',
+      row.devoteeCount,
       row.mobile,
       row.gotra,
-      row.dob,
-      row.whatsapp,
       row.referredBy,
       row.amountPaid,
       row.paymentId,
@@ -212,7 +211,7 @@ export default function ReportsClient() {
     const link = document.createElement("a")
     const url = URL.createObjectURL(blob)
     link.setAttribute("href", url)
-    link.setAttribute("download", `Devotee_Bookings_${selectedCampaignId || 'All'}.csv`)
+    link.setAttribute("download", `Campaign_Orders_${selectedCampaignId || 'All'}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -400,11 +399,9 @@ export default function ReportsClient() {
               <TableRow>
                 <TableCell className='font-bold' style={{ minWidth: 50 }}>S.No</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Date</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 150 }}>Devotee Name</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 100 }}>Mobile No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 200 }}>Devotees / Booking Details</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 110 }}>Mobile No</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Gotra</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 90 }}>DOB</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 110 }}>WhatsApp No</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 95 }}>Referred By</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 100 }}>Amount Paid</TableCell>
                 <TableCell className='font-bold text-center' style={{ minWidth: 90 }}>Reconciled</TableCell>
@@ -414,8 +411,8 @@ export default function ReportsClient() {
             <TableBody>
               {slicedRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className='text-center py-8 text-slate-400'>
-                    No matching devotee records found.
+                  <TableCell colSpan={9} className='text-center py-8 text-slate-400'>
+                    No matching booking orders found.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -424,20 +421,33 @@ export default function ReportsClient() {
                     <TableCell className='text-slate-500 font-bold'>{row.sNo}</TableCell>
                     <TableCell className='text-slate-500'>{row.date}</TableCell>
                     <TableCell className='font-semibold text-slate-700 cursor-pointer' onClick={() => handleOpenOrderDetails(row.parentOrder)}>
-                      <span className='hover:underline hover:text-[#FF671F] flex items-center gap-1'>
-                        {row.name} <i className='tabler-eye text-xs text-[#FF671F]' />
-                      </span>
-                      {row.nameLocal ? (
-                        <span className='block text-xs font-normal text-slate-400'>({row.nameLocal})</span>
-                      ) : null}
+                      <div className='flex items-center gap-1.5 flex-wrap'>
+                        <span className='hover:underline hover:text-[#FF671F] font-bold text-slate-800'>
+                          {row.primaryName}
+                        </span>
+                        {row.primaryNameLocal && (
+                          <span className='text-xs text-slate-400'>({row.primaryNameLocal})</span>
+                        )}
+                        {row.devoteeCount > 1 && (
+                          <Chip 
+                            label={`+${row.devoteeCount - 1} Devotee${row.devoteeCount - 1 > 1 ? 's' : ''}`}
+                            size='small'
+                            className='bg-orange-100 text-[#FF671F] font-bold h-5 text-[10px]'
+                            title={row.devoteesSummary}
+                          />
+                        )}
+                      </div>
+                      {row.devoteeCount > 1 && (
+                        <span className='block text-xs font-normal text-slate-500 mt-0.5 truncate max-w-[280px]' title={row.devoteesSummary}>
+                          Devotees: {row.devoteesSummary}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className='text-slate-600 font-medium'>{row.mobile}</TableCell>
                     <TableCell className='text-slate-600'>{row.gotra}</TableCell>
-                    <TableCell className='text-slate-600'>{row.dob}</TableCell>
-                    <TableCell className='text-slate-600'>{row.whatsapp}</TableCell>
                     <TableCell>
                       {row.referredBy !== '—' ? (
-                        <Chip label={row.referredBy} size='small' className='bg-blue-50 text-blue-700 border-blue-100 border' />
+                        <Chip label={row.referredBy} size='small' className='bg-blue-50 text-blue-700 border-blue-100 border font-bold' />
                       ) : (
                         <span className='text-slate-300'>—</span>
                       )}
@@ -472,7 +482,7 @@ export default function ReportsClient() {
         <TablePagination
           rowsPerPageOptions={[10, 25, 50, 100]}
           component='div'
-          count={filteredDevotees.length}
+          count={filteredOrders.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
