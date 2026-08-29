@@ -153,7 +153,12 @@ const Footer = ({ mode }: { mode: Mode }) => {
                     </div>
                   </div>
                 </Link>
-                <Link className='bg-[#282C3E] bs-[56px] is-[211px] rounded'>
+                <Link 
+                  href='https://play.google.com/store/apps/details?id=com.mandirsetuuu' 
+                  target='_blank' 
+                  rel='noopener noreferrer'
+                  className='bg-[#282C3E] bs-[56px] is-[211px] rounded hover:opacity-90 transition-opacity'
+                >
                   <div className='flex items-center pli-5 plb-[7px] gap-6'>
                     <img src='/images/front-pages/google-play-icon.png' alt='Google play' className='bs-[34px]' />
                     <div className='flex flex-col items-start'>
