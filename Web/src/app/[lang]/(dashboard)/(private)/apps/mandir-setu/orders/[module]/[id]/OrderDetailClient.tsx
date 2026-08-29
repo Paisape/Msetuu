@@ -229,17 +229,76 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
                 </div>
               )}
 
+              {/* Offer Link Campaign Details Card */}
+              {order.offerLink && (
+                <div className='mt-6 p-4 rounded-xl bg-orange-50/60 border border-orange-100 dark:bg-slate-800 dark:border-slate-700'>
+                  <Typography variant='subtitle2' className='font-bold text-[#FF671F] flex items-center gap-1.5 mb-3'>
+                    <i className='tabler-link text-lg' />
+                    Offer Link Promotion Campaign
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant='caption' className='text-slate-500 block'>Campaign Title</Typography>
+                      <Typography variant='body2' className='font-bold text-slate-800 dark:text-slate-200'>
+                        {order.offerLink.title}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                      <Typography variant='caption' className='text-slate-500 block'>Offer Price</Typography>
+                      <Typography variant='body2' className='font-bold text-emerald-600'>
+                        ₹{Number(order.offerLink.offerPrice).toFixed(2)}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                      <Typography variant='caption' className='text-slate-500 block'>Original Price</Typography>
+                      <Typography variant='body2' className='font-medium text-slate-400 line-through'>
+                        ₹{Number(order.offerLink.salePrice).toFixed(2)}
+                      </Typography>
+                    </Grid>
+                    {order.referralCode && (
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Typography variant='caption' className='text-slate-500 block'>Referred By Partner</Typography>
+                        <Chip label={order.referralCode} size='small' className='bg-blue-100 text-blue-800 font-bold' />
+                      </Grid>
+                    )}
+                  </Grid>
+                </div>
+              )}
+
+              {/* Devotees List */}
               {Array.isArray(order.devotees) && order.devotees.length > 0 && (
                 <div className='mt-6'>
                   <Divider className='mb-4' />
-                  <Typography variant='subtitle1' className='font-bold mb-2'>
-                    Devotees ({order.devotees.length})
+                  <Typography variant='subtitle1' className='font-bold mb-3 flex items-center gap-2'>
+                    <i className='tabler-users text-lg text-[#FF671F]' />
+                    Booked Devotees ({order.devotees.length})
                   </Typography>
-                  <div className='flex flex-col gap-2'>
-                    {(order.devotees as { name: string; gotra: string }[]).map((p, i) => (
-                      <Typography key={i} variant='body2'>
-                        {i + 1}. {p.name} — Gotra: {p.gotra}
-                      </Typography>
+                  <div className='grid grid-cols-1 gap-3'>
+                    {(order.devotees as any[]).map((d, i) => (
+                      <div key={d.id || i} className='p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2'>
+                        <div>
+                          <div className='flex items-center gap-2 flex-wrap'>
+                            <Typography className='font-bold text-slate-800 dark:text-slate-100 text-sm'>
+                              {i + 1}. {d.name}
+                            </Typography>
+                            {d.nameLocal && (
+                              <Typography variant='caption' className='text-slate-400'>
+                                ({d.nameLocal})
+                              </Typography>
+                            )}
+                            {d.isPrimary && (
+                              <Chip label='Primary Devotee' color='primary' size='small' className='h-5 text-[10px] font-bold' />
+                            )}
+                          </div>
+                          <Typography variant='caption' className='text-slate-500 block mt-1'>
+                            Gotra: <strong className='text-slate-700 dark:text-slate-300'>{d.gotra || '—'}</strong> · DOB: <strong className='text-slate-700 dark:text-slate-300'>{d.dob || '—'}</strong>
+                          </Typography>
+                        </div>
+                        <div className='text-left sm:text-right text-xs text-slate-600 dark:text-slate-400'>
+                          {d.phone && <div className='font-mono font-medium'>📱 {d.phone}</div>}
+                          {d.email && <div className='text-slate-500'>✉️ {d.email}</div>}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
