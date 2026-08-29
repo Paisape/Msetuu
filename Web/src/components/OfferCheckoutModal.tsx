@@ -414,7 +414,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             setIsOpen(false)
             setLiveCounter(prev => prev + 1)
             if (devotees[0]?.name) {
-              const newDevoteeCity = [devotees[0].locality, devotees[0].city, devotees[0].state].filter(Boolean).join(', ') || 'भारत'
+              const newDevoteeCity = [devotees[0].city, devotees[0].state].filter(Boolean).join(', ')
               setRealBookings(prev => [{ name: devotees[0].name, city: newDevoteeCity }, ...prev])
             }
           } catch (err: any) {
@@ -481,13 +481,13 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
               </span>
             </div>
 
-            {/* Bottom row: Rotating Real Booked Devotee Name & City */}
-            {realBookings.length > 0 && realBookings[activeBookingIdx] && (
+            {/* Bottom row: Latest Booked Devotee (Updates after next booking) */}
+            {realBookings.length > 0 && realBookings[0] && (
               <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-xs">
                 <span className="text-base flex-shrink-0 animate-bounce">🪔</span>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[11px] font-bold text-slate-700 truncate">
-                    <span className="font-black text-slate-900">{realBookings[activeBookingIdx].name}</span> {realBookings[activeBookingIdx].city ? `(${realBookings[activeBookingIdx].city})` : ''}
+                    <span className="font-black text-slate-900">{realBookings[0].name}</span>{realBookings[0].city ? ` (${realBookings[0].city})` : ''}
                   </span>
                   <span className="text-[9px] font-extrabold text-emerald-600 flex items-center gap-0.5">
                     <span>✓</span> {t.justBooked || 'ने अभी सेवा बुक की!'}

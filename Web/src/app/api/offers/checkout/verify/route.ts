@@ -141,23 +141,17 @@ export async function POST(req: Request) {
             referralCode: dbOrder.referralCode,
             displayCounter,
             devotees: dbOrder.devotees as any[],
-            ipAddress: dbOrder.ipAddress,
-            ipLocation: dbOrder.ipLocation,
-            gpsLocation: dbOrder.gpsLocation,
-            userAgent: dbOrder.userAgent,
             createdAt: dbOrder.createdAt
           })
 
-          const adminRecipients = [
-            process.env.SMTP_USER,
-            process.env.SMTP_FROM_EMAIL,
-            process.env.ADMIN_EMAIL,
-            'mandirsetu@gmail.com',
-            'admin@mandirsetuu.com'
-          ].filter((e): e is string => Boolean(e && typeof e === 'string' && e.includes('@')))
+          // Support multiple comma/semicolon/space-separated emails from ADMIN_EMAIL (exclude SMTP_USER)
+          const customAdminEmails = (process.env.ADMIN_EMAIL || '')
+            .split(/[,;\s]+/)
+            .map(e => e.trim())
+            .filter(e => e.includes('@'))
 
-          // Deduplicate recipients
-          const uniqueAdminRecipients = Array.from(new Set(adminRecipients))
+          const defaultAdmins = ['mandirsetu@gmail.com', 'admin@mandirsetuu.com']
+          const uniqueAdminRecipients = Array.from(new Set([...customAdminEmails, ...defaultAdmins]))
 
           for (const adminEmail of uniqueAdminRecipients) {
             await sendEmail({

@@ -70,33 +70,40 @@ export default async function OfferPage({ params }: Props) {
     }
   })
 
-  // Fetch recent bookings for live social proof ticker
+  // Fetch recent bookings for live social proof ticker (most recent first)
   const recentOrdersRaw = await prisma.offerLinkOrder.findMany({
     where: {
       offerLinkId: offer.id,
       paymentStatus: 'SUCCESS'
     },
-    take: 5,
+    take: 10,
     orderBy: { createdAt: 'desc' },
     select: {
+      ipLocation: true,
       devotees: {
-        take: 1,
         select: {
           name: true,
+          locality: true,
           city: true,
-          state: true
+          state: true,
+          isPrimary: true
         }
       }
     }
   })
 
   const recentBookings = recentOrdersRaw
-    .map(o => o.devotees[0])
+    .map(o => {
+      const d = o.devotees.find(item => item.isPrimary) || o.devotees[0]
+      if (!d) return null
+      const locParts = [d.city, d.state].filter(Boolean)
+      const location = locParts.length > 0 ? locParts.join(', ') : (o.ipLocation && o.ipLocation !== 'Unknown' ? o.ipLocation : '')
+      return {
+        name: d.name,
+        city: location
+      }
+    })
     .filter(Boolean)
-    .map(d => ({
-      name: d.name,
-      city: d.city || d.state || 'भारत'
-    }))
 
   const initialCounter = (offer as any).initialCounter ?? 10000
   const displayCounter = initialCounter + completedOrdersCount

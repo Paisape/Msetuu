@@ -46,6 +46,9 @@ type Order = {
   id: string
   amount: string
   paymentId: string
+  paymentStatus: string
+  paymentMethod?: string | null
+  paymentDetails?: any
   referralCode: string | null
   reconciledStatus: string
   createdAt: string
@@ -87,6 +90,7 @@ export default function ReportsClient() {
 
   // Filter & Pagination States
   const [searchTerm, setSearchTerm] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(0)
@@ -151,12 +155,15 @@ export default function ReportsClient() {
       referredBy: order.referralCode || '—',
       amountPaid: Number(order.amount),
       paymentId: order.paymentId || '—',
+      paymentStatus: order.paymentStatus || 'PENDING',
+      paymentMethod: order.paymentMethod || (order.paymentStatus === 'SUCCESS' ? 'UPI' : '—'),
+      paymentDetails: order.paymentDetails || null,
       reconciledStatus: order.reconciledStatus || 'RECONCILED_AUTO',
       parentOrder: order
     }
   })
 
-  // Order Filtering (Search by Name, Mobile, Gotra, Referral Code, or Dates)
+  // Order Filtering (Search by Name, Mobile, Gotra, Referral Code, Payment Status, or Dates)
   const filteredOrders = orderRows.filter(row => {
     const q = searchTerm.trim().toLowerCase()
     const matchesSearch = !q || 
@@ -164,7 +171,10 @@ export default function ReportsClient() {
       (row.devoteesSummary && row.devoteesSummary.toLowerCase().includes(q)) || 
       (row.mobile && row.mobile.includes(q)) || 
       (row.gotra && row.gotra.toLowerCase().includes(q)) || 
+      (row.paymentMethod && row.paymentMethod.toLowerCase().includes(q)) ||
       (row.referredBy && row.referredBy.toLowerCase().includes(q))
+
+    const matchesStatus = paymentStatusFilter === 'ALL' || row.paymentStatus === paymentStatusFilter
 
     let matchesDate = true
     if (startDate) {
@@ -176,7 +186,7 @@ export default function ReportsClient() {
       matchesDate = matchesDate && row.rawDate <= end
     }
 
-    return matchesSearch && matchesDate
+    return matchesSearch && matchesStatus && matchesDate
   })
 
   // Pagination slicing
@@ -195,8 +205,11 @@ export default function ReportsClient() {
   const handleExportCSV = () => {
     const headers = [
       'S.No',
-      'Order ID',
+      'Short Order ID',
+      'System UUID',
       'Date & Time',
+      'Payment Status (Razorpay)',
+      'Payment Method',
       'Primary Devotee Name',
       'Primary Mobile No',
       'Primary Email',
@@ -221,8 +234,11 @@ export default function ReportsClient() {
       const primary = parent.devotees?.find((d: any) => d.isPrimary) || parent.devotees?.[0] || {}
       return [
         row.sNo,
+        `#MS-${row.id.slice(0, 8).toUpperCase()}`,
         row.id,
         new Date(parent.createdAt || row.rawDate).toLocaleString(),
+        row.paymentStatus === 'SUCCESS' ? 'CAPTURED (SUCCESS)' : row.paymentStatus === 'PENDING' ? 'CREATED (PENDING)' : row.paymentStatus,
+        row.paymentMethod,
         row.primaryName || '',
         row.mobile || '',
         primary.email || '',
@@ -400,7 +416,7 @@ export default function ReportsClient() {
         </Box>
 
         {/* Filters Box */}
-        <Box className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100'>
+        <Box className='grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100'>
           <TextField
             label='Search Name, Mobile, Gotra or Code'
             value={searchTerm}
@@ -409,6 +425,21 @@ export default function ReportsClient() {
             className='bg-white'
             fullWidth
           />
+          <TextField
+            select
+            label='Payment Status (Razorpay)'
+            value={paymentStatusFilter}
+            onChange={(e) => { setPaymentStatusFilter(e.target.value); setPage(0); }}
+            size='small'
+            className='bg-white'
+            fullWidth
+            SelectProps={{ native: true }}
+          >
+            <option value='ALL'>All Payment Statuses</option>
+            <option value='SUCCESS'>CAPTURED (Success)</option>
+            <option value='PENDING'>CREATED (Pending / Abandoned)</option>
+            <option value='FAILED'>FAILED</option>
+          </TextField>
           <TextField
             label='Start Date'
             type='date'
@@ -438,6 +469,8 @@ export default function ReportsClient() {
                 <TableCell className='font-bold' style={{ minWidth: 50 }}>S.No</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 130 }}>Order ID</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Date</TableCell>
+                <TableCell className='font-bold text-center' style={{ minWidth: 110 }}>Payment Status</TableCell>
+                <TableCell className='font-bold text-center' style={{ minWidth: 110 }}>Payment Method</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 160 }}>Main Devotee</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 220 }}>All Devotees</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 110 }}>Mobile No</TableCell>
@@ -451,7 +484,7 @@ export default function ReportsClient() {
             <TableBody>
               {slicedRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className='text-center py-8 text-slate-400'>
+                  <TableCell colSpan={13} className='text-center py-8 text-slate-400'>
                     No matching booking orders found.
                   </TableCell>
                 </TableRow>
@@ -459,10 +492,35 @@ export default function ReportsClient() {
                 slicedRows.map((row) => (
                   <TableRow key={row.id} className='hover:bg-slate-50/50'>
                     <TableCell className='text-slate-500 font-bold'>{row.sNo}</TableCell>
-                    <TableCell className='font-mono text-xs font-bold text-slate-700' title={row.id}>
-                      {row.id.length > 12 ? `${row.id.slice(0, 8)}...` : row.id}
+                    <TableCell className='font-mono text-xs font-bold text-slate-700' title={`Full System UUID: ${row.id}`}>
+                      <div className='font-bold text-[#FF671F]'>#MS-{row.id.slice(0, 8).toUpperCase()}</div>
+                      <div className='text-[10px] text-slate-400 font-mono tracking-tight'>{row.id.slice(0, 13)}...</div>
                     </TableCell>
                     <TableCell className='text-slate-500'>{row.date}</TableCell>
+                    <TableCell className='text-center'>
+                      <Chip 
+                        label={row.paymentStatus === 'SUCCESS' ? 'CAPTURED' : row.paymentStatus === 'PENDING' ? 'CREATED' : row.paymentStatus} 
+                        size='small'
+                        className={`font-bold text-[10px] ${
+                          row.paymentStatus === 'SUCCESS' 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : row.paymentStatus === 'PENDING' 
+                            ? 'bg-amber-100 text-amber-800' 
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      />
+                    </TableCell>
+                    <TableCell className='text-center'>
+                      {row.paymentMethod !== '—' ? (
+                        <Chip 
+                          label={row.paymentMethod} 
+                          size='small' 
+                          className='bg-sky-50 text-sky-800 border border-sky-100 font-bold text-[10px]' 
+                        />
+                      ) : (
+                        <span className='text-slate-300'>—</span>
+                      )}
+                    </TableCell>
                     <TableCell className='font-bold text-slate-800 cursor-pointer' onClick={() => handleOpenOrderDetails(row.parentOrder)}>
                       <span className='hover:underline hover:text-[#FF671F]'>
                         {row.primaryName}
@@ -562,8 +620,11 @@ export default function ReportsClient() {
               <div className='grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100'>
                 <div>
                   <span className='text-xs text-slate-400 font-bold block'>ORDER ID</span>
-                  <span className='font-mono font-bold text-slate-700' title={selectedOrder.id}>
+                  <span className='font-mono font-bold text-[#FF671F] text-base block'>
                     #MS-{selectedOrder.id.slice(0, 8).toUpperCase()}
+                  </span>
+                  <span className='text-[11px] font-mono text-slate-500 block break-all'>
+                    UUID: {selectedOrder.id}
                   </span>
                 </div>
                 <div>
@@ -583,6 +644,30 @@ export default function ReportsClient() {
                   <span className='font-bold text-slate-700'>{selectedOrder.referralCode || 'None'}</span>
                 </div>
                 <div>
+                  <span className='text-xs text-slate-400 font-bold block'>PAYMENT STATUS (RAZORPAY)</span>
+                  <Chip 
+                    label={selectedOrder.paymentStatus === 'SUCCESS' ? 'CAPTURED (SUCCESS)' : selectedOrder.paymentStatus === 'PENDING' ? 'CREATED (PENDING)' : selectedOrder.paymentStatus} 
+                    size='small'
+                    className={`font-bold ${
+                      selectedOrder.paymentStatus === 'SUCCESS' 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : selectedOrder.paymentStatus === 'PENDING' 
+                        ? 'bg-amber-100 text-amber-800' 
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <span className='text-xs text-slate-400 font-bold block'>PAYMENT METHOD</span>
+                  <Chip 
+                    label={selectedOrder.paymentMethod || (selectedOrder.paymentStatus === 'SUCCESS' ? 'UPI' : '—')} 
+                    size='small' 
+                    color='primary' 
+                    variant='outlined' 
+                    className='font-bold' 
+                  />
+                </div>
+                <div>
                   <span className='text-xs text-slate-400 font-bold block'>RECONCILIATION STATUS</span>
                   <Chip 
                     label={selectedOrder.reconciledStatus} 
@@ -590,12 +675,6 @@ export default function ReportsClient() {
                     color={selectedOrder.reconciledStatus.startsWith('RECONCILED') ? 'success' : 'default'}
                   />
                 </div>
-                {selectedOrder.paymentMethod && (
-                  <div>
-                    <span className='text-xs text-slate-400 font-bold block'>PAYMENT METHOD</span>
-                    <Chip label={selectedOrder.paymentMethod} size='small' color='primary' variant='outlined' className='font-bold' />
-                  </div>
-                )}
                 {selectedOrder.reconciliationNotes && (
                   <div className='col-span-2 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100'>
                     <span className='text-xs text-emerald-800 font-bold block mb-0.5'>GATEWAY VERIFICATION LOG</span>

@@ -22,11 +22,11 @@ export async function GET(req: Request) {
     const selectedId = offerLinkId || campaigns[0].id
 
     // 2. Fetch traffic, orders, and conversion statistics
-    const [viewsCount, totalOrders, successfulOrders] = await Promise.all([
+    const [viewsCount, totalOrdersCount, allOrders] = await Promise.all([
       prisma.offerLinkAnalytics.count({ where: { offerLinkId: selectedId } }),
       prisma.offerLinkOrder.count({ where: { offerLinkId: selectedId } }),
       prisma.offerLinkOrder.findMany({
-        where: { offerLinkId: selectedId, paymentStatus: 'SUCCESS' },
+        where: { offerLinkId: selectedId },
         orderBy: { createdAt: 'desc' },
         include: {
           devotees: true
@@ -34,6 +34,7 @@ export async function GET(req: Request) {
       })
     ])
 
+    const successfulOrders = allOrders.filter(o => o.paymentStatus === 'SUCCESS')
     const totalRevenue = successfulOrders.reduce((sum: number, o: { amount: any }) => sum + Number(o.amount), 0)
     const totalDevoteesCount = successfulOrders.reduce((sum: number, o: { devotees: any[] }) => sum + (o.devotees?.length || 1), 0)
     const conversionRate = viewsCount > 0 ? (successfulOrders.length / viewsCount) * 100 : 0
@@ -41,6 +42,7 @@ export async function GET(req: Request) {
     const stats = {
       viewsCount,
       bookingsCount: successfulOrders.length,
+      totalOrdersCount,
       totalDevoteesCount,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
       totalRevenue: parseFloat(totalRevenue.toFixed(2))
@@ -105,7 +107,7 @@ export async function GET(req: Request) {
       campaigns,
       selectedId,
       stats,
-      orders: successfulOrders,
+      orders: allOrders,
       referrals
     })
   } catch (err) {

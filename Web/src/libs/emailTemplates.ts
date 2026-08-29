@@ -298,23 +298,19 @@ export function adminOfferBookingSuccessEmail(opts: {
   paymentMethod: string
   referralCode?: string | null
   displayCounter: number
-  devotees: Array<{
+  devotees: {
     name: string
     nameLocal?: string | null
-    gotra?: string | null
-    dob?: string | null
-    phone?: string | null
+    gotra?: string
+    dob?: string
+    phone?: string
     email?: string | null
-    pincode?: string | null
     locality?: string | null
     city?: string | null
     state?: string | null
+    pincode?: string | null
     isPrimary?: boolean
-  }>
-  ipAddress?: string | null
-  ipLocation?: string | null
-  gpsLocation?: string | null
-  userAgent?: string | null
+  }[]
   createdAt: Date
 }): { subject: string; html: string } {
   const subject = `🚩 New Campaign Booking: ${opts.campaignTitle} (₹${opts.amount.toFixed(0)}) - Order #${opts.orderId.slice(0, 8).toUpperCase()}`
