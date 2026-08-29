@@ -188,23 +188,49 @@ export default function ReportsClient() {
     setPage(0)
   }
 
-  // CSV Export (Exporting Orders with full Devotee details)
+  // CSV Export (Exporting Orders with complete Devotee, Campaign, and Geolocation fields)
   const handleExportCSV = () => {
-    const headers = ['S.No', 'Order ID', 'Date', 'Primary Devotee', 'All Devotees', 'Total Devotees', 'Mobile No', 'Gotra', 'Referred By', 'Amount Paid (INR)', 'Payment Gateway ID', 'Reconciled']
-    const rows = filteredOrders.map(row => [
-      row.sNo,
-      row.id,
-      row.date,
-      row.primaryName || '',
-      row.devoteesSummary || '',
-      row.devoteeCount,
-      row.mobile,
-      row.gotra,
-      row.referredBy,
-      row.amountPaid,
-      row.paymentId,
-      row.reconciledStatus
-    ])
+    const headers = [
+      'S.No',
+      'Order ID',
+      'Date & Time',
+      'Primary Devotee Name',
+      'Primary Mobile No',
+      'Primary Email',
+      'Primary Gotra',
+      'Primary DOB',
+      'All Booked Devotees',
+      'Total Devotees Count',
+      'Referred By Partner',
+      'Amount Paid (INR)',
+      'Payment Gateway ID',
+      'Reconciled Status',
+      'User IP Address',
+      'IP Location',
+      'GPS Coordinates'
+    ]
+    const rows = filteredOrders.map(row => {
+      const parent = row.parentOrder || {}
+      return [
+        row.sNo,
+        row.id,
+        new Date(parent.createdAt || row.rawDate).toLocaleString(),
+        row.primaryName || '',
+        row.mobile || '',
+        parent.devotees?.find((d: any) => d.isPrimary)?.email || parent.devotees?.[0]?.email || '',
+        row.gotra || '',
+        row.dob || '',
+        row.devoteesSummary || '',
+        row.devoteeCount,
+        row.referredBy,
+        row.amountPaid,
+        row.paymentId,
+        row.reconciledStatus,
+        parent.userIp || '—',
+        parent.ipLocation || '—',
+        parent.latitude && parent.longitude ? `${parent.latitude}, ${parent.longitude}` : '—'
+      ]
+    })
 
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
