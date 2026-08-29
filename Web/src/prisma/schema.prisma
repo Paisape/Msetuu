@@ -1113,20 +1113,21 @@ model PayoutRequest {
 // -------------------------------------------------------------
 
 model OfferLink {
-  id           String               @id @default(uuid())
-  slug         String               @unique
-  title        String
-  salePrice    Decimal              @db.Decimal(10, 2)
-  offerPrice   Decimal              @db.Decimal(10, 2)
-  gstIncluded  Boolean              @default(false)
-  gstRate      Decimal              @default(18.00) @db.Decimal(5, 2)
-  htmlContent  String               @db.Text
-  isActive     Boolean              @default(true)
-  supportPhone String?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  orders       OfferLinkOrder[]
-  analytics    OfferLinkAnalytics[]
+  id             String               @id @default(uuid())
+  slug           String               @unique
+  title          String
+  salePrice      Decimal              @db.Decimal(10, 2)
+  offerPrice     Decimal              @db.Decimal(10, 2)
+  gstIncluded    Boolean              @default(false)
+  gstRate        Decimal              @default(18.00) @db.Decimal(5, 2)
+  htmlContent    String               @db.Text
+  isActive       Boolean              @default(true)
+  supportPhone   String?
+  initialCounter Int                  @default(10000)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  orders         OfferLinkOrder[]
+  analytics      OfferLinkAnalytics[]
 }
 
 model ReferralCode {
@@ -1161,16 +1162,20 @@ model OfferLinkOrder {
 }
 
 model OfferLinkDevotee {
-  id             String          @id @default(uuid())
-  orderId        String
-  order          OfferLinkOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  name           String          // English translated/transliterated name
-  nameLocal      String?         // User's original entered name (local language)
-  gotra          String
-  dob            String
-  phone          String
-  email          String?
-  isPrimary      Boolean         @default(false)
+  id        String         @id @default(uuid())
+  orderId   String
+  order     OfferLinkOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name      String // English translated/transliterated name
+  nameLocal String? // User's original entered name (local language)
+  gotra     String
+  dob       String
+  phone     String
+  email     String?
+  pincode   String?
+  locality  String?
+  city      String?
+  state     String?
+  isPrimary Boolean        @default(false)
 }
 
 model OfferLinkAnalytics {

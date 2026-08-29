@@ -289,3 +289,105 @@ export function passwordlessOtpEmail(opts: { otp: string }): { subject: string; 
 
   return { subject, html: renderEmailLayout(body, 'Your login verification code.') }
 }
+
+export function adminOfferBookingSuccessEmail(opts: {
+  orderId: string
+  campaignTitle: string
+  amount: number
+  paymentId: string
+  paymentMethod: string
+  referralCode?: string | null
+  displayCounter: number
+  devotees: Array<{
+    name: string
+    nameLocal?: string | null
+    gotra?: string | null
+    dob?: string | null
+    phone?: string | null
+    email?: string | null
+    pincode?: string | null
+    locality?: string | null
+    city?: string | null
+    state?: string | null
+    isPrimary?: boolean
+  }>
+  ipAddress?: string | null
+  ipLocation?: string | null
+  gpsLocation?: string | null
+  userAgent?: string | null
+  createdAt: Date
+}): { subject: string; html: string } {
+  const subject = `🚩 New Campaign Booking: ${opts.campaignTitle} (₹${opts.amount.toFixed(0)}) - Order #${opts.orderId.slice(0, 8).toUpperCase()}`
+
+  const devoteesHtml = opts.devotees
+    .map(
+      (d, i) => `
+    <tr style="border-bottom: 1px solid #f1f5f9;">
+      <td style="padding: 10px; font-weight: bold; color: #1e293b;">${i + 1}. ${d.name} ${d.nameLocal ? `<span style="color:#64748b;font-weight:normal;">(${d.nameLocal})</span>` : ''} ${d.isPrimary ? '<span style="background:#ff671f;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:bold;margin-left:4px;">PRIMARY</span>' : ''}</td>
+      <td style="padding: 10px; color: #334155; font-family: monospace;">${d.phone || '—'}</td>
+      <td style="padding: 10px; color: #334155;">${d.gotra || '—'} / ${d.dob || '—'}</td>
+      <td style="padding: 10px; color: #334155;">${[d.locality, d.city, d.state, d.pincode].filter(Boolean).join(', ') || '—'}</td>
+    </tr>
+  `
+    )
+    .join('')
+
+  const body = `
+    <div style="background-color:#fff7ed;border:1px solid #ffedd5;padding:16px;border-radius:12px;margin-bottom:20px;text-align:center;">
+      <h2 style="margin:0;color:#c2410c;font-size:20px;font-weight:800;">🚩 New Campaign Booking Confirmed!</h2>
+      <p style="margin:6px 0 0;color:#ea580c;font-size:14px;font-weight:bold;">${opts.campaignTitle}</p>
+    </div>
+
+    <!-- Counter Status Banner -->
+    <div style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#ffffff;padding:14px 20px;border-radius:10px;margin-bottom:24px;text-align:center;font-weight:bold;font-size:16px;">
+      🚩 Live Campaign Counter: <span style="font-size:20px;font-weight:900;">${opts.displayCounter.toLocaleString('en-IN')}+ Devotees</span>
+    </div>
+
+    <!-- Order Summary Table -->
+    <h3 style="color:#1e293b;margin:0 0 12px;font-size:16px;border-bottom:2px solid #f97316;padding-bottom:6px;">📋 Order & Payment Details</h3>
+    <table width="100%" cellpadding="8" cellspacing="0" style="margin-bottom:24px;background-color:#f8fafc;border-radius:10px;font-size:13px;border:1px solid #e2e8f0;">
+      <tr>
+        <td width="35%" style="color:#64748b;font-weight:bold;">Order ID:</td>
+        <td style="font-family:monospace;font-weight:bold;color:#0f172a;">${opts.orderId}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b;font-weight:bold;">Booking Date & Time:</td>
+        <td style="color:#0f172a;">${opts.createdAt.toLocaleString('en-IN')}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b;font-weight:bold;">Total Amount Paid:</td>
+        <td style="font-size:16px;font-weight:bold;color:#059669;">₹${opts.amount.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b;font-weight:bold;">Payment Gateway ID:</td>
+        <td style="font-family:monospace;font-weight:bold;color:#0f172a;">${opts.paymentId}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b;font-weight:bold;">Payment Method:</td>
+        <td style="font-weight:bold;color:#3b82f6;">${opts.paymentMethod}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b;font-weight:bold;">Referred By Partner:</td>
+        <td style="font-weight:bold;color:#6366f1;">${opts.referralCode || 'Direct Booking'}</td>
+      </tr>
+    </table>
+
+    <!-- Booked Devotees -->
+    <h3 style="color:#1e293b;margin:0 0 12px;font-size:16px;border-bottom:2px solid #f97316;padding-bottom:6px;">👥 Booked Devotees (${opts.devotees.length})</h3>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;font-size:12px;">
+      <thead>
+        <tr style="background-color:#f1f5f9;color:#475569;text-align:left;">
+          <th style="padding:10px;">Devotee Name</th>
+          <th style="padding:10px;">Mobile</th>
+          <th style="padding:10px;">Gotra / DOB</th>
+          <th style="padding:10px;">Locality & Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${devoteesHtml}
+      </tbody>
+    </table>
+  `
+
+  return { subject, html: renderEmailLayout(body, `New Campaign Booking: ${opts.campaignTitle}`) }
+}

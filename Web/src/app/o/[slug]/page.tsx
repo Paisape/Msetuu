@@ -31,10 +31,16 @@ export async function generateMetadata({ params }: Props) {
 export default async function OfferPage({ params }: Props) {
   const { slug } = await params
 
-  // Fetch the offer link configuration from DB
-  const offer = await prisma.offerLink.findUnique({
-    where: { slug: slug.toLowerCase() }
+  const cleanSlug = slug.toLowerCase()
+  let offer = await prisma.offerLink.findUnique({
+    where: { slug: cleanSlug }
   })
+
+  // Resilient fallback for minor spelling typos (e.g. khatushaym vs khatushyam)
+  if (!offer) {
+    const allOffers = await prisma.offerLink.findMany({ where: { isActive: true } })
+    offer = allOffers.find(o => o.slug.replace(/[^a-z0-9]/g, '') === cleanSlug.replace(/[^a-z0-9]/g, '')) || null
+  }
 
   if (!offer || !offer.isActive) {
     return notFound()
@@ -56,6 +62,45 @@ export default async function OfferPage({ params }: Props) {
     // Fail silently so it doesn't block page load
   }
 
+  // Fetch total completed orders count for live devotee booking counter
+  const completedOrdersCount = await prisma.offerLinkOrder.count({
+    where: {
+      offerLinkId: offer.id,
+      paymentStatus: 'SUCCESS'
+    }
+  })
+
+  // Fetch recent bookings for live social proof ticker
+  const recentOrdersRaw = await prisma.offerLinkOrder.findMany({
+    where: {
+      offerLinkId: offer.id,
+      paymentStatus: 'SUCCESS'
+    },
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      devotees: {
+        take: 1,
+        select: {
+          name: true,
+          city: true,
+          state: true
+        }
+      }
+    }
+  })
+
+  const recentBookings = recentOrdersRaw
+    .map(o => o.devotees[0])
+    .filter(Boolean)
+    .map(d => ({
+      name: d.name,
+      city: d.city || d.state || 'भारत'
+    }))
+
+  const initialCounter = (offer as any).initialCounter ?? 10000
+  const displayCounter = initialCounter + completedOrdersCount
+
   // Convert Decimal fields to strings for serialization across client boundaries
   const serializedOffer = {
     id: offer.id,
@@ -64,7 +109,9 @@ export default async function OfferPage({ params }: Props) {
     salePrice: offer.salePrice.toString(),
     gstIncluded: offer.gstIncluded,
     gstRate: offer.gstRate.toString(),
-    supportPhone: offer.supportPhone || ''
+    supportPhone: offer.supportPhone || '',
+    displayCounter,
+    recentBookings
   }
 
   // Clean raw HTML content from structural wrappers (DOCTYPE, html, body) to match browser parse behavior

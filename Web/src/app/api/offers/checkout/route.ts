@@ -161,6 +161,10 @@ export async function POST(req: Request) {
           dob: (devotee.dob || '').trim(),
           phone: devotee.phone.trim(),
           email: devotee.email ? devotee.email.trim() : null,
+          pincode: devotee.pincode ? devotee.pincode.trim() : null,
+          locality: devotee.locality ? devotee.locality.trim() : null,
+          city: devotee.city ? devotee.city.trim() : null,
+          state: devotee.state ? devotee.state.trim() : null,
           isPrimary: index === 0
         }
       })

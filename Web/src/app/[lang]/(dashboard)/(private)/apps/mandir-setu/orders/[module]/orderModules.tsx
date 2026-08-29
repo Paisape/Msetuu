@@ -118,6 +118,15 @@ export const ORDER_MODULES: Record<string, OrderModuleConfig> = {
     columns: [
       { key: 'name', label: 'Devotee' },
       { key: 'offer.title', label: 'Offer' },
+      { 
+        key: 'address', 
+        label: 'Locality & Address', 
+        render: item => {
+          const parts = [item.locality, item.city, item.state].filter(Boolean)
+          const pin = item.pincode ? ` (${item.pincode})` : ''
+          return parts.length > 0 ? `${parts.join(', ')}${pin}` : '—'
+        } 
+      },
       { key: 'packageName', label: 'Type / Tier', render: item => item.packageName ? item.packageName : item.personCount > 1 ? `${item.personCount} Devotees` : 'Standard' },
       { key: 'amountPaid', label: 'Amount Paid', render: item => money(item.amountPaid) },
       { key: 'paymentStatus', label: 'Payment' },

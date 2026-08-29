@@ -130,7 +130,10 @@ export default function ReportsClient() {
   const orderRows: any[] = orders.map((order, index) => {
     const devotees = order.devotees || []
     const primaryDevotee = devotees.find(d => d.isPrimary) || devotees[0]
-    const devoteesSummary = devotees.map(d => d.name).filter(Boolean).join(', ')
+    const otherDevotees = devotees.filter(d => d !== primaryDevotee).map(d => d.name).filter(Boolean)
+    const devoteesSummary = primaryDevotee?.name 
+      ? `${primaryDevotee.name} (Main Devotee)${otherDevotees.length > 0 ? ' — ' + otherDevotees.join(', ') : ''}`
+      : devotees.map(d => d.name).filter(Boolean).join(', ')
 
     return {
       id: order.id,
@@ -199,6 +202,10 @@ export default function ReportsClient() {
       'Primary Email',
       'Primary Gotra',
       'Primary DOB',
+      'Primary Pincode',
+      'Primary Locality',
+      'Primary City',
+      'Primary State',
       'All Booked Devotees',
       'Total Devotees Count',
       'Referred By Partner',
@@ -211,15 +218,20 @@ export default function ReportsClient() {
     ]
     const rows = filteredOrders.map(row => {
       const parent = row.parentOrder || {}
+      const primary = parent.devotees?.find((d: any) => d.isPrimary) || parent.devotees?.[0] || {}
       return [
         row.sNo,
         row.id,
         new Date(parent.createdAt || row.rawDate).toLocaleString(),
         row.primaryName || '',
         row.mobile || '',
-        parent.devotees?.find((d: any) => d.isPrimary)?.email || parent.devotees?.[0]?.email || '',
+        primary.email || '',
         row.gotra || '',
         row.dob || '',
+        primary.pincode || '',
+        primary.locality || '',
+        primary.city || '',
+        primary.state || '',
         row.devoteesSummary || '',
         row.devoteeCount,
         row.referredBy,
@@ -550,7 +562,9 @@ export default function ReportsClient() {
               <div className='grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100'>
                 <div>
                   <span className='text-xs text-slate-400 font-bold block'>ORDER ID</span>
-                  <span className='font-mono font-bold text-slate-700'>{selectedOrder.id}</span>
+                  <span className='font-mono font-bold text-slate-700' title={selectedOrder.id}>
+                    #MS-{selectedOrder.id.slice(0, 8).toUpperCase()}
+                  </span>
                 </div>
                 <div>
                   <span className='text-xs text-slate-400 font-bold block'>DATE</span>
@@ -633,7 +647,8 @@ export default function ReportsClient() {
                         <div>📞 Mobile: <strong>{devotee.phone || '—'}</strong></div>
                         <div>🏵️ Gotra: <strong>{devotee.gotra || '—'}</strong></div>
                         <div>🎂 DOB: <strong>{devotee.dob || '—'}</strong></div>
-                        <div>💬 WhatsApp: <strong>{devotee.email || '—'}</strong></div>
+                        <div>✉️ Email: <strong>{devotee.email || '—'}</strong></div>
+                        <div className='col-span-2'>📍 Address: <strong>{devotee.locality ? `${devotee.locality}, ` : ''}{devotee.city ? `${devotee.city}, ` : ''}{devotee.state || '—'} {devotee.pincode ? `(${devotee.pincode})` : ''}</strong></div>
                       </div>
                     </div>
                   ))}

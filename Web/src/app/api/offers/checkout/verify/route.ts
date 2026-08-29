@@ -3,7 +3,7 @@ import prisma from '@/libs/prisma'
 import { verifyRazorpaySignature, getRazorpayPaymentDetails } from '@/libs/razorpay'
 import { handleApiError } from '@/libs/api-auth'
 import { createInvoiceForOrder } from '@/libs/invoice'
-import { paymentSuccessEmail } from '@/libs/emailTemplates'
+import { paymentSuccessEmail, adminOfferBookingSuccessEmail } from '@/libs/emailTemplates'
 import { sendEmail } from '@/libs/email'
 import { sendOrderConfirmationSms } from '@/libs/sms'
 
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
           gstInclusive: dbOrder.offerLink.gstIncluded
         })
 
-        // Email receipt to devotee if email is valid and present
+        // 1. Email receipt to devotee if email is valid and present
         if (customerEmail && customerEmail.includes('@')) {
           const { subject, html } = paymentSuccessEmail({
             customerName,
@@ -124,7 +124,53 @@ export async function POST(req: Request) {
           await sendEmail({ to: customerEmail, subject, html }).catch(e => console.error('[Email] Failed to send receipt:', e))
         }
 
-        // DLT SMS Order Confirmation to devotee's mobile
+        // 2. Dispatch Rich Admin Notification Email to admin team
+        try {
+          const completedOrdersCount = await prisma.offerLinkOrder.count({
+            where: { offerLinkId: dbOrder.offerLinkId, paymentStatus: 'SUCCESS' }
+          })
+          const initialCounter = (dbOrder.offerLink as any).initialCounter ?? 10000
+          const displayCounter = initialCounter + completedOrdersCount
+
+          const adminEmailData = adminOfferBookingSuccessEmail({
+            orderId: dbOrder.id,
+            campaignTitle: dbOrder.offerLink.title,
+            amount: Number(dbOrder.amount),
+            paymentId: dbOrder.paymentId || '—',
+            paymentMethod: dbOrder.paymentMethod || 'Online',
+            referralCode: dbOrder.referralCode,
+            displayCounter,
+            devotees: dbOrder.devotees as any[],
+            ipAddress: dbOrder.ipAddress,
+            ipLocation: dbOrder.ipLocation,
+            gpsLocation: dbOrder.gpsLocation,
+            userAgent: dbOrder.userAgent,
+            createdAt: dbOrder.createdAt
+          })
+
+          const adminRecipients = [
+            process.env.SMTP_USER,
+            process.env.SMTP_FROM_EMAIL,
+            process.env.ADMIN_EMAIL,
+            'mandirsetu@gmail.com',
+            'admin@mandirsetuu.com'
+          ].filter((e): e is string => Boolean(e && typeof e === 'string' && e.includes('@')))
+
+          // Deduplicate recipients
+          const uniqueAdminRecipients = Array.from(new Set(adminRecipients))
+
+          for (const adminEmail of uniqueAdminRecipients) {
+            await sendEmail({
+              to: adminEmail,
+              subject: adminEmailData.subject,
+              html: adminEmailData.html
+            }).catch(err => console.error(`[Admin Booking Email] Failed sending to ${adminEmail}:`, err))
+          }
+        } catch (adminMailErr) {
+          console.error('[Admin Booking Email] Error rendering or sending admin notification:', adminMailErr)
+        }
+
+        // 3. DLT SMS Order Confirmation to devotee's mobile
         const customerPhone = primaryDevotee?.phone || null
         if (customerPhone && customerPhone.trim()) {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'

@@ -8,6 +8,10 @@ type Devotee = {
   dob: string
   phone: string
   email: string
+  pincode?: string
+  locality?: string
+  city?: string
+  state?: string
 }
 
 type Props = {
@@ -19,6 +23,8 @@ type Props = {
     gstIncluded: boolean
     gstRate: string
     supportPhone?: string
+    displayCounter?: number
+    recentBookings?: { name: string; city: string }[]
   }
 }
 
@@ -32,6 +38,10 @@ const translations = {
     dob: 'Date of Birth (Optional)',
     phone: 'Mobile / WhatsApp No *',
     email: 'Email ID (Optional)',
+    pincode: 'Pincode (6-Digits)',
+    locality: 'Locality / Area',
+    city: 'City / District',
+    state: 'State',
     addPerson: 'Add Extra Person',
     price: 'Price',
     gst: 'GST',
@@ -44,7 +54,9 @@ const translations = {
     person: 'Person',
     sameAsPrimary: 'Same as primary',
     orderIdLabel: 'Order ID',
-    supportContact: 'For details contact:'
+    supportContact: 'For details contact:',
+    devoteesBooked: 'Devotees Booked',
+    limitedSlots: '⚡ Limited Vedic Slots Remaining!'
   },
   hi: {
     bookNow: 'अभी बुक करें',
@@ -55,6 +67,10 @@ const translations = {
     dob: 'जन्म तिथि (वैकल्पिक)',
     phone: 'मोबाइल / व्हाट्सएप नंबर *',
     email: 'ईमेल आईडी (वैकल्पिक)',
+    pincode: 'पिनकोड (6 अंक)',
+    locality: 'इलाका / क्षेत्र',
+    city: 'शहर / जिला',
+    state: 'राज्य',
     addPerson: 'अतिरिक्त व्यक्ति जोड़ें',
     price: 'मूल्य',
     gst: 'जीएसटी',
@@ -67,7 +83,9 @@ const translations = {
     person: 'व्यक्ति',
     sameAsPrimary: 'मुख्य नंबर के समान',
     orderIdLabel: 'ऑर्डर आईडी',
-    supportContact: 'विवरण के लिए संपर्क करें:'
+    supportContact: 'विवरण के लिए संपर्क करें:',
+    devoteesBooked: 'श्रद्धालु सेवा बुक कर चुके हैं',
+    limitedSlots: '⚡ केवल सीमित वैदिक स्थान शेष!'
   },
   mr: {
     bookNow: 'आताच बुक करा',
@@ -78,6 +96,10 @@ const translations = {
     dob: 'जन्म तारीख (पर्यायी)',
     phone: 'मोबाईल / व्हॉट्सॲप नंबर *',
     email: 'ईमेल आयडी (वैकल्पिक)',
+    pincode: 'पिनकोड (6 अंक)',
+    locality: 'परिसर / भाग',
+    city: 'शहर / जिल्हा',
+    state: 'राज्य',
     addPerson: 'अतिरिक्त व्यक्ती जोडा',
     price: 'किंमत',
     gst: 'जीएसटी',
@@ -90,7 +112,9 @@ const translations = {
     person: 'व्यक्ती',
     sameAsPrimary: 'मुख्य नंबर प्रमाणे',
     orderIdLabel: 'ऑर्डर आयडी',
-    supportContact: 'अधिक माहितीसाठी संपर्क करा:'
+    supportContact: 'अधिक माहितीसाठी संपर्क करा:',
+    devoteesBooked: 'श्रद्धळूंची बुकिंग पूर्ण झाली',
+    limitedSlots: '⚡ फक्त मर्यादित वैदिक जागा शिल्लक!'
   },
   gu: {
     bookNow: 'અત્યારે જ બુક કરો',
@@ -101,6 +125,10 @@ const translations = {
     dob: 'જન્મ તારીખ (વૈકલ્પિક)',
     phone: 'મોબાઇલ / વોટ્સએપ નંબર *',
     email: 'ઈમેલ આઈડી (વૈકલ્પિક)',
+    pincode: 'પિનકોડ (6 અંક)',
+    locality: 'વિસ્તાર / સોસાયટી',
+    city: 'શહેર / જિલ્લો',
+    state: 'રાજ્ય',
     addPerson: 'વધારાની વ્યક્તિ ઉમેરો',
     price: 'કિંમત',
     gst: 'જીએસટી',
@@ -127,6 +155,18 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   const [partnerName, setPartnerName] = useState('')
   const [confirmedOrderId, setConfirmedOrderId] = useState('')
   const [gpsLocation, setGpsLocation] = useState<string | null>(null)
+  const [liveCounter, setLiveCounter] = useState<number>(offerLink.displayCounter || 10000)
+
+  const [realBookings, setRealBookings] = useState<{ name: string; city: string }[]>(offerLink.recentBookings || [])
+  const [activeBookingIdx, setActiveBookingIdx] = useState(0)
+
+  useEffect(() => {
+    if (realBookings.length <= 1) return
+    const timer = setInterval(() => {
+      setActiveBookingIdx(prev => (prev + 1) % realBookings.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [realBookings.length])
 
   const [devotees, setDevotees] = useState<Devotee[]>([
     { name: '', gotra: '', dob: '', phone: '', email: '' }
@@ -372,6 +412,11 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             setConfirmedOrderId(orderId)
             setSuccess(true)
             setIsOpen(false)
+            setLiveCounter(prev => prev + 1)
+            if (devotees[0]?.name) {
+              const newDevoteeCity = [devotees[0].locality, devotees[0].city, devotees[0].state].filter(Boolean).join(', ') || 'भारत'
+              setRealBookings(prev => [{ name: devotees[0].name, city: newDevoteeCity }, ...prev])
+            }
           } catch (err: any) {
             setError(err.message)
           } finally {
@@ -413,6 +458,47 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
 
   return (
     <>
+      {/* Floating Side Social Proof Toast (Positioned below main image, floating on right side) */}
+      {liveCounter !== undefined && (
+        <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 z-[999] max-w-[280px] sm:max-w-xs transition-all duration-500 animate-in fade-in slide-in-from-right-4">
+          <div 
+            onClick={() => setIsOpen(true)}
+            className="bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-2xl border-2 border-[#FF671F]/40 flex flex-col gap-1.5 cursor-pointer hover:scale-105 transition-all group"
+          >
+            {/* Top row: Live counter badge */}
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span className="text-[11px] font-black text-slate-800 tracking-tight flex items-center gap-1">
+                  <span>🚩</span> <span className="text-[#FF671F] font-black">{liveCounter.toLocaleString('en-IN')}+</span> {t.devoteesBooked}
+                </span>
+              </div>
+              <span className="text-[9px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full animate-pulse">
+                LIVE
+              </span>
+            </div>
+
+            {/* Bottom row: Rotating Real Booked Devotee Name & City */}
+            {realBookings.length > 0 && realBookings[activeBookingIdx] && (
+              <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-xs">
+                <span className="text-base flex-shrink-0 animate-bounce">🪔</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-bold text-slate-700 truncate">
+                    <span className="font-black text-slate-900">{realBookings[activeBookingIdx].name}</span> {realBookings[activeBookingIdx].city ? `(${realBookings[activeBookingIdx].city})` : ''}
+                  </span>
+                  <span className="text-[9px] font-extrabold text-emerald-600 flex items-center gap-0.5">
+                    <span>✓</span> {t.justBooked || 'ने अभी सेवा बुक की!'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 1. Permanent, Beautiful Sticky Footer "Book Now" Button */}
       <div 
         suppressHydrationWarning

@@ -26,13 +26,18 @@ export async function GET(req: Request) {
     ])
 
     const formattedLinkOrders = linkOrders.map(l => {
-      const primaryDevotee = l.devotees.find(d => d.isPrimary) || l.devotees[0]
+      const primaryDevotee = l.devotees.find(d => d.isPrimary) || l.devotees[0] || {}
       return {
         id: l.id,
         isOfferLinkOrder: true,
         name: primaryDevotee?.name || 'Devotee',
         email: primaryDevotee?.email || null,
         phone: primaryDevotee?.phone || null,
+        pincode: primaryDevotee?.pincode || null,
+        locality: primaryDevotee?.locality || null,
+        city: primaryDevotee?.city || null,
+        state: primaryDevotee?.state || null,
+        devotees: l.devotees,
         offer: {
           id: l.offerLink.id,
           title: l.offerLink.title

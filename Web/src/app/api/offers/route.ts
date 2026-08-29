@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     await requireUser()
 
     const body = await req.json()
-    const { slug, title, salePrice, offerPrice, gstIncluded, gstRate, htmlContent, supportPhone } = body
+    const { slug, title, salePrice, offerPrice, gstIncluded, gstRate, htmlContent, supportPhone, initialCounter } = body
 
     if (!slug || !title || salePrice === undefined || offerPrice === undefined || !htmlContent) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
@@ -49,7 +49,8 @@ export async function POST(req: Request) {
         gstIncluded: Boolean(gstIncluded),
         gstRate: gstRate !== undefined ? Number(gstRate) : 18.00,
         htmlContent,
-        supportPhone: supportPhone ? supportPhone.trim() : null
+        supportPhone: supportPhone ? supportPhone.trim() : null,
+        initialCounter: initialCounter !== undefined ? Number(initialCounter) : 10000
       }
     })
 

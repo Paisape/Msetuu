@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: Params) {
     const { id } = await params
 
     const body = await req.json()
-    const { slug, title, salePrice, offerPrice, gstIncluded, gstRate, htmlContent, isActive, supportPhone } = body
+    const { slug, title, salePrice, offerPrice, gstIncluded, gstRate, htmlContent, isActive, supportPhone, initialCounter } = body
 
     const existing = await prisma.offerLink.findUnique({ where: { id } })
     if (!existing) {
@@ -40,6 +40,7 @@ export async function PUT(req: Request, { params }: Params) {
     if (htmlContent !== undefined) data.htmlContent = htmlContent
     if (isActive !== undefined) data.isActive = Boolean(isActive)
     if (supportPhone !== undefined) data.supportPhone = supportPhone ? supportPhone.trim() : null
+    if (initialCounter !== undefined) data.initialCounter = Number(initialCounter)
 
     const updated = await prisma.offerLink.update({
       where: { id },

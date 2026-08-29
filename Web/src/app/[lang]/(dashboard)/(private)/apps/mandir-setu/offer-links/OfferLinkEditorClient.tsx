@@ -35,6 +35,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
   const [htmlContent, setHtmlContent] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [supportPhone, setSupportPhone] = useState('')
+  const [initialCounter, setInitialCounter] = useState('10000')
 
   // Autogenerate slug from title on creation
   const handleTitleChange = (val: string) => {
@@ -66,6 +67,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         setHtmlContent(offer.htmlContent)
         setIsActive(offer.isActive)
         setSupportPhone(offer.supportPhone || '')
+        setInitialCounter((offer.initialCounter ?? 10000).toString())
       } catch (err: any) {
         setErrorMsg(err.message || 'Error loading offer link.')
       } finally {
@@ -91,7 +93,8 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         gstRate: Number(gstRate),
         htmlContent,
         isActive,
-        supportPhone: supportPhone.trim() || null
+        supportPhone: supportPhone.trim() || null,
+        initialCounter: Number(initialCounter || 0)
       }
 
       const url = editId ? `/api/offers/${editId}` : '/api/offers'
@@ -182,6 +185,15 @@ export default function OfferLinkEditorClient({ editId }: Props) {
             fullWidth
             placeholder="e.g. +91 8976876305"
             helperText="Displays a custom 'For details contact' number at the bottom of this campaign checkout bar."
+          />
+
+          <TextField
+            label='Start Counter Offset (Default e.g. 10000)'
+            type='number'
+            value={initialCounter}
+            onChange={(e) => setInitialCounter(e.target.value)}
+            fullWidth
+            helperText='Base counter starting number. Total shown on campaign page = Start Counter + Completed Orders.'
           />
 
           <div className='flex items-center gap-4'>
