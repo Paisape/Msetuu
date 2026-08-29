@@ -35,11 +35,13 @@ export async function GET(req: Request) {
     ])
 
     const totalRevenue = successfulOrders.reduce((sum: number, o: { amount: any }) => sum + Number(o.amount), 0)
+    const totalDevoteesCount = successfulOrders.reduce((sum: number, o: { devotees: any[] }) => sum + (o.devotees?.length || 1), 0)
     const conversionRate = viewsCount > 0 ? (successfulOrders.length / viewsCount) * 100 : 0
 
     const stats = {
       viewsCount,
       bookingsCount: successfulOrders.length,
+      totalDevoteesCount,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
       totalRevenue: parseFloat(totalRevenue.toFixed(2))
     }

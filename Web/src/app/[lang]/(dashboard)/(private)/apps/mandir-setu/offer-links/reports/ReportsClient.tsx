@@ -268,25 +268,30 @@ export default function ReportsClient() {
 
       {/* KPI Stats Grid */}
       {stats && (
-        <div className='grid grid-cols-1 sm:grid-cols-4 gap-6'>
-          <Card className='p-5 border border-slate-100 shadow-sm text-center'>
-            <Typography variant='body2' className='text-slate-400 font-bold tracking-wider mb-1'>PAGE VIEWS</Typography>
-            <Typography variant='h3' className='font-black text-slate-700'>{stats.viewsCount}</Typography>
+        <div className='grid grid-cols-1 sm:grid-cols-5 gap-4'>
+          <Card className='p-4 border border-slate-100 shadow-sm text-center'>
+            <Typography variant='caption' className='text-slate-400 font-bold tracking-wider mb-1 block'>PAGE VIEWS</Typography>
+            <Typography variant='h4' className='font-black text-slate-700'>{stats.viewsCount}</Typography>
           </Card>
 
-          <Card className='p-5 border border-slate-100 shadow-sm text-center'>
-            <Typography variant='body2' className='text-slate-400 font-bold tracking-wider mb-1'>CONFIRMED BOOKINGS</Typography>
-            <Typography variant='h3' className='font-black text-emerald-700'>{stats.bookingsCount}</Typography>
+          <Card className='p-4 border border-slate-100 shadow-sm text-center'>
+            <Typography variant='caption' className='text-slate-400 font-bold tracking-wider mb-1 block'>TOTAL ORDERS</Typography>
+            <Typography variant='h4' className='font-black text-slate-800'>{stats.bookingsCount}</Typography>
           </Card>
 
-          <Card className='p-5 border border-slate-100 shadow-sm text-center'>
-            <Typography variant='body2' className='text-slate-400 font-bold tracking-wider mb-1'>CONVERSION RATE</Typography>
-            <Typography variant='h3' className='font-black text-blue-700'>{stats.conversionRate}%</Typography>
+          <Card className='p-4 border border-emerald-200 bg-emerald-50/40 shadow-sm text-center'>
+            <Typography variant='caption' className='text-emerald-700 font-bold tracking-wider mb-1 block'>DEVOTEES BOOKED</Typography>
+            <Typography variant='h4' className='font-black text-emerald-700'>{stats.totalDevoteesCount || stats.bookingsCount}</Typography>
           </Card>
 
-          <Card className='p-5 border border-slate-100 shadow-sm text-center'>
-            <Typography variant='body2' className='text-slate-400 font-bold tracking-wider mb-1'>TOTAL REVENUE</Typography>
-            <Typography variant='h3' className='font-black text-slate-800'>₹{stats.totalRevenue.toFixed(2)}</Typography>
+          <Card className='p-4 border border-slate-100 shadow-sm text-center'>
+            <Typography variant='caption' className='text-slate-400 font-bold tracking-wider mb-1 block'>CONVERSION RATE</Typography>
+            <Typography variant='h4' className='font-black text-blue-700'>{stats.conversionRate}%</Typography>
+          </Card>
+
+          <Card className='p-4 border border-slate-100 shadow-sm text-center'>
+            <Typography variant='caption' className='text-slate-400 font-bold tracking-wider mb-1 block'>TOTAL REVENUE</Typography>
+            <Typography variant='h4' className='font-black text-slate-900'>₹{stats.totalRevenue.toFixed(2)}</Typography>
           </Card>
         </div>
       )}
