@@ -178,6 +178,7 @@ export async function POST(req: Request) {
         ipAddress: ip,
         ipLocation: ipLocation || null,
         gpsLocation: gpsLocation || null,
+        userAgent: req.headers.get('user-agent') || null,
         devotees: {
           create: formattedDevotees
         }

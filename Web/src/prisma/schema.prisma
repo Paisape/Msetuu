@@ -1155,6 +1155,7 @@ model OfferLinkOrder {
   ipAddress           String?
   ipLocation          String?
   gpsLocation         String?
+  userAgent           String?            // User Agent (Device, Browser, OS Telemetry)
   createdAt           DateTime           @default(now())
   devotees            OfferLinkDevotee[]
 }

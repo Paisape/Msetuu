@@ -39,8 +39,28 @@ const formatValue = (key: string, value: unknown): string => {
   }
 
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'number') return value.toLocaleString('en-IN')
 
   return String(value)
+}
+
+const parseUserAgent = (ua?: string) => {
+  if (!ua) return 'Desktop / Browser'
+  let os = 'Desktop'
+  let browser = 'Browser'
+
+  if (ua.includes('Android')) os = 'Android'
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS'
+  else if (ua.includes('Windows')) os = 'Windows'
+  else if (ua.includes('Macintosh')) os = 'macOS'
+  else if (ua.includes('Linux')) os = 'Linux'
+
+  if (ua.includes('Chrome')) browser = 'Chrome'
+  else if (ua.includes('Safari')) browser = 'Safari'
+  else if (ua.includes('Firefox')) browser = 'Firefox'
+  else if (ua.includes('Edg')) browser = 'Edge'
+
+  return `${os} (${browser})`
 }
 
 const STATUS_COLORS: Record<string, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
@@ -453,8 +473,55 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
               {order.ipAddress && (
                 <div className='flex justify-between items-center'>
                   <Typography variant='body2' className='text-textSecondary font-medium'>Customer IP</Typography>
-                  <Typography variant='caption' className='font-mono'>
+                  <Typography variant='caption' className='font-mono font-bold'>
                     {order.ipAddress}
+                  </Typography>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Telemetry & Marketing Metadata Card */}
+          <Card className='mb-6 border border-slate-100 shadow-sm'>
+            <CardHeader title='📡 Devotee Telemetry & Device Metadata' subheader='Device, Browser, IP & Geolocation info for marketing next offers' />
+            <CardContent className='flex flex-col gap-3'>
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>Device & OS</Typography>
+                <Typography variant='body2' className='font-bold text-slate-800 dark:text-slate-200' title={order.userAgent || ''}>
+                  {parseUserAgent(order.userAgent)}
+                </Typography>
+              </div>
+
+              {order.userAgent && (
+                <div className='pb-2 border-b border-slate-100 dark:border-slate-800'>
+                  <Typography variant='caption' className='text-slate-400 block mb-1 font-semibold'>User-Agent Browser String</Typography>
+                  <Typography variant='caption' className='font-mono text-[11px] text-slate-600 dark:text-slate-400 break-all block bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700'>
+                    {order.userAgent}
+                  </Typography>
+                </div>
+              )}
+
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>User IP Address</Typography>
+                <Typography variant='body2' className='font-mono font-bold text-slate-700 dark:text-slate-300'>
+                  {order.ipAddress || '—'}
+                </Typography>
+              </div>
+
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800'>
+                <Typography variant='body2' className='text-textSecondary font-medium'>IP Geolocation</Typography>
+                <Typography variant='body2' className='font-bold text-slate-700 dark:text-slate-300'>
+                  {order.ipLocation || '—'}
+                </Typography>
+              </div>
+
+              {order.gpsLocation && (
+                <div className='flex justify-between items-center'>
+                  <Typography variant='body2' className='text-textSecondary font-medium'>GPS Location</Typography>
+                  <Typography variant='body2' className='font-mono text-blue-600 font-bold'>
+                    <a href={`https://www.google.com/maps?q=${order.gpsLocation}`} target='_blank' rel='noreferrer' className='hover:underline flex items-center gap-1'>
+                      📍 {order.gpsLocation} (Maps ↗)
+                    </a>
                   </Typography>
                 </div>
               )}
