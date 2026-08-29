@@ -398,8 +398,10 @@ export default function ReportsClient() {
             <TableHead className='bg-slate-50'>
               <TableRow>
                 <TableCell className='font-bold' style={{ minWidth: 50 }}>S.No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 130 }}>Order ID</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Date</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 200 }}>Devotees / Booking Details</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 160 }}>Main Devotee</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 220 }}>All Devotees</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 110 }}>Mobile No</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Gotra</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 95 }}>Referred By</TableCell>
@@ -411,7 +413,7 @@ export default function ReportsClient() {
             <TableBody>
               {slicedRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className='text-center py-8 text-slate-400'>
+                  <TableCell colSpan={11} className='text-center py-8 text-slate-400'>
                     No matching booking orders found.
                   </TableCell>
                 </TableRow>
@@ -419,29 +421,29 @@ export default function ReportsClient() {
                 slicedRows.map((row) => (
                   <TableRow key={row.id} className='hover:bg-slate-50/50'>
                     <TableCell className='text-slate-500 font-bold'>{row.sNo}</TableCell>
+                    <TableCell className='font-mono text-xs font-bold text-slate-700' title={row.id}>
+                      {row.id.length > 12 ? `${row.id.slice(0, 8)}...` : row.id}
+                    </TableCell>
                     <TableCell className='text-slate-500'>{row.date}</TableCell>
-                    <TableCell className='font-semibold text-slate-700 cursor-pointer' onClick={() => handleOpenOrderDetails(row.parentOrder)}>
-                      <div className='flex items-center gap-1.5 flex-wrap'>
-                        <span className='hover:underline hover:text-[#FF671F] font-bold text-slate-800'>
-                          {row.primaryName}
-                        </span>
-                        {row.primaryNameLocal && (
-                          <span className='text-xs text-slate-400'>({row.primaryNameLocal})</span>
-                        )}
+                    <TableCell className='font-bold text-slate-800 cursor-pointer' onClick={() => handleOpenOrderDetails(row.parentOrder)}>
+                      <span className='hover:underline hover:text-[#FF671F]'>
+                        {row.primaryName}
+                      </span>
+                      {row.primaryNameLocal && (
+                        <span className='block text-xs font-normal text-slate-400'>({row.primaryNameLocal})</span>
+                      )}
+                    </TableCell>
+                    <TableCell className='text-slate-600 text-xs font-medium'>
+                      <div className='max-w-[240px] leading-relaxed'>
+                        {row.devoteesSummary}
                         {row.devoteeCount > 1 && (
                           <Chip 
-                            label={`+${row.devoteeCount - 1} Devotee${row.devoteeCount - 1 > 1 ? 's' : ''}`}
+                            label={`${row.devoteeCount} Total`}
                             size='small'
-                            className='bg-orange-100 text-[#FF671F] font-bold h-5 text-[10px]'
-                            title={row.devoteesSummary}
+                            className='ml-1.5 bg-orange-100 text-[#FF671F] font-bold h-4 text-[9px]'
                           />
                         )}
                       </div>
-                      {row.devoteeCount > 1 && (
-                        <span className='block text-xs font-normal text-slate-500 mt-0.5 truncate max-w-[280px]' title={row.devoteesSummary}>
-                          Devotees: {row.devoteesSummary}
-                        </span>
-                      )}
                     </TableCell>
                     <TableCell className='text-slate-600 font-medium'>{row.mobile}</TableCell>
                     <TableCell className='text-slate-600'>{row.gotra}</TableCell>
