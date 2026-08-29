@@ -150,6 +150,7 @@ export default function ReportsClient() {
       devoteesSummary: devoteesSummary || primaryDevotee?.name || 'Devotee',
       devotees: devotees,
       mobile: primaryDevotee?.phone || devotees[0]?.phone || '—',
+      email: primaryDevotee?.email || devotees.find((d: any) => d.email)?.email || '—',
       gotra: primaryDevotee?.gotra || '—',
       dob: primaryDevotee?.dob || '—',
       referredBy: order.referralCode || '—',
@@ -163,13 +164,14 @@ export default function ReportsClient() {
     }
   })
 
-  // Order Filtering (Search by Name, Mobile, Gotra, Referral Code, Payment Status, or Dates)
+  // Order Filtering (Search by Name, Mobile, Email, Gotra, Referral Code, Payment Status, or Dates)
   const filteredOrders = orderRows.filter(row => {
     const q = searchTerm.trim().toLowerCase()
     const matchesSearch = !q || 
       (row.primaryName && row.primaryName.toLowerCase().includes(q)) || 
       (row.devoteesSummary && row.devoteesSummary.toLowerCase().includes(q)) || 
       (row.mobile && row.mobile.includes(q)) || 
+      (row.email && row.email.toLowerCase().includes(q)) ||
       (row.gotra && row.gotra.toLowerCase().includes(q)) || 
       (row.paymentMethod && row.paymentMethod.toLowerCase().includes(q)) ||
       (row.referredBy && row.referredBy.toLowerCase().includes(q))
@@ -474,6 +476,7 @@ export default function ReportsClient() {
                 <TableCell className='font-bold' style={{ minWidth: 160 }}>Main Devotee</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 220 }}>All Devotees</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 110 }}>Mobile No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 140 }}>Email ID</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 90 }}>Gotra</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 95 }}>Referred By</TableCell>
                 <TableCell className='font-bold' style={{ minWidth: 100 }}>Amount Paid</TableCell>
@@ -484,7 +487,7 @@ export default function ReportsClient() {
             <TableBody>
               {slicedRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className='text-center py-8 text-slate-400'>
+                  <TableCell colSpan={14} className='text-center py-8 text-slate-400'>
                     No matching booking orders found.
                   </TableCell>
                 </TableRow>
@@ -542,6 +545,13 @@ export default function ReportsClient() {
                       </div>
                     </TableCell>
                     <TableCell className='text-slate-600 font-medium'>{row.mobile}</TableCell>
+                    <TableCell className='text-slate-600 text-xs font-mono'>
+                      {row.email && row.email !== '—' ? (
+                        <span className='text-slate-700 font-medium'>{row.email}</span>
+                      ) : (
+                        <span className='text-slate-300'>—</span>
+                      )}
+                    </TableCell>
                     <TableCell className='text-slate-600'>{row.gotra}</TableCell>
                     <TableCell>
                       {row.referredBy !== '—' ? (

@@ -327,10 +327,60 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
 
   const t = translations[lang]
 
+  const [pincodeLoading, setPincodeLoading] = useState(false)
+  const [pincodeError, setPincodeError] = useState(false)
+
   const handleFieldChange = (index: number, field: keyof Devotee, value: string) => {
-    const updated = [...devotees]
-    updated[index][field] = value
-    setDevotees(updated)
+    setDevotees(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handlePincodeChange = async (index: number, pin: string) => {
+    const cleanPin = pin.replace(/\D/g, '').slice(0, 6)
+    setPincodeError(false)
+
+    setDevotees(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], pincode: cleanPin }
+      return updated
+    })
+
+    if (cleanPin.length === 6) {
+      setPincodeLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`)
+        const data = await res.json()
+        if (data && data[0]?.Status === 'Success' && Array.isArray(data[0]?.PostOffice) && data[0].PostOffice.length > 0) {
+          const po = data[0].PostOffice[0]
+          const newDistrict = po.District || po.Division || ''
+          const newState = po.State || ''
+          const newLocality = po.Name || ''
+
+          setDevotees(prev => {
+            const updated = [...prev]
+            updated[index] = {
+              ...updated[index],
+              pincode: cleanPin,
+              city: newDistrict,
+              state: newState,
+              locality: newLocality
+            }
+            return updated
+          })
+          setPincodeError(false)
+        } else {
+          setPincodeError(true)
+        }
+      } catch (err) {
+        console.warn('Pincode lookup error:', err)
+        setPincodeError(true)
+      } finally {
+        setPincodeLoading(false)
+      }
+    }
   }
 
   const addPerson = () => {
@@ -669,16 +719,90 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                     )}
 
                     {index === 0 && (
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.email}</label>
-                        <input
-                          type="email"
-                          value={devotee.email}
-                          onChange={(e) => handleFieldChange(index, 'email', e.target.value)}
-                          placeholder="e.g. name@example.com"
-                          className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white transition-all shadow-sm"
-                        />
-                      </div>
+                      <>
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.email}</label>
+                          <input
+                            type="email"
+                            value={devotee.email}
+                            onChange={(e) => handleFieldChange(index, 'email', e.target.value)}
+                            placeholder="e.g. name@example.com"
+                            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white transition-all shadow-sm"
+                          />
+                        </div>
+
+                        {/* Address & Pincode Auto-lookup Section */}
+                        <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-orange-50/40 p-3.5 rounded-xl border border-orange-100/80">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                              <span>📮 {t.pincode || 'पिनकोड'}</span>
+                              {pincodeLoading && <span className="text-[10px] text-[#FF671F] font-bold animate-pulse">खोज रहे हैं...</span>}
+                              {pincodeError && <span className="text-[10px] text-red-500 font-bold">अमान्य पिनकोड</span>}
+                              {!pincodeLoading && !pincodeError && devotee.pincode && devotee.pincode.length === 6 && (
+                                <span className="text-[10px] text-emerald-600 font-bold">✓ मान्य</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              value={devotee.pincode || ''}
+                              onChange={(e) => handlePincodeChange(index, e.target.value)}
+                              placeholder="e.g. 395007"
+                              className={`w-full px-3 py-2 border rounded-lg text-slate-700 text-sm font-mono focus:outline-none bg-white shadow-sm transition-all ${
+                                pincodeError ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-slate-200 focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F]'
+                              }`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                              <span>🏘️ {t.locality || 'इलाका / क्षेत्र'}</span>
+                              {!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) && (
+                                <span className='text-[10px] text-slate-400 font-medium'>🔒 लॉक</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              disabled={!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)}
+                              value={devotee.locality || ''}
+                              onChange={(e) => handleFieldChange(index, 'locality', e.target.value)}
+                              placeholder={Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) ? "e.g. Ring Road" : "पिनकोड से स्वतः भरेगा"}
+                              className={`w-full px-3 py-2 border rounded-lg text-sm transition-all ${
+                                Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)
+                                  ? 'border-slate-200 text-slate-700 focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm'
+                                  : 'border-slate-200/80 text-slate-400 bg-slate-100/80 cursor-not-allowed select-none'
+                              }`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                              <span>🏙️ {t.city || 'शहर / राज्य'}</span>
+                              {!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) && (
+                                <span className='text-[10px] text-slate-400 font-medium'>🔒 लॉक</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              disabled={!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)}
+                              value={devotee.city ? (devotee.state ? `${devotee.city}, ${devotee.state}` : devotee.city) : (devotee.state || '')}
+                              onChange={(e) => {
+                                const parts = e.target.value.split(',')
+                                const updated = [...devotees]
+                                updated[index].city = parts[0]?.trim() || ''
+                                if (parts[1]) updated[index].state = parts[1].trim()
+                                setDevotees(updated)
+                              }}
+                              placeholder={Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) ? "e.g. Surat, Gujarat" : "पिनकोड से स्वतः भरेगा"}
+                              className={`w-full px-3 py-2 border rounded-lg text-sm transition-all ${
+                                Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)
+                                  ? 'border-slate-200 text-slate-700 focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm'
+                                  : 'border-slate-200/80 text-slate-400 bg-slate-100/80 cursor-not-allowed select-none'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

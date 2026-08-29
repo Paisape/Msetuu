@@ -56,6 +56,7 @@ const EMAIL_FIELDS: FieldMeta[] = [
 // automatic new-listing/welcome/order-accepted/video-uploaded triggers) — kept independent of the
 // main Email tab above. Falls back to that main account until this is explicitly configured.
 const NOTIFICATION_EMAIL_FIELDS: FieldMeta[] = [
+  { key: 'ADMIN_EMAIL', label: 'Admin Notification Recipient Email(s) (comma-separated)', secret: false, placeholder: 'admin1@mandirsetuu.com, admin2@gmail.com' },
   { key: 'SMTP_HOST', label: 'SMTP Host', secret: false, placeholder: 'smtp.zoho.in' },
   { key: 'SMTP_PORT', label: 'SMTP Port', secret: false, placeholder: '465' },
   { key: 'SMTP_SECURE', label: 'Use SSL (true / false)', secret: false, placeholder: 'true' },

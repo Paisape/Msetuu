@@ -27,20 +27,17 @@ type SmtpConfig = {
 async function resolveSmtpConfig(category: SmtpCategory = 'EMAIL'): Promise<SmtpConfig | null> {
   const dbSettings = await getSettingsForCategory(category).catch(() => ({}) as Record<string, string>)
 
-  const host = dbSettings.SMTP_HOST || (category === 'EMAIL' ? process.env.SMTP_HOST : undefined)
-  const port = Number(dbSettings.SMTP_PORT || (category === 'EMAIL' ? process.env.SMTP_PORT : undefined) || 465)
-  const secureRaw = dbSettings.SMTP_SECURE ?? (category === 'EMAIL' ? process.env.SMTP_SECURE : undefined)
+  const host = dbSettings.SMTP_HOST || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_HOST : process.env.SMTP_HOST)
+  const port = Number(dbSettings.SMTP_PORT || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_PORT : process.env.SMTP_PORT) || 465)
+  const secureRaw = dbSettings.SMTP_SECURE ?? (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_SECURE : process.env.SMTP_SECURE)
   const secure = secureRaw !== 'false'
-  const user = dbSettings.SMTP_USER || (category === 'EMAIL' ? process.env.SMTP_USER : undefined)
-  const pass = dbSettings.SMTP_PASSWORD || (category === 'EMAIL' ? process.env.SMTP_PASSWORD : undefined)
-  const fromName = dbSettings.SMTP_FROM_NAME || (category === 'EMAIL' ? process.env.SMTP_FROM_NAME : undefined) || 'Mandirsetuu'
-  const fromEmail = dbSettings.SMTP_FROM_EMAIL || (category === 'EMAIL' ? process.env.SMTP_FROM_EMAIL : undefined) || user
+  const user = dbSettings.SMTP_USER || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_USER : process.env.SMTP_USER)
+  const pass = dbSettings.SMTP_PASSWORD || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_PASSWORD : process.env.SMTP_PASSWORD)
+  const fromName = dbSettings.SMTP_FROM_NAME || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_FROM_NAME : process.env.SMTP_FROM_NAME) || 'Mandirsetuu Alerts'
+  const fromEmail = dbSettings.SMTP_FROM_EMAIL || (category === 'NOTIFICATION_EMAIL' ? process.env.NOTIFICATION_SMTP_FROM_EMAIL : process.env.SMTP_FROM_EMAIL) || user
 
   if (!host || !user || !pass || !fromEmail) {
-    // NOTIFICATION_EMAIL isn't configured yet — fall back to the main EMAIL account rather than
-    // silently dropping notifications.
-    if (category === 'NOTIFICATION_EMAIL') return resolveSmtpConfig('EMAIL')
-
+    // Strictly decoupled: if NOTIFICATION_EMAIL is unconfigured, do NOT use main transactional EMAIL account
     return null
   }
 

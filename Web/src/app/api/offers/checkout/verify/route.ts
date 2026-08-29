@@ -6,6 +6,7 @@ import { createInvoiceForOrder } from '@/libs/invoice'
 import { paymentSuccessEmail, adminOfferBookingSuccessEmail } from '@/libs/emailTemplates'
 import { sendEmail } from '@/libs/email'
 import { sendOrderConfirmationSms } from '@/libs/sms'
+import { getSettingsForCategory } from '@/libs/appSettings'
 
 // POST /api/offers/checkout/verify - Verify payment transaction signature and amount integrity
 export async function POST(req: Request) {
@@ -144,8 +145,10 @@ export async function POST(req: Request) {
             createdAt: dbOrder.createdAt
           })
 
-          // Support multiple comma/semicolon/space-separated emails from ADMIN_EMAIL (exclude SMTP_USER)
-          const customAdminEmails = (process.env.ADMIN_EMAIL || '')
+          // Support multiple comma/semicolon/space-separated emails from Admin Dashboard DB settings or ADMIN_EMAIL .env
+          const dbNotificationSettings = await getSettingsForCategory('NOTIFICATION_EMAIL').catch(() => ({}) as Record<string, string>)
+          const adminEmailSetting = dbNotificationSettings.ADMIN_EMAIL || process.env.ADMIN_EMAIL || ''
+          const customAdminEmails = adminEmailSetting
             .split(/[,;\s]+/)
             .map(e => e.trim())
             .filter(e => e.includes('@'))
@@ -157,7 +160,8 @@ export async function POST(req: Request) {
             await sendEmail({
               to: adminEmail,
               subject: adminEmailData.subject,
-              html: adminEmailData.html
+              html: adminEmailData.html,
+              category: 'NOTIFICATION_EMAIL'
             }).catch(err => console.error(`[Admin Booking Email] Failed sending to ${adminEmail}:`, err))
           }
         } catch (adminMailErr) {
