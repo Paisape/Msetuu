@@ -53,9 +53,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required checkout information.' }, { status: 400 })
     }
 
-    // Resolve client IP Address from proxy headers
+    // Resolve real client IP Address from Cloudflare, reverse proxy, or x-forwarded-for headers
+    const cfIp = req.headers.get('cf-connecting-ip')
+    const realIp = req.headers.get('x-real-ip')
     const forwarded = req.headers.get('x-forwarded-for')
-    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1'
+    
+    let ip = '127.0.0.1'
+    if (cfIp && cfIp.trim()) {
+      ip = cfIp.trim()
+    } else if (realIp && realIp.trim()) {
+      ip = realIp.trim()
+    } else if (forwarded && forwarded.trim()) {
+      ip = forwarded.split(',')[0].trim()
+    }
 
     // Retrieve country code from Cloudflare or Vercel edge headers
     const edgeCountry = req.headers.get('cf-ipcountry') || req.headers.get('x-vercel-ip-country') || 'Unknown'

@@ -389,21 +389,21 @@ export default function ReportsClient() {
           />
         </Box>
 
-        <TableContainer className='border rounded-lg overflow-hidden max-h-[550px] overflow-y-auto'>
-          <Table stickyHeader>
+        <TableContainer className='border rounded-lg overflow-x-auto overflow-y-auto max-h-[550px] shadow-sm'>
+          <Table stickyHeader size='small'>
             <TableHead className='bg-slate-50'>
               <TableRow>
-                <TableCell className='font-bold' style={{ minWidth: 60 }}>S.No</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 100 }}>Date</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 160 }}>Devotee Name</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 110 }}>Mobile No</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 100 }}>Gotra</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 110 }}>DOB</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 120 }}>WhatsApp No</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 100 }}>Referred By</TableCell>
-                <TableCell className='font-bold' style={{ minWidth: 110 }}>Amount Paid</TableCell>
-                <TableCell className='font-bold text-center' style={{ minWidth: 100 }}>Reconciled</TableCell>
-                <TableCell className='font-bold text-right' style={{ minWidth: 80 }}>Action</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 50 }}>S.No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 90 }}>Date</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 150 }}>Devotee Name</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 100 }}>Mobile No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 90 }}>Gotra</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 90 }}>DOB</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 110 }}>WhatsApp No</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 95 }}>Referred By</TableCell>
+                <TableCell className='font-bold' style={{ minWidth: 100 }}>Amount Paid</TableCell>
+                <TableCell className='font-bold text-center' style={{ minWidth: 90 }}>Reconciled</TableCell>
+                <TableCell className='font-bold text-right sticky right-0 bg-slate-100 z-20 shadow-[-4px_0_6px_rgba(0,0,0,0.06)]' style={{ minWidth: 85 }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -445,14 +445,14 @@ export default function ReportsClient() {
                         color={row.reconciledStatus.startsWith('RECONCILED') ? 'success' : 'default'}
                       />
                     </TableCell>
-                    <TableCell className='text-right'>
+                    <TableCell className='text-right sticky right-0 bg-white z-10 shadow-[-4px_0_6px_rgba(0,0,0,0.06)]'>
                       <Button 
                         size='small' 
-                        variant='outlined'
+                        variant='contained'
                         onClick={() => handleOpenOrderDetails(row.parentOrder)}
                         startIcon={<i className='tabler-eye text-sm' />}
-                        style={{ color: '#FF671F', borderColor: '#FF671F' }}
-                        className='font-medium text-xs px-2 py-0.5 min-w-0'
+                        style={{ backgroundColor: '#FF671F', color: '#ffffff' }}
+                        className='font-bold text-xs px-2.5 py-1 min-w-0 shadow-sm'
                       >
                         View
                       </Button>

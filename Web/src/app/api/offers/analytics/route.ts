@@ -17,7 +17,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Offer Link not found.' }, { status: 404 })
     }
 
-    const ipAddress = req.headers.get('x-forwarded-for') || '127.0.0.1'
+    const cfIp = req.headers.get('cf-connecting-ip')
+    const realIp = req.headers.get('x-real-ip')
+    const forwarded = req.headers.get('x-forwarded-for')
+    const ipAddress = (cfIp || realIp || (forwarded ? forwarded.split(',')[0] : '127.0.0.1')).trim()
     const userAgent = req.headers.get('user-agent') || 'Unknown'
 
     const visit = await prisma.offerLinkAnalytics.create({

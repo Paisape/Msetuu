@@ -14,6 +14,10 @@ import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 
 import { ORDER_MODULES, ORDER_TYPE_MAP } from '../orderModules'
 
@@ -72,6 +76,7 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
   const [trail, setTrail] = useState<TrailEntry[]>([])
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -109,6 +114,25 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
     load()
   }, [load])
 
+  const handleStatusChange = async (newStatus: string) => {
+    setUpdatingStatus(true)
+    try {
+      const patchUrl = module === 'offer' ? `/api/offer/orders/${id}` : `/api/${module}/${id}`
+      const res = await fetch(patchUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to update order status.')
+      await load()
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error updating status.')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   if (!config) return <Typography className='p-6'>Unknown order module.</Typography>
 
   if (loading) {
@@ -142,9 +166,29 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
             Order {order.id}
           </Typography>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-3 flex-wrap'>
           <Chip label={order.status} color={STATUS_COLORS[order.status] || 'default'} />
           {order.paymentStatus && <Chip label={`Payment: ${order.paymentStatus}`} color={STATUS_COLORS[order.paymentStatus] || 'default'} variant='outlined' />}
+          
+          <FormControl size='small' className='min-w-[170px] bg-white'>
+            <InputLabel id='status-change-label'>Change Status</InputLabel>
+            <Select
+              labelId='status-change-label'
+              label='Change Status'
+              value={order.status || ''}
+              onChange={e => handleStatusChange(e.target.value)}
+              disabled={updatingStatus}
+            >
+              <MenuItem value='PENDING'>PENDING</MenuItem>
+              <MenuItem value='PROCESSING'>PROCESSING</MenuItem>
+              <MenuItem value='CONFIRMED'>CONFIRMED</MenuItem>
+              <MenuItem value='RECONCILED_AUTO'>RECONCILED AUTO</MenuItem>
+              <MenuItem value='RECONCILED_MANUAL'>RECONCILED MANUAL</MenuItem>
+              <MenuItem value='COMPLETED'>COMPLETED</MenuItem>
+              <MenuItem value='CANCELLED'>CANCELLED</MenuItem>
+            </Select>
+          </FormControl>
+
           {invoiceId && (
             <Button component={Link} href={`/apps/mandir-setu/accounts/invoices/${invoiceId}`} variant='outlined' size='small' startIcon={<i className='tabler-receipt' />}>
               View Invoice
