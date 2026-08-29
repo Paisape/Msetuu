@@ -70,18 +70,8 @@ const Logo = ({ color, isStatic = false }: { color?: CSSProperties['color']; isS
   }, [isHovered, layout, isBreakpointReached, isStatic])
 
   return (
-    <div className='flex items-center gap-2'>
-      <img src='/images/logo-mandirsetuu.png' alt='Mandirsetuu Logo' className='h-8 w-auto object-contain' />
-      <LogoText
-        color={color}
-        ref={logoTextRef}
-        isHovered={isStatic ? false : isHovered}
-        isCollapsed={isStatic ? false : layout === 'collapsed'}
-        transitionDuration={transitionDuration}
-        isBreakpointReached={isStatic ? true : isBreakpointReached}
-      >
-        {themeConfig.templateName}
-      </LogoText>
+    <div className='flex items-center'>
+      <img src='/images/logo-mandirsetuu.png' alt='Mandirsetuu Logo' className='h-9 w-auto object-contain' />
     </div>
   )
 }
