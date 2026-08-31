@@ -41,10 +41,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ path: st
         '.jpeg': 'image/jpeg',
         '.webp': 'image/webp',
         '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.cur': 'image/x-icon',
         '.mp4': 'video/mp4',
         '.webm': 'video/webm',
         '.pdf': 'application/pdf',
-        '.mp3': 'audio/mpeg'
+        '.mp3': 'audio/mpeg',
+        '.html': 'text/html; charset=utf-8',
+        '.htm': 'text/html; charset=utf-8',
+        '.js': 'application/javascript; charset=utf-8',
+        '.mjs': 'application/javascript; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.txt': 'text/plain; charset=utf-8',
+        '.xml': 'application/xml',
+        '.wasm': 'application/wasm',
+        '.glb': 'model/gltf-binary',
+        '.gltf': 'model/gltf+json'
       }
 
       if (mimeTypes[ext]) {

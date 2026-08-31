@@ -66,6 +66,17 @@ export default function VrHostingClient() {
   const [selectedQrItem, setSelectedQrItem] = useState<VrMediaItem | null>(null)
   const [copiedLink, setCopiedLink] = useState(false)
 
+  // 3D Tour ZIP Upload Modal State
+  const [openZipDialog, setOpenZipDialog] = useState(false)
+  const [zipTargetId, setZipTargetId] = useState<string>('')
+  const [zipFile, setZipFile] = useState<File | null>(null)
+  const [zipTitle, setZipTitle] = useState('')
+  const [zipSlug, setZipSlug] = useState('')
+  const [zipDescription, setZipDescription] = useState('')
+  const [uploadingZip, setUploadingZip] = useState(false)
+  const [zipSuccessMsg, setZipSuccessMsg] = useState<string | null>(null)
+  const [zipErrorMsg, setZipErrorMsg] = useState<string | null>(null)
+
   const loadItems = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -178,6 +189,63 @@ export default function VrHostingClient() {
     }
   }
 
+  const handleOpenReplaceZip = (item: VrMediaItem) => {
+    setZipTargetId(item.id)
+    setZipFile(null)
+    setZipTitle(item.title)
+    setZipSlug(item.slug)
+    setZipDescription(item.description || '')
+    setZipErrorMsg(null)
+    setZipSuccessMsg(null)
+    setOpenZipDialog(true)
+  }
+
+  const handleUploadZip = async () => {
+    if (!zipFile) {
+      setZipErrorMsg('Please select a 3D Tour .zip file to upload.')
+      return
+    }
+
+    setUploadingZip(true)
+    setZipErrorMsg(null)
+    setZipSuccessMsg(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', zipFile)
+      if (zipTargetId) formData.append('targetId', zipTargetId)
+      if (zipTitle) formData.append('title', zipTitle)
+      if (zipSlug) formData.append('slug', zipSlug)
+      if (zipDescription) formData.append('description', zipDescription)
+
+      const res = await fetch('/api/vr/upload-tour', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setZipSuccessMsg(`✓ ${data.message}`)
+        await loadItems()
+        setTimeout(() => {
+          setOpenZipDialog(false)
+          setZipTargetId('')
+          setZipFile(null)
+          setZipTitle('')
+          setZipSlug('')
+          setZipDescription('')
+          setZipSuccessMsg(null)
+        }, 1500)
+      } else {
+        setZipErrorMsg(data?.error || 'Failed to upload and extract 3D tour zip.')
+      }
+    } catch {
+      setZipErrorMsg('Network error while uploading 3D tour zip.')
+    } finally {
+      setUploadingZip(false)
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this VR Media item?')) return
 
@@ -226,9 +294,29 @@ export default function VrHostingClient() {
             Upload and host 360° VR Videos, 360° Panoramic Images, and HD Videos. Auto-generate shareable QR Codes and Links monetized with Google AdSense.
           </Typography>
         </div>
-        <Button variant='contained' startIcon={<i className='tabler-plus' />} onClick={handleOpenAdd}>
-          Add New VR Media
-        </Button>
+        <div className='flex items-center gap-3'>
+          <Button
+            variant='contained'
+            style={{ backgroundColor: '#FF671F' }}
+            className='font-bold text-white shadow-md'
+            startIcon={<i className='tabler-file-zip' />}
+            onClick={() => {
+              setZipFile(null)
+              setZipTitle('')
+              setZipSlug('')
+              setZipDescription('')
+              setZipErrorMsg(null)
+              setZipSuccessMsg(null)
+              setOpenZipDialog(true)
+            }}
+          >
+            Upload 3D Tour (.zip)
+          </Button>
+
+          <Button variant='outlined' startIcon={<i className='tabler-plus' />} onClick={handleOpenAdd}>
+            Add Single Media
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -276,73 +364,109 @@ export default function VrHostingClient() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredItems.map(item => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>
-                          <div className='flex items-center gap-3'>
-                            {item.thumbnailUrl ? (
-                              <img src={item.thumbnailUrl} alt={item.title} className='w-12 h-12 object-cover rounded-lg border' />
-                            ) : (
-                              <div className='w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl'>
-                                {item.mediaType === 'VR_360_IMAGE' ? '🥽' : '🎥'}
-                              </div>
-                            )}
-                            <div>
-                              <Typography className='font-semibold text-sm'>{item.title}</Typography>
-                              {item.description && (
-                                <Typography variant='caption' className='text-textSecondary line-clamp-1'>
-                                  {item.description}
-                                </Typography>
+                    filteredItems.map(item => {
+                      const is3dTour = item.mediaUrl.endsWith('.htm') || item.mediaUrl.endsWith('.html') || item.mediaUrl.includes('/tours/')
+
+                      return (
+                        <TableRow key={item.id} hover>
+                          <TableCell>
+                            <div className='flex items-center gap-3'>
+                              {item.thumbnailUrl ? (
+                                <img src={item.thumbnailUrl} alt={item.title} className='w-12 h-12 object-cover rounded-lg border shadow-sm' />
+                              ) : (
+                                <div className='w-12 h-12 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center text-xl'>
+                                  {is3dTour ? '🕉️' : item.mediaType === 'VR_360_IMAGE' ? '🥽' : '🎥'}
+                                </div>
                               )}
+                              <div>
+                                <div className='flex items-center gap-2'>
+                                  <Typography className='font-semibold text-sm'>{item.title}</Typography>
+                                  {is3dTour && (
+                                    <span className='px-1.5 py-0.5 bg-orange-100 text-orange-800 text-[10px] font-bold rounded'>
+                                      3D Tour
+                                    </span>
+                                  )}
+                                </div>
+                                {item.description && (
+                                  <Typography variant='caption' className='text-textSecondary line-clamp-1'>
+                                    {item.description}
+                                  </Typography>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size='small'
-                            label={item.mediaType.replace('_', ' ')}
-                            color={item.mediaType === 'VR_360_IMAGE' ? 'primary' : 'secondary'}
-                            variant='outlined'
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant='caption' className='font-mono text-xs text-primary'>
-                            /front-pages/vr/{item.slug}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant='body2' className='font-medium'>
-                            👁️ {item.viewsCount}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size='small'
-                            label={item.active ? 'Active' : 'Inactive'}
-                            color={item.active ? 'success' : 'default'}
-                          />
-                        </TableCell>
-                        <TableCell align='right'>
-                          <div className='flex items-center justify-end gap-1'>
-                            <Button
+                          </TableCell>
+                          <TableCell>
+                            <Chip
                               size='small'
-                              variant='outlined'
-                              color='info'
-                              startIcon={<i className='tabler-qrcode' />}
-                              onClick={() => handleShowQr(item)}
-                            >
-                              QR & Link
-                            </Button>
-                            <IconButton size='small' color='primary' onClick={() => handleOpenEdit(item)}>
-                              <i className='tabler-edit' />
-                            </IconButton>
-                            <IconButton size='small' color='error' onClick={() => handleDelete(item.id)}>
-                              <i className='tabler-trash' />
-                            </IconButton>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                              label={is3dTour ? '3D VIRTUAL TOUR' : item.mediaType.replace('_', ' ')}
+                              color={is3dTour ? 'warning' : item.mediaType === 'VR_360_IMAGE' ? 'primary' : 'secondary'}
+                              variant={is3dTour ? 'filled' : 'outlined'}
+                              className='font-bold text-[11px]'
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='caption' className='font-mono text-xs text-primary'>
+                              /front-pages/vr/{item.slug}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='body2' className='font-medium'>
+                              👁️ {item.viewsCount}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              size='small'
+                              label={item.active ? 'Active' : 'Inactive'}
+                              color={item.active ? 'success' : 'default'}
+                            />
+                          </TableCell>
+                          <TableCell align='right'>
+                            <div className='flex items-center justify-end gap-1'>
+                              {is3dTour && (
+                                <Button
+                                  size='small'
+                                  variant='contained'
+                                  style={{ backgroundColor: '#f97316' }}
+                                  className='text-white font-bold'
+                                  startIcon={<i className='tabler-refresh' />}
+                                  onClick={() => handleOpenReplaceZip(item)}
+                                >
+                                  Replace .ZIP
+                                </Button>
+                              )}
+                              <Button
+                                size='small'
+                                variant='outlined'
+                                color='info'
+                                startIcon={<i className='tabler-qrcode' />}
+                                onClick={() => handleShowQr(item)}
+                              >
+                                QR & Link
+                              </Button>
+                              <Button
+                                size='small'
+                                variant='outlined'
+                                color='secondary'
+                                component='a'
+                                href={`/front-pages/vr/${item.slug}`}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                startIcon={<i className='tabler-external-link' />}
+                              >
+                                View
+                              </Button>
+                              <IconButton size='small' color='primary' onClick={() => handleOpenEdit(item)}>
+                                <i className='tabler-edit' />
+                              </IconButton>
+                              <IconButton size='small' color='error' onClick={() => handleDelete(item.id)}>
+                                <i className='tabler-trash' />
+                              </IconButton>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -483,6 +607,162 @@ export default function VrHostingClient() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenQrModal(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 3D Tour .ZIP Upload & Auto-Extraction Modal */}
+      <Dialog open={openZipDialog} onClose={() => !uploadingZip && setOpenZipDialog(false)} maxWidth='sm' fullWidth>
+        <DialogTitle className='flex items-center gap-2 font-bold text-slate-800 border-b pb-3'>
+          <span className='text-2xl'>📦</span>
+          <span>{zipTargetId ? 'Replace / Update Existing 3D Tour (.zip)' : 'Upload 3D Virtual Tour Package (.zip)'}</span>
+        </DialogTitle>
+        <DialogContent className='flex flex-col gap-4 pt-5'>
+          <Typography variant='body2' className='text-slate-600 bg-orange-50 border border-orange-200 p-3 rounded-xl'>
+            💡 <strong>Exported from 3DVista, TDV Player, Pannellum, or Marzipano?</strong>
+            <br />
+            {zipTargetId 
+              ? 'Uploading a new .zip will replace all panoramas, tiles, sound, and scripts for this temple while keeping the exact same link and QR codes!' 
+              : 'Select your exported .zip file. The system will automatically unzip all 360° panoramas, scripts, sound, UI buttons, and generate your live 3D Darshan tour!'}
+          </Typography>
+
+          {zipErrorMsg && (
+            <Alert severity='error' onClose={() => setZipErrorMsg(null)}>
+              {zipErrorMsg}
+            </Alert>
+          )}
+
+          {zipSuccessMsg && (
+            <Alert severity='success'>
+              {zipSuccessMsg}
+            </Alert>
+          )}
+
+          {/* Target Tour Mode Selector */}
+          <TextField
+            select
+            label='Action Mode'
+            value={zipTargetId}
+            onChange={e => {
+              const selectedId = e.target.value
+              setZipTargetId(selectedId)
+              if (selectedId) {
+                const found = items.find(i => i.id === selectedId)
+                if (found) {
+                  setZipTitle(found.title)
+                  setZipSlug(found.slug)
+                  setZipDescription(found.description || '')
+                }
+              } else {
+                setZipTitle('')
+                setZipSlug('')
+                setZipDescription('')
+              }
+            }}
+            disabled={uploadingZip}
+            fullWidth
+            size='small'
+            helperText={zipTargetId ? 'Replacing will update the files under the existing URL and preserve QR codes.' : 'Creating a brand new 3D tour item.'}
+          >
+            <MenuItem value=''>➕ Create New 3D Tour Item</MenuItem>
+            {items.map(i => (
+              <MenuItem key={i.id} value={i.id}>
+                🔄 Replace: {i.title} (/front-pages/vr/{i.slug})
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <div className='flex flex-col gap-1.5'>
+            <Typography variant='caption' className='font-bold text-slate-700 uppercase'>
+              Select .ZIP Tour File *
+            </Typography>
+            <div className='border-2 border-dashed border-orange-300 bg-orange-50/40 rounded-xl p-6 text-center hover:bg-orange-50 transition-colors flex flex-col items-center justify-center gap-2'>
+              <input
+                type='file'
+                id='tour-zip-file-input'
+                accept='.zip'
+                className='hidden'
+                disabled={uploadingZip}
+                onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f) {
+                    setZipFile(f)
+                    if (!zipTitle) {
+                      setZipTitle(f.name.replace(/\.zip$/i, '').replace(/[-_]+/g, ' '))
+                    }
+                  }
+                }}
+              />
+              <label htmlFor='tour-zip-file-input' className='cursor-pointer flex flex-col items-center gap-2'>
+                <div className='w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-2xl shadow-sm'>
+                  📁
+                </div>
+                <Typography className='font-bold text-sm text-slate-800'>
+                  {zipFile ? zipFile.name : 'Click to select or drag .zip tour file'}
+                </Typography>
+                <Typography variant='caption' className='text-slate-500'>
+                  {zipFile ? `${(zipFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Supports 3DVista, WebXR, Cubic/Equirectangular HTML5 packages'}
+                </Typography>
+              </label>
+            </div>
+          </div>
+
+          <TextField
+            label='Temple / 3D Tour Title'
+            value={zipTitle}
+            onChange={e => setZipTitle(e.target.value)}
+            disabled={uploadingZip}
+            fullWidth
+            size='small'
+            placeholder='e.g. Mundru Dham Shri Ganesh 3D Darshan'
+          />
+
+          <TextField
+            label='Custom URL Slug (Optional)'
+            value={zipSlug}
+            onChange={e => setZipSlug(e.target.value)}
+            disabled={uploadingZip}
+            fullWidth
+            size='small'
+            placeholder='e.g. mundru-mandir-3d (Auto-generated if left empty)'
+          />
+
+          <TextField
+            label='Tour Description / Significance (Optional)'
+            value={zipDescription}
+            onChange={e => setZipDescription(e.target.value)}
+            disabled={uploadingZip}
+            multiline
+            rows={2}
+            fullWidth
+            size='small'
+            placeholder='e.g. Experience 360° holy sanctum darshan, garbha griha, and parikrama of the sacred temple.'
+          />
+
+          {uploadingZip && (
+            <div className='flex flex-col items-center justify-center p-4 bg-slate-50 border rounded-xl gap-2 text-center'>
+              <CircularProgress size={28} style={{ color: '#FF671F' }} />
+              <Typography variant='body2' className='font-bold text-slate-700'>
+                Uploading, unzipping & deploying 3D Tour assets...
+              </Typography>
+              <Typography variant='caption' className='text-slate-500'>
+                Please wait while high-resolution 360° tiles, audio & scripts are deployed to server.
+              </Typography>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions className='border-t px-6 py-3'>
+          <Button onClick={() => setOpenZipDialog(false)} disabled={uploadingZip}>
+            Cancel
+          </Button>
+          <Button
+            variant='contained'
+            onClick={handleUploadZip}
+            disabled={uploadingZip || !zipFile}
+            style={{ backgroundColor: '#FF671F' }}
+            className='font-bold text-white'
+          >
+            {uploadingZip ? 'Deploying Tour...' : zipTargetId ? 'Unzip & Replace 3D Tour' : 'Unzip & Publish 3D Tour'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

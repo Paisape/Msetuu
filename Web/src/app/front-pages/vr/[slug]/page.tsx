@@ -210,8 +210,19 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
               </div>
             )}
 
-            {/* 2. MAIN MEDIA PLAYER (VR Video / HD Video / 360 Image) */}
-            {item.mediaType === 'VR_360_VIDEO' || item.mediaType === 'HD_VIDEO' ? (
+            {/* 2. MAIN MEDIA PLAYER (3D Tour HTML5 / VR Video / HD Video / 360 Image) */}
+            {item.mediaUrl.endsWith('.htm') || item.mediaUrl.endsWith('.html') || item.mediaUrl.includes('/tours/') ? (
+              /* Interactive 3D Virtual Tour (3DVista / TDV Player / Pannellum / Marzipano) */
+              <div className='relative w-full h-full bg-black flex items-center justify-center'>
+                <iframe
+                  src={item.mediaUrl}
+                  title={item.title}
+                  className='w-full h-full border-0 absolute inset-0'
+                  allow='accelerometer; autoplay; camera; gyroscope; vr; xr-spatial-tracking; fullscreen'
+                  allowFullScreen
+                />
+              </div>
+            ) : item.mediaType === 'VR_360_VIDEO' || item.mediaType === 'HD_VIDEO' ? (
               <video
                 ref={videoRef}
                 src={item.mediaUrl}
