@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
@@ -6,24 +6,6 @@ import AdmZip from 'adm-zip'
 import sharp from 'sharp'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
-
-// Helper to recursively find image files
-function findImagesInDir(dir: string, fileList: string[] = []): string[] {
-  if (!existsSync(dir)) return fileList
-  const files = readdirSync(dir)
-  for (const file of files) {
-    const fullPath = path.join(dir, file)
-    if (statSync(fullPath).isDirectory()) {
-      findImagesInDir(fullPath, fileList)
-    } else {
-      const ext = path.extname(file).toLowerCase()
-      if (['.jpg', '.jpeg', '.webp', '.png'].includes(ext)) {
-        fileList.push(fullPath)
-      }
-    }
-  }
-  return fileList
-}
 
 // POST /api/vr/upload-tour — Uploads/Replaces and unzips a 3DVista/TDV 3D Tour ZIP package + Auto-generates thumbnail
 export async function POST(req: Request) {
@@ -143,63 +125,55 @@ export async function POST(req: Request) {
     const generatedThumbFilename = 'generated_thumb.webp'
     const generatedThumbFullPath = path.join(destDir, generatedThumbFilename)
 
-    // 1. Direct thumbnail file check in root
-    const rootThumbCandidates = [
-      'thumbnail.png',
-      'thumbnail.jpg',
-      'thumbnail.webp',
-      'misc/icon512.png',
-      'misc/icon192.png'
-    ]
+    // 1. Check for standard thumbnail in zip entries
+    const rootThumbEntry = zipEntries.find(e => 
+      !e.isDirectory && [
+        'thumbnail.png',
+        'thumbnail.jpg',
+        'thumbnail.webp',
+        'misc/icon512.png',
+        'misc/icon192.png'
+      ].includes(e.entryName.toLowerCase())
+    )
 
-    for (const cand of rootThumbCandidates) {
-      if (existsSync(path.join(destDir, cand))) {
-        detectedThumbPath = `/uploads/tours/${finalSlug}/${cand}`
-        break
+    if (rootThumbEntry) {
+      detectedThumbPath = `/uploads/tours/${finalSlug}/${rootThumbEntry.entryName}`
+    } else {
+      // 2. Look for best candidate image in zip entries
+      const imageEntries = zipEntries.filter(e => 
+        !e.isDirectory && 
+        ['.jpg', '.jpeg', '.webp', '.png'].includes(path.extname(e.name).toLowerCase()) &&
+        !e.entryName.includes('skin/') &&
+        !e.entryName.includes('lib/') &&
+        !e.entryName.includes('cursor')
+      )
+
+      let bestEntry = imageEntries.find(e => e.entryName.toLowerCase().includes('_hd_t.jpg'))
+      if (!bestEntry) {
+        bestEntry = imageEntries.find(e => e.entryName.toLowerCase().includes('_t.webp') || e.entryName.toLowerCase().includes('_t.jpg'))
       }
-    }
-
-    // 2. If no direct thumbnail, look for high-res preview or panorama images in the package
-    if (!detectedThumbPath) {
-      const allImages = findImagesInDir(destDir)
-
-      // Priority order for candidate images:
-      // a) *_hd_t.jpg (High-def panorama preview)
-      // b) *_t.webp or *_t.jpg (Pano thumbnail)
-      // c) Front face of cubic tile (f/2/0_0.webp or f/0/0_0.webp)
-      // d) Any image larger than 20KB
-      let bestSourceImage = allImages.find(img => img.toLowerCase().includes('_hd_t.jpg'))
-      
-      if (!bestSourceImage) {
-        bestSourceImage = allImages.find(img => img.toLowerCase().includes('_t.webp') || img.toLowerCase().includes('_t.jpg'))
+      if (!bestEntry) {
+        bestEntry = imageEntries.find(e => e.entryName.includes('/f/') && e.entryName.endsWith('.webp'))
       }
-
-      if (!bestSourceImage) {
-        bestSourceImage = allImages.find(img => img.includes(path.sep + 'f' + path.sep) && img.endsWith('.webp'))
-      }
-
-      if (!bestSourceImage) {
-        // Pick the largest image in the package
-        const validImages = allImages.filter(img => !img.includes('skin') && !img.includes('lib') && !img.includes('cursor'))
-        if (validImages.length > 0) {
-          validImages.sort((a, b) => statSync(b).size - statSync(a).size)
-          bestSourceImage = validImages[0]
-        }
+      if (!bestEntry && imageEntries.length > 0) {
+        imageEntries.sort((a, b) => b.header.size - a.header.size)
+        bestEntry = imageEntries[0]
       }
 
-      // Generate optimized WebP thumbnail from the best source image
-      if (bestSourceImage && existsSync(bestSourceImage)) {
-        try {
-          await sharp(bestSourceImage)
-            .resize(800, 480, { fit: 'cover', position: 'center' })
-            .webp({ quality: 85 })
-            .toFile(generatedThumbFullPath)
+      if (bestEntry) {
+        const sourceImagePath = path.join(destDir, bestEntry.entryName)
+        if (existsSync(sourceImagePath)) {
+          try {
+            await sharp(sourceImagePath)
+              .resize(800, 480, { fit: 'cover', position: 'center' })
+              .webp({ quality: 85 })
+              .toFile(generatedThumbFullPath)
 
-          detectedThumbPath = `/uploads/tours/${finalSlug}/${generatedThumbFilename}`
-        } catch (err) {
-          console.warn('[upload-tour] Sharp thumbnail generation failed, using direct source:', err)
-          const relPath = path.relative(path.join(process.cwd(), 'public'), bestSourceImage).replace(/\\/g, '/')
-          detectedThumbPath = `/${relPath}`
+            detectedThumbPath = `/uploads/tours/${finalSlug}/${generatedThumbFilename}`
+          } catch (err) {
+            console.warn('[upload-tour] Sharp thumbnail generation failed, using direct source:', err)
+            detectedThumbPath = `/uploads/tours/${finalSlug}/${bestEntry.entryName}`
+          }
         }
       }
     }

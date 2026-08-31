@@ -24,6 +24,9 @@ RUN npx prisma generate && npm run build:icons
 # Next.js build (using 2GB max memory to fit within standard VPS container limits)
 RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
+# Prune development dependencies to keep the final runner image light
+RUN npm prune --omit=dev --legacy-peer-deps
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -45,15 +48,16 @@ RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
 
 RUN chmod +x ./entrypoint.sh
 
-USER nextjs
+# Stay root here on purpose: entrypoint.sh fixes ownership of any mounted volume
+# before dropping privileges to the nextjs user via su-exec.
 
 EXPOSE 3000
 
