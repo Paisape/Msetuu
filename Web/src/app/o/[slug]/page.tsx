@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 
 import prisma from '@/libs/prisma'
 import OfferCheckoutModal from '@/components/OfferCheckoutModal'
+import { calculateDynamicCounter } from '@/libs/socialProof'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -106,7 +107,7 @@ export default async function OfferPage({ params }: Props) {
     .filter(Boolean)
 
   const initialCounter = (offer as any).initialCounter ?? 10000
-  const displayCounter = initialCounter + completedOrdersCount
+  const displayCounter = calculateDynamicCounter(initialCounter, completedOrdersCount)
 
   // Convert Decimal fields to strings for serialization across client boundaries
   const serializedOffer = {

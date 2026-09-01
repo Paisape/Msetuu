@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { getMergedDevoteeList, calculateDynamicCounter } from '@/libs/socialProof'
 
 type Devotee = {
   name: string
@@ -155,18 +156,50 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   const [partnerName, setPartnerName] = useState('')
   const [confirmedOrderId, setConfirmedOrderId] = useState('')
   const [gpsLocation, setGpsLocation] = useState<string | null>(null)
-  const [liveCounter, setLiveCounter] = useState<number>(offerLink.displayCounter || 10000)
+  const [liveCounter, setLiveCounter] = useState<number>(() => {
+    return offerLink.displayCounter || calculateDynamicCounter(10000, 0)
+  })
 
-  const [realBookings, setRealBookings] = useState<{ name: string; city: string }[]>(offerLink.recentBookings || [])
+  // Full pool of rotating devotee names (real bookings prioritized first)
+  const [rotatingDevotees, setRotatingDevotees] = useState<{ name: string; city: string }[]>(() => {
+    return getMergedDevoteeList(offerLink.recentBookings || [])
+  })
   const [activeBookingIdx, setActiveBookingIdx] = useState(0)
+  const [isFading, setIsFading] = useState(false)
 
+  // 1. Automatic Name Rotation (every 3.5s with subtle fade animation)
   useEffect(() => {
-    if (realBookings.length <= 1) return
+    if (rotatingDevotees.length <= 1) return
     const timer = setInterval(() => {
-      setActiveBookingIdx(prev => (prev + 1) % realBookings.length)
-    }, 4000)
+      setIsFading(true)
+      setTimeout(() => {
+        setActiveBookingIdx(prev => (prev + 1) % rotatingDevotees.length)
+        setIsFading(false)
+      }, 250)
+    }, 3800)
     return () => clearInterval(timer)
-  }, [realBookings.length])
+  }, [rotatingDevotees.length])
+
+  // 2. Automatic Live Counter progression & Hourly update
+  useEffect(() => {
+    const updateCounter = () => {
+      const computed = calculateDynamicCounter(10000, 0)
+      setLiveCounter(prev => Math.max(prev, computed))
+    }
+
+    // Update on minute / hour interval
+    const counterTimer = setInterval(updateCounter, 60000)
+
+    // Micro live increment every 45-75s while browsing page
+    const microIncrement = setInterval(() => {
+      setLiveCounter(prev => prev + 1)
+    }, 55000)
+
+    return () => {
+      clearInterval(counterTimer)
+      clearInterval(microIncrement)
+    }
+  }, [])
 
   const [devotees, setDevotees] = useState<Devotee[]>([
     { name: '', gotra: '', dob: '', phone: '', email: '' }
@@ -531,13 +564,18 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
               </span>
             </div>
 
-            {/* Bottom row: Latest Booked Devotee (Updates after next booking) */}
-            {realBookings.length > 0 && realBookings[0] && (
-              <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-xs">
+            {/* Bottom row: Rotating Devotee Booking Toast with smooth transition */}
+            {rotatingDevotees.length > 0 && rotatingDevotees[activeBookingIdx % rotatingDevotees.length] && (
+              <div className={`flex items-center gap-2 pt-1 border-t border-slate-100 text-xs transition-opacity duration-300 ${isFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <span className="text-base flex-shrink-0 animate-bounce">🪔</span>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[11px] font-bold text-slate-700 truncate">
-                    <span className="font-black text-slate-900">{realBookings[0].name}</span>{realBookings[0].city ? ` (${realBookings[0].city})` : ''}
+                    <span className="font-black text-slate-900">
+                      {rotatingDevotees[activeBookingIdx % rotatingDevotees.length].name}
+                    </span>
+                    {rotatingDevotees[activeBookingIdx % rotatingDevotees.length].city 
+                      ? ` (${rotatingDevotees[activeBookingIdx % rotatingDevotees.length].city})` 
+                      : ''}
                   </span>
                   <span className="text-[9px] font-extrabold text-emerald-600 flex items-center gap-0.5">
                     <span>✓</span> {t.justBooked || 'ने अभी सेवा बुक की!'}
