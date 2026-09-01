@@ -1,5 +1,5 @@
 // MUI Imports
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -36,7 +36,11 @@ const VALID_MODULES = [
 
 const ContentManagementModulePage = async (props: Props) => {
   const params = await props.params
-  const { module: slug } = params
+  const { lang, module: slug } = params
+
+  if (slug === 'darshan-temples') {
+    redirect(`/${lang}/apps/mandir-setu/operation/vr-hosting`)
+  }
 
   if (!VALID_MODULES.includes(slug)) {
     notFound()

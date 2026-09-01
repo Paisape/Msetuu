@@ -122,7 +122,7 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
           <SubMenu label='Operation' icon={<i className='tabler-video' />}>
             <MenuItem href={`/${locale}/apps/mandir-setu/operation/video-upload`}>Video Upload</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/operation/geotag`}>Geo-Tagged Photos</MenuItem>
-            <MenuItem href={`/${locale}/apps/mandir-setu/operation/vr-hosting`}>VR & Video Hosting</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/operation/vr-hosting`}>3D Darshan & VR Hosting</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/offers`}>Special Offers</MenuItem>
           </SubMenu>
           <SubMenu label='Content Management' icon={<i className='tabler-photo-edit' />}>
@@ -136,7 +136,6 @@ const HorizontalMenu = ({ dictionary }: { dictionary: Awaited<ReturnType<typeof 
             <MenuItem href={`/${locale}/apps/mandir-setu/content/astrologers`}>Astrologers</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-categories`}>Jyotish Categories</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-time-slots`}>Jyotish Time Slots</MenuItem>
-            <MenuItem href={`/${locale}/apps/mandir-setu/content/darshan-temples`}>3D Darshan</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/faqs`}>FAQs</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/how-it-works`}>How It Works</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/reviews`}>Reviews</MenuItem>
