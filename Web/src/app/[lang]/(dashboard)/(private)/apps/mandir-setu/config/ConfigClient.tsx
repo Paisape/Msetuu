@@ -25,8 +25,9 @@ import AdminCredentialsPanel from '@/components/admin/AdminCredentialsPanel'
 type FieldMeta = { key: string; label: string; secret: boolean; placeholder?: string }
 
 const PG_FIELDS: FieldMeta[] = [
-  { key: 'RAZORPAY_KEY_ID', label: 'Razorpay Key ID', secret: false, placeholder: 'rzp_test_xxxxxxxxxxxx' },
-  { key: 'RAZORPAY_KEY_SECRET', label: 'Razorpay Key Secret', secret: true }
+  { key: 'RAZORPAY_KEY_ID', label: 'Razorpay Key ID', secret: false, placeholder: 'rzp_test_xxxxxxxxxxxx or rzp_live_xxxxxxxxxxxx' },
+  { key: 'RAZORPAY_KEY_SECRET', label: 'Razorpay Key Secret', secret: true },
+  { key: 'RAZORPAY_WEBHOOK_SECRET', label: 'Razorpay Webhook Secret (Optional — defaults to Key Secret if unset)', secret: true, placeholder: 'Secret entered in Razorpay Webhooks tab' }
 ]
 
 // Razorpay doesn't have a separate "sandbox vs production" toggle in this app — the mode is
@@ -530,6 +531,25 @@ const ConfigClient = () => {
                   API Keys → Test Mode) while building/testing, and swap in your <strong>Live Mode</strong> keys
                   (only issued after Razorpay activates your account) when you&apos;re ready to accept real payments.
                 </Typography>
+
+                <div className='p-4 mb-5 rounded-xl border border-sky-200 bg-sky-50/70 text-slate-800 space-y-2'>
+                  <div className='flex items-center gap-2 font-bold text-sky-950 text-sm'>
+                    <span>⚡ Razorpay Automated Webhook Setup</span>
+                  </div>
+                  <Typography variant='caption' className='text-slate-600 block'>
+                    To enable 100% instant auto-confirmation for devotees who close the browser early or pay via UPI, add this Webhook in your <strong>Razorpay Dashboard → Account & Settings → Webhooks → Add New Webhook</strong>:
+                  </Typography>
+                  <div className='flex items-center gap-2 flex-wrap'>
+                    <span className='text-xs font-bold text-slate-700'>Webhook URL:</span>
+                    <code className='px-2.5 py-1 bg-white rounded border border-sky-200 font-mono text-xs font-bold text-sky-900 select-all'>
+                      https://www.mandirsetuu.com/api/webhooks/razorpay
+                    </code>
+                  </div>
+                  <div className='text-[11px] text-slate-600'>
+                    <strong>Active Events to Enable:</strong> <code>payment.captured</code>, <code>order.paid</code>
+                  </div>
+                </div>
+
                 <SettingsPanel
                   endpoint='/api/secure-config/settings/pg'
                   fields={PG_FIELDS}
