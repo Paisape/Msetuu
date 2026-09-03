@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
       { source: '/register', destination: '/en/register' },
       { source: '/MsetuAdmin', destination: '/en/apps/mandir-setu' },
       { source: '/:lang(en|fr|ar)/MsetuAdmin', destination: '/:lang/apps/mandir-setu' },
+      { source: '/t/:path*', destination: '/front-pages/track-order?id=:path*' },
+      { source: '/track/:path*', destination: '/front-pages/track-order?id=:path*' },
       // Force any localized upload paths back to the public/uploads directory
       // to bypass any permanently cached 308 redirects from earlier bugs.
       { source: '/:lang(en|fr|ar)/uploads/:path*', destination: '/uploads/:path*' }
@@ -37,7 +39,7 @@ const nextConfig: NextConfig = {
         locale: false
       },
       {
-        source: '/:path((?!en|fr|ar|front-pages|o|images|uploads|audio|api|favicon.ico|login|next.svg|vercel.svg).*)*',
+        source: '/:path((?!en|fr|ar|front-pages|o|t|track|images|uploads|audio|api|favicon.ico|login|next.svg|vercel.svg).*)*',
         destination: '/en/:path*',
         permanent: true,
         locale: false
