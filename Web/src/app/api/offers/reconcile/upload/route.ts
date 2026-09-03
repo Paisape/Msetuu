@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { confirmOfferBookingAndNotify } from '@/libs/offerBooking'
 
 // POST /api/offers/reconcile/upload - Parse CSV settlement reports and reconcile orders
 export async function POST(req: Request) {
@@ -88,15 +89,14 @@ export async function POST(req: Request) {
 
         if (Math.abs(orderAmount - parsedAmount) < 0.05) {
           // Valid match: amount is correct
-          await prisma.offerLinkOrder.update({
-            where: { id: order.id },
-            data: {
-              paymentStatus: 'SUCCESS',
-              reconciledStatus: 'RECONCILED_AUTO',
-              reconciledAt: new Date(),
-              reconciliationNotes: `Settlement verified automatically from file: ${file.name}`
-            }
-          })
+          await confirmOfferBookingAndNotify({
+            orderId: order.id,
+            paymentId: transactionId,
+            paymentMethod: `${gateway}_SETTLEMENT`,
+            reconciledStatus: 'RECONCILED_AUTO',
+            notes: `Settlement verified automatically from file: ${file.name}`
+          }).catch(err => console.error(`[Upload Reconcile] Failed notify for ${order.id}:`, err))
+
           totalMatched++
         } else {
           // Amount discrepancy found

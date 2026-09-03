@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { confirmOfferBookingAndNotify } from '@/libs/offerBooking'
 
 // POST /api/offers/reconcile/manual - Manually reconcile/confirm a pending order
 export async function POST(req: Request) {
@@ -22,26 +23,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
     }
 
-    const data: Record<string, any> = {
+    const noteText = notes
+      ? `${notes} (Manually reconciled by ${admin.name || admin.email})`
+      : `Manually confirmed paid by ${admin.name || admin.email}.`
+
+    const updated = await confirmOfferBookingAndNotify({
+      orderId,
+      paymentId: paymentId ? paymentId.trim() : order.paymentId || undefined,
+      paymentMethod: 'MANUAL_RECONCILED',
       reconciledStatus: 'RECONCILED_MANUAL',
-      reconciledAt: new Date(),
-      reconciliationNotes: notes ? `${notes} (Manually reconciled by ${admin.name || admin.email})` : `Manually confirmed paid by ${admin.name || admin.email}.`
-    }
-
-    if (paymentId) {
-      data.paymentId = paymentId.trim()
-    }
-
-    if (forceSuccess) {
-      data.paymentStatus = 'SUCCESS'
-    }
-
-    const updated = await prisma.offerLinkOrder.update({
-      where: { id: orderId },
-      data,
-      include: {
-        devotees: true
-      }
+      notes: noteText
     })
 
     return NextResponse.json({ success: true, order: updated })

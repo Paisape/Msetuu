@@ -197,3 +197,45 @@ export async function getRazorpayPaymentDetails(paymentId: string): Promise<Razo
     contact: payment.contact || undefined
   }
 }
+
+/**
+ * Fetches all payment attempts associated with a given Razorpay Order ID.
+ * Returns array of payment objects (e.g. status: 'captured', amount, method, id: 'pay_xxxx').
+ */
+export async function getRazorpayPaymentsForOrder(orderId: string): Promise<any[]> {
+  const client = await getClient()
+  const res: any = await withTimeout(
+    client.orders.fetchPayments(orderId),
+    RAZORPAY_TIMEOUT_MS,
+    'Razorpay fetch order payments'
+  )
+  return res.items || []
+}
+
+/**
+ * Validates the HMAC SHA256 signature sent by Razorpay in the X-Razorpay-Signature header.
+ */
+export async function verifyRazorpayWebhookSignature(
+  rawBody: string,
+  signature: string,
+  secretOverride?: string
+): Promise<boolean> {
+  const webhookSecret =
+    secretOverride ||
+    (await getSettingOrEnv('PG', 'RAZORPAY_WEBHOOK_SECRET', 'RAZORPAY_WEBHOOK_SECRET')) ||
+    (await getSettingOrEnv('PG', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_KEY_SECRET'))
+
+  if (!webhookSecret || !rawBody || !signature) return false
+
+  try {
+    const expected = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex')
+    const expectedBuf = Buffer.from(expected, 'hex')
+    const actualBuf = Buffer.from(signature, 'hex')
+
+    if (expectedBuf.length !== actualBuf.length) return false
+
+    return crypto.timingSafeEqual(expectedBuf, actualBuf)
+  } catch {
+    return false
+  }
+}

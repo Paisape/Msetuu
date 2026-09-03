@@ -262,6 +262,11 @@ export async function sendOrderConfirmationSms({
       .replace(/\{#urg#\}/g, finalTrackLink)
       .replace(/\{#orderId#\}/g, shortOrderId)
       .replace(/\{#trackLink#\}/g, finalTrackLink)
+      .replace(/\{#order_id#\}/g, shortOrderId)
+      .replace(/\{#link#\}/g, finalTrackLink)
+      .replace(/\{#url#\}/g, finalTrackLink)
+      .replace(/\{#num#\}/g, shortOrderId)
+      .replace(/\{#var#\}/g, shortOrderId)
       .replace(/\{orderId\}/g, shortOrderId)
       .replace(/\{trackLink\}/g, finalTrackLink)
 

@@ -59,6 +59,7 @@ export default function ReconcileClient() {
 
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [syncingRzp, setSyncingRzp] = useState(false)
   const [submittingManual, setSubmittingManual] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -78,8 +79,8 @@ export default function ReconcileClient() {
       const res = await fetch('/api/offers/reconcile')
       if (!res.ok) throw new Error('Failed to load reconciliation logs.')
       const data = await res.json()
-      setRuns(data.runs)
-      setPendingOrders(data.pendingOrders)
+      setRuns(data.runs || [])
+      setPendingOrders(data.pendingOrders || [])
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.')
     } finally {
@@ -100,43 +101,71 @@ export default function ReconcileClient() {
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return
+
     setUploading(true)
     setErrorMsg(null)
     setSuccessMsg(null)
 
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('gateway', gateway)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('gateway', gateway)
 
+    try {
       const res = await fetch('/api/offers/reconcile/upload', {
         method: 'POST',
         body: formData
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Reconciliation failed.')
+      if (!res.ok) throw new Error(data.error || 'Failed to process reconciliation report.')
 
-      setSuccessMsg(`Processed file "${data.fileName}": Reconciled ${data.totalMatched} orders, flagged ${data.totalDiscrepant} discrepancies.`)
-      
-      // Reset file input
+      setSuccessMsg(`Audit Complete! Matched ${data.totalMatched} payments. Discrepancies: ${data.totalDiscrepant}`)
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-
-      // Refresh list
-      await loadData()
+      loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to process file.')
+      setErrorMsg(err.message)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleSyncRazorpay = async (orderId?: string) => {
+    setSyncingRzp(true)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      const res = await fetch('/api/offers/reconcile/sync-razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderId ? { orderId } : {})
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Razorpay sync failed.')
+
+      if (data.reconciledCount > 0) {
+        setSuccessMsg(`✅ ${data.message} All confirmation SMS and invoices have been generated!`)
+      } else {
+        setSuccessMsg(`ℹ️ Checked ${data.checkedCount} order(s). Razorpay reported no newly completed payments.`)
+      }
+
+      loadData()
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to sync with Razorpay API.')
+    } finally {
+      setSyncingRzp(false)
     }
   }
 
   const handleManualReconcile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedOrder) return
+
     setSubmittingManual(true)
     setErrorMsg(null)
+    setSuccessMsg(null)
 
     try {
       const res = await fetch('/api/offers/reconcile/manual', {
@@ -144,22 +173,22 @@ export default function ReconcileClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: selectedOrder.id,
-          paymentId: manualTxnId || null,
+          paymentId: manualTxnId || undefined,
           notes: manualNotes,
           forceSuccess: true
         })
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to manual reconcile.')
+      if (!res.ok) throw new Error(data.error || 'Failed to manually settle order.')
 
-      setSuccessMsg(`Order successfully marked as PAID! ID: ${selectedOrder.id}`)
-      setPendingOrders(pendingOrders.filter(o => o.id !== selectedOrder.id))
+      setSuccessMsg('Order manually settled and confirmed successfully! Confirmation SMS dispatched.')
       setSelectedOrder(null)
       setManualTxnId('')
       setManualNotes('')
+      loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || 'An error occurred.')
+      setErrorMsg(err.message)
     } finally {
       setSubmittingManual(false)
     }
@@ -167,21 +196,21 @@ export default function ReconcileClient() {
 
   if (loading) {
     return (
-      <Box className='flex justify-center p-12'>
-        <CircularProgress style={{ color: '#FF671F' }} />
+      <Box className='flex justify-center items-center min-h-[400px]'>
+        <CircularProgress />
       </Box>
     )
   }
 
   return (
-    <div className='max-w-6xl mx-auto space-y-8'>
-      {/* CSV Settlement File Uploader */}
+    <div className='p-6 space-y-6 max-w-7xl mx-auto'>
+      {/* Page Header */}
       <Card className='p-6 border border-slate-100 shadow-sm'>
         <Typography variant='h4' className='font-bold text-slate-800 mb-2'>
-          📊 Payment Gateway Reconciliation
+          📊 Payment Gateway Reconciliation & Auto-Sync
         </Typography>
         <Typography variant='body2' color='textSecondary' className='mb-6'>
-          Reconcile checkouts automatically by uploading Razorpay or PhonePe payout transaction reports (CSV files).
+          Reconcile checkouts automatically via Direct Razorpay API Sync or by uploading Razorpay / PhonePe payout transaction reports (CSV files).
         </Typography>
 
         {successMsg && <Alert severity='success' className='mb-4'>{successMsg}</Alert>}
@@ -228,14 +257,31 @@ export default function ReconcileClient() {
 
       {/* Unreconciled Pending Orders */}
       <Card className='p-6 border border-slate-100 shadow-sm'>
-        <Typography variant='h5' className='font-bold text-slate-800 mb-2'>
-          ⏳ Pending / Unpaid Orders
-        </Typography>
-        <Typography variant='body2' color='textSecondary' className='mb-6'>
-          List of checkouts awaiting payment. Verify manually if webhooks failed but client paid.
-        </Typography>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4'>
+          <div>
+            <Typography variant='h5' className='font-bold text-slate-800'>
+              ⏳ Pending / Unreconciled Orders ({pendingOrders.length})
+            </Typography>
+            <Typography variant='body2' color='textSecondary'>
+              Orders where the devotee initiated checkout. If the user paid on Razorpay but closed their browser early, click <strong>Auto-Sync</strong> to verify directly with Razorpay!
+            </Typography>
+          </div>
 
-        <TableContainer className='border rounded-lg overflow-hidden max-h-[350px] overflow-y-auto'>
+          {pendingOrders.length > 0 && (
+            <Button
+              variant='contained'
+              disabled={syncingRzp}
+              onClick={() => handleSyncRazorpay()}
+              style={{ backgroundColor: '#006241' }}
+              className='font-bold text-white px-5 py-2 flex items-center gap-2 flex-shrink-0'
+            >
+              {syncingRzp ? <CircularProgress size={18} color='inherit' /> : <span>🔄</span>}
+              <span>Auto-Sync All with Razorpay</span>
+            </Button>
+          )}
+        </div>
+
+        <TableContainer className='border rounded-lg overflow-hidden max-h-[400px] overflow-y-auto'>
           <Table stickyHeader>
             <TableHead className='bg-slate-50'>
               <TableRow>
@@ -243,15 +289,15 @@ export default function ReconcileClient() {
                 <TableCell className='font-bold'>Campaign</TableCell>
                 <TableCell className='font-bold'>Primary Devotee</TableCell>
                 <TableCell className='font-bold'>Amount (₹)</TableCell>
-                <TableCell className='font-bold'>Temporary Ref ID</TableCell>
-                <TableCell className='font-bold text-right'>Audit</TableCell>
+                <TableCell className='font-bold'>Razorpay Order ID</TableCell>
+                <TableCell className='font-bold text-right'>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {pendingOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className='text-center py-8 text-slate-400'>
-                    No pending/unpaid orders found.
+                  <TableCell colSpan={6} className='text-center py-8 text-emerald-600 font-bold'>
+                    🎉 All orders are reconciled! No pending or unpaid orders found.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -262,22 +308,37 @@ export default function ReconcileClient() {
                     </TableCell>
                     <TableCell className='font-semibold text-slate-700'>{order.offerLink.title}</TableCell>
                     <TableCell>
-                      {order.devotees[0]?.name || 'N/A'}
-                      {order.devotees[0]?.nameLocal ? ` (${order.devotees[0]?.nameLocal})` : ''}
-                      {` `}({order.devotees[0]?.phone})
+                      <div className='font-bold text-slate-800'>
+                        {order.devotees[0]?.name || 'Devotee'}
+                        {order.devotees[0]?.nameLocal ? ` (${order.devotees[0]?.nameLocal})` : ''}
+                      </div>
+                      <div className='text-xs text-slate-500'>
+                        📱 {order.devotees[0]?.phone}
+                      </div>
                     </TableCell>
-                    <TableCell className='font-bold text-slate-800'>₹{Number(order.amount).toFixed(2)}</TableCell>
+                    <TableCell className='font-black text-slate-800'>₹{Number(order.amount).toFixed(2)}</TableCell>
                     <TableCell className='text-xs font-mono text-slate-500'>{order.paymentId || 'None'}</TableCell>
                     <TableCell className='text-right'>
-                      <Button
-                        variant='contained'
-                        size='small'
-                        onClick={() => setSelectedOrder(order)}
-                        style={{ backgroundColor: '#006241' }}
-                        className='font-bold text-white'
-                      >
-                        Force Settle
-                      </Button>
+                      <div className='flex items-center justify-end gap-2'>
+                        <Button
+                          variant='outlined'
+                          size='small'
+                          disabled={syncingRzp}
+                          onClick={() => handleSyncRazorpay(order.id)}
+                          className='font-bold text-[#006241] border-[#006241]'
+                        >
+                          Sync RZP
+                        </Button>
+                        <Button
+                          variant='contained'
+                          size='small'
+                          onClick={() => setSelectedOrder(order)}
+                          style={{ backgroundColor: '#FF671F' }}
+                          className='font-bold text-white'
+                        >
+                          Manual Settle
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -293,7 +354,7 @@ export default function ReconcileClient() {
           📜 Previous Audit Runs Logs
         </Typography>
         <Typography variant='body2' color='textSecondary' className='mb-6'>
-          Records of uploaded settlement files and matched transaction ratios.
+          Records of automated API syncs and uploaded settlement reports.
         </Typography>
 
         <TableContainer className='border rounded-lg overflow-hidden'>
@@ -301,8 +362,8 @@ export default function ReconcileClient() {
             <TableHead className='bg-slate-50'>
               <TableRow>
                 <TableCell className='font-bold'>Execution Date</TableCell>
-                <TableCell className='font-bold'>File Name</TableCell>
-                <TableCell className='font-bold'>Gateway</TableCell>
+                <TableCell className='font-bold'>Audit Source</TableCell>
+                <TableCell className='font-bold'>Type</TableCell>
                 <TableCell className='font-bold text-center'>Processed Lines</TableCell>
                 <TableCell className='font-bold text-center'>Auto Matched</TableCell>
                 <TableCell className='font-bold text-center'>Discrepancies</TableCell>
@@ -339,7 +400,7 @@ export default function ReconcileClient() {
             onClick={() => router.push(`/${locale}/apps/mandir-setu/offer-links`)}
             className='border-slate-300 text-slate-700 font-bold'
           >
-            Back to Dashboard
+            Back to Special Offers
           </Button>
         </div>
       </Card>
