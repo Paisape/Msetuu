@@ -99,6 +99,29 @@ export default function ReportsClient() {
   // Order Details Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [sendingSmsId, setSendingSmsId] = useState<string | null>(null)
+  const [smsToast, setSmsToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+  const handleResendSms = async (orderId: string, phone?: string) => {
+    setSendingSmsId(orderId)
+    setSmsToast(null)
+    try {
+      const res = await fetch('/api/admin/orders/resend-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, mobileOverride: phone })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch SMS.')
+      }
+      setSmsToast({ type: 'success', msg: data.message || `SMS successfully dispatched to ${phone || 'devotee'}!` })
+    } catch (err: any) {
+      setSmsToast({ type: 'error', msg: err.message || 'SMS dispatch failed. Check SMS settings and credentials.' })
+    } finally {
+      setSendingSmsId(null)
+    }
+  }
 
   const loadReports = async (campaignId?: string) => {
     if (campaignId) setFiltering(true)
@@ -785,6 +808,40 @@ export default function ReportsClient() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Devotee SMS Notification Card */}
+              <div className='p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2.5'>
+                <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2'>
+                  <div>
+                    <span className='text-xs font-bold text-emerald-950 block'>📱 Devotee DLT SMS Confirmation</span>
+                    <span className='text-[11px] text-emerald-800 font-medium block'>
+                      Target Mobile: <strong>{selectedOrder.devotees[0]?.phone || '—'}</strong>
+                    </span>
+                  </div>
+                  <Button
+                    variant='contained'
+                    size='small'
+                    disabled={sendingSmsId === selectedOrder.id || !selectedOrder.devotees[0]?.phone}
+                    onClick={() => handleResendSms(selectedOrder.id, selectedOrder.devotees[0]?.phone)}
+                    style={{ backgroundColor: '#006241' }}
+                    className='font-bold text-white text-xs px-4 flex-shrink-0'
+                  >
+                    {sendingSmsId === selectedOrder.id ? (
+                      <span className='flex items-center gap-1.5'>
+                        <CircularProgress size={12} color='inherit' /> Sending...
+                      </span>
+                    ) : (
+                      '📱 Send SMS Now'
+                    )}
+                  </Button>
+                </div>
+
+                {smsToast && (
+                  <Alert severity={smsToast.type} className='text-xs py-1 mt-2'>
+                    {smsToast.msg}
+                  </Alert>
+                )}
               </div>
             </>
           )}

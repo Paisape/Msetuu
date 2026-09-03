@@ -118,7 +118,20 @@ export async function sendTextziSms(
       data = text
     }
 
-    if (!res.ok) {
+    const isPayloadError =
+      typeof data === 'object' &&
+      data !== null &&
+      (data.status === 'error' ||
+        data.status === 'failed' ||
+        data.type === 'error' ||
+        data.responseCode === 'error' ||
+        data.error)
+
+    if (!res.ok || isPayloadError) {
+      const errorDetail =
+        (typeof data === 'object' && (data.message || data.error || data.msg)) ||
+        `Textzi API error HTTP ${res.status}`
+
       await prisma.smsLog.create({
         data: {
           mobile: formattedMobile,
@@ -127,14 +140,14 @@ export async function sendTextziSms(
           status: 'FAILED',
           requestUrl: redactedUrl,
           response: typeof data === 'object' ? JSON.stringify(data) : String(data),
-          error: `Textzi API error HTTP ${res.status}`
+          error: errorDetail
         }
       }).catch(err => console.error('[SMS] Logging failed:', err))
 
       return {
         success: false,
         httpCode: res.status,
-        message: `Textzi API error HTTP ${res.status}`,
+        message: errorDetail,
         response: data
       }
     }
@@ -255,7 +268,8 @@ export async function sendOrderConfirmationSms({
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
     const finalTrackLink = trackLink || `${appUrl}/front-pages/track-order?id=${orderId}`
-    const shortOrderId = orderId.length > 8 ? orderId.slice(0, 8).toUpperCase() : orderId.toUpperCase()
+    const cleanAlphanumeric = orderId.replace(/[^a-zA-Z0-9]/g, '')
+    const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
 
     let message = rawContent
       .replace(/\{#alp#\}/g, shortOrderId)

@@ -95,9 +95,39 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
   const [order, setOrder] = useState<Record<string, any> | null>(null)
   const [trail, setTrail] = useState<TrailEntry[]>([])
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [sendingSms, setSendingSms] = useState(false)
+  const [smsResult, setSmsResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+  const handleResendSms = async () => {
+    if (!order) return
+    setSendingSms(true)
+    setSmsResult(null)
+
+    const primaryPhone = order.devotees?.[0]?.phone || order.devoteePhone || order.customerPhone || order.user?.phone || ''
+
+    try {
+      const res = await fetch('/api/admin/orders/resend-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: id,
+          orderType: module === 'offer' ? 'OFFER_LINK' : orderType,
+          mobileOverride: primaryPhone
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to dispatch confirmation SMS.')
+
+      setSmsResult({ type: 'success', msg: data.message || `Confirmation SMS successfully sent to ${primaryPhone}!` })
+    } catch (err: any) {
+      setSmsResult({ type: 'error', msg: err.message || 'SMS dispatch failed. Check SMS settings and credentials.' })
+    } finally {
+      setSendingSms(false)
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -478,6 +508,39 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
                   </Typography>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* SMS Notification & On-Demand Dispatch Card */}
+          <Card className='mb-6 border border-slate-100 shadow-sm'>
+            <CardHeader
+              title='📱 Devotee Confirmation SMS'
+              subheader='Send or re-send DLT booking confirmation message'
+            />
+            <CardContent className='flex flex-col gap-3'>
+              {smsResult && (
+                <Alert severity={smsResult.type} className='text-xs'>
+                  {smsResult.msg}
+                </Alert>
+              )}
+
+              <div className='flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800 text-xs'>
+                <span className='text-slate-500 font-medium'>Devotee Mobile</span>
+                <span className='font-mono font-bold text-slate-800 dark:text-slate-200'>
+                  {order.devotees?.[0]?.phone || order.devoteePhone || order.customerPhone || order.user?.phone || 'Not provided'}
+                </span>
+              </div>
+
+              <Button
+                variant='contained'
+                disabled={sendingSms || !(order.devotees?.[0]?.phone || order.devoteePhone || order.customerPhone || order.user?.phone)}
+                onClick={handleResendSms}
+                style={{ backgroundColor: '#006241' }}
+                className='font-bold text-white flex items-center justify-center gap-2 py-2 mt-1'
+              >
+                {sendingSms ? <CircularProgress size={16} color='inherit' /> : <span>📱</span>}
+                <span>{sendingSms ? 'Dispatching SMS...' : 'Send Confirmation SMS Now'}</span>
+              </Button>
             </CardContent>
           </Card>
 
