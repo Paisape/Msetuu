@@ -117,7 +117,7 @@ export async function confirmOfferBookingAndNotify(opts: ConfirmOfferBookingOpti
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
       const cleanAlphanumeric = updatedOrder.id.replace(/[^a-zA-Z0-9]/g, '')
       const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
-      const trackLink = `${appUrl}/t/${shortOrderId}`
+      const trackLink = `${appUrl}/t/?id=${shortOrderId}`
       const smsRes = await sendOrderConfirmationSms({
         mobile: customerPhone,
         orderId: updatedOrder.id,
