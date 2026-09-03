@@ -10,15 +10,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Order ID is required.' }, { status: 400 })
     }
 
-    const cleanId = rawId.replace(/^[#\s]*(MS-|ms-|ORD-|ord-)?/i, '').trim()
+    const rawTrimmed = rawId.trim()
+    const cleanId = rawTrimmed.replace(/^[#\s]*(MS\s*[-_]?|ORD\s*[-_]?)/i, '').trim()
+
+    const searchIds = Array.from(new Set([rawTrimmed, cleanId].filter(Boolean)))
+    const whereConditions = searchIds.flatMap(sId => [
+      { id: { equals: sId, mode: 'insensitive' as const } },
+      { id: { startsWith: sId, mode: 'insensitive' as const } }
+    ])
 
     // 1. Check OfferLinkOrder (New Campaigns /o/[slug])
     const offerLinkOrder = await prisma.offerLinkOrder.findFirst({
       where: {
-        OR: [
-          { id: { equals: cleanId, mode: 'insensitive' } },
-          { id: { startsWith: cleanId, mode: 'insensitive' } }
-        ]
+        OR: whereConditions
       },
       include: {
         offerLink: { select: { title: true } },
@@ -41,10 +45,7 @@ export async function GET(req: Request) {
     // 2. Check OfferOrder
     const offerOrder = await prisma.offerOrder.findFirst({
       where: {
-        OR: [
-          { id: { equals: cleanId, mode: 'insensitive' } },
-          { id: { startsWith: cleanId, mode: 'insensitive' } }
-        ]
+        OR: whereConditions
       },
       include: { offer: { select: { title: true } } }
     })
@@ -65,10 +66,7 @@ export async function GET(req: Request) {
     // 3. Check ChadhavaOrder
     const chadhavaOrder = await prisma.chadhavaOrder.findFirst({
       where: {
-        OR: [
-          { id: { equals: cleanId, mode: 'insensitive' } },
-          { id: { startsWith: cleanId, mode: 'insensitive' } }
-        ]
+        OR: whereConditions
       },
       include: { chadhavaListing: { select: { title: true } } }
     })
@@ -89,10 +87,7 @@ export async function GET(req: Request) {
     // 4. Check PujaOrder
     const pujaOrder = await prisma.pujaOrder.findFirst({
       where: {
-        OR: [
-          { id: { equals: cleanId, mode: 'insensitive' } },
-          { id: { startsWith: cleanId, mode: 'insensitive' } }
-        ]
+        OR: whereConditions
       },
       include: { pujaListing: { select: { title: true } } }
     })
@@ -107,6 +102,25 @@ export async function GET(req: Request) {
         videoUrl: pujaOrder.videoUrl,
         videoUploadedAt: pujaOrder.videoUploadedAt,
         createdAt: pujaOrder.createdAt
+      })
+    }
+
+    // 5. Check ProductOrder
+    const productOrder = await prisma.productOrder.findFirst({
+      where: {
+        OR: whereConditions
+      },
+      include: { product: { select: { name: true } }, user: { select: { name: true } } }
+    })
+    if (productOrder) {
+      return NextResponse.json({
+        id: productOrder.id,
+        shortId: `#MS-${productOrder.id.slice(0, 8).toUpperCase()}`,
+        type: 'E-Commerce',
+        title: productOrder.product?.name || 'Store Item',
+        name: productOrder.user?.name || 'Customer',
+        status: productOrder.status,
+        createdAt: productOrder.createdAt
       })
     }
 
