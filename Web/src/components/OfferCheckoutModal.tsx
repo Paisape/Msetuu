@@ -24,6 +24,7 @@ type Props = {
     gstIncluded: boolean
     gstRate: string
     supportPhone?: string
+    initialCounter?: number
     displayCounter?: number
     recentBookings?: { name: string; city: string }[]
   }
@@ -156,8 +157,9 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   const [partnerName, setPartnerName] = useState('')
   const [confirmedOrderId, setConfirmedOrderId] = useState('')
   const [gpsLocation, setGpsLocation] = useState<string | null>(null)
+  const baseInitial = offerLink.initialCounter ?? 10000
   const [liveCounter, setLiveCounter] = useState<number>(() => {
-    return offerLink.displayCounter || calculateDynamicCounter(10000, 0)
+    return offerLink.displayCounter || calculateDynamicCounter(baseInitial, 0)
   })
 
   // Full pool of rotating devotee names (real bookings prioritized first)
@@ -183,7 +185,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   // 2. Automatic Live Counter progression & Hourly update
   useEffect(() => {
     const updateCounter = () => {
-      const computed = calculateDynamicCounter(10000, 0)
+      const computed = calculateDynamicCounter(baseInitial, 0)
       setLiveCounter(prev => Math.max(prev, computed))
     }
 
