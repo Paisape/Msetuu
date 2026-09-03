@@ -127,11 +127,11 @@ export async function POST(req: Request) {
 
         // 2. Dispatch Rich Admin Notification Email to admin team
         try {
-          const completedOrdersCount = await prisma.offerLinkOrder.count({
-            where: { offerLinkId: dbOrder.offerLinkId, paymentStatus: 'SUCCESS' }
+          const totalDevoteesCount = await prisma.offerLinkDevotee.count({
+            where: { order: { offerLinkId: dbOrder.offerLinkId, paymentStatus: 'SUCCESS' } }
           })
           const initialCounter = (dbOrder.offerLink as any).initialCounter ?? 10000
-          const displayCounter = initialCounter + completedOrdersCount
+          const displayCounter = initialCounter + totalDevoteesCount
 
           const adminEmailData = adminOfferBookingSuccessEmail({
             orderId: dbOrder.id,

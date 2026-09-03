@@ -63,11 +63,13 @@ export default async function OfferPage({ params }: Props) {
     // Fail silently so it doesn't block page load
   }
 
-  // Fetch total completed orders count for live devotee booking counter
-  const completedOrdersCount = await prisma.offerLinkOrder.count({
+  // Fetch total completed devotees count for live devotee booking counter
+  const totalDevoteesCount = await prisma.offerLinkDevotee.count({
     where: {
-      offerLinkId: offer.id,
-      paymentStatus: 'SUCCESS'
+      order: {
+        offerLinkId: offer.id,
+        paymentStatus: 'SUCCESS'
+      }
     }
   })
 
@@ -107,7 +109,7 @@ export default async function OfferPage({ params }: Props) {
     .filter(Boolean)
 
   const initialCounter = (offer as any).initialCounter ?? 10000
-  const displayCounter = calculateDynamicCounter(initialCounter, completedOrdersCount)
+  const displayCounter = calculateDynamicCounter(initialCounter, totalDevoteesCount)
 
   // Convert Decimal fields to strings for serialization across client boundaries
   const serializedOffer = {

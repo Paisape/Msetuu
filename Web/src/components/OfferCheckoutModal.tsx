@@ -162,12 +162,18 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
     return offerLink.displayCounter || calculateDynamicCounter(baseInitial, 0)
   })
 
-  // Full pool of rotating devotee names (real bookings prioritized first)
+  // Full pool of rotating devotee names (deterministic on SSR, shuffled on client mount)
   const [rotatingDevotees, setRotatingDevotees] = useState<{ name: string; city: string }[]>(() => {
-    return getMergedDevoteeList(offerLink.recentBookings || [])
+    const real = offerLink.recentBookings || []
+    return real.length > 0 ? real : SAMPLE_DEVOTEES
   })
   const [activeBookingIdx, setActiveBookingIdx] = useState(0)
   const [isFading, setIsFading] = useState(false)
+
+  // Randomize devotee list on client mount to prevent SSR hydration mismatch
+  useEffect(() => {
+    setRotatingDevotees(getMergedDevoteeList(offerLink.recentBookings || []))
+  }, [offerLink.recentBookings])
 
   // 1. Automatic Devotee Name Rotation (every 3.8s with subtle fade animation)
   useEffect(() => {
@@ -476,10 +482,19 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             setConfirmedOrderId(orderId)
             setSuccess(true)
             setIsOpen(false)
-            setLiveCounter(prev => prev + 1)
-            if (devotees[0]?.name) {
-              const newDevoteeCity = [devotees[0].city, devotees[0].state].filter(Boolean).join(', ')
-              setRotatingDevotees(prev => [{ name: devotees[0].name, city: newDevoteeCity }, ...prev])
+            const countToAdd = Math.max(1, devotees.length)
+            setLiveCounter(prev => prev + countToAdd)
+            
+            // Add all entered devotees to rotating live ticker
+            const newDevotees = devotees
+              .filter(d => d.name?.trim())
+              .map(d => ({
+                name: d.name.trim(),
+                city: [d.city, d.state].filter(Boolean).join(', ')
+              }))
+
+            if (newDevotees.length > 0) {
+              setRotatingDevotees(prev => [...newDevotees, ...prev])
               setActiveBookingIdx(0)
             }
           } catch (err: any) {
