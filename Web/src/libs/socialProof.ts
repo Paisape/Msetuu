@@ -1,6 +1,7 @@
 /**
  * Social Proof & Booking Counter Engine for Mandirsetuu Offer Pages.
  * Accurately calculates: Start Counter Offset (Configured in Admin) + Real Completed Orders.
+ * Provides randomized real + sample devotee name rotation.
  */
 
 export const SAMPLE_DEVOTEES: { name: string; city: string }[] = [
@@ -31,7 +32,11 @@ export const SAMPLE_DEVOTEES: { name: string; city: string }[] = [
   { name: 'HARISH PANDEY', city: 'Gorakhpur, Uttar Pradesh, India' },
   { name: 'VANDANA CHAVAN', city: 'Kolhapur, Maharashtra, India' },
   { name: 'GIRISH AGNIHOTRI', city: 'Gwalior, Madhya Pradesh, India' },
-  { name: 'ROHIT KASHYAP', city: 'Mathura, Uttar Pradesh, India' }
+  { name: 'ROHIT KASHYAP', city: 'Mathura, Uttar Pradesh, India' },
+  { name: 'AJAY CHATTERJEE', city: 'Kolkata, West Bengal, India' },
+  { name: 'PANKAJ RAWAT', city: 'Dehradun, Uttarakhand, India' },
+  { name: 'ANURADHA JADHAV', city: 'Aurangabad, Maharashtra, India' },
+  { name: 'SUMIT BHARDWAJ', city: 'Gurugram, Haryana, India' }
 ]
 
 /**
@@ -42,17 +47,24 @@ export function calculateDynamicCounter(baseCounter: number = 0, realOrdersCount
 }
 
 /**
- * Merges real live bookings with sample devotee pool for continuous rotation.
- * Real bookings from DB are always prioritized at the top of the queue.
+ * Randomizes and combines real bookings with sample devotee pool
+ * so devotee names are randomized on every page load and visit.
  */
 export function getMergedDevoteeList(realBookings: { name: string; city: string }[] = []): { name: string; city: string }[] {
-  if (!realBookings || realBookings.length === 0) {
-    return SAMPLE_DEVOTEES
-  }
-
-  // Deduplicate and place real bookings at the front
-  const realNames = new Set(realBookings.map(b => b.name.toLowerCase().trim()))
+  const realList = realBookings || []
+  const realNames = new Set(realList.map(b => b.name.toLowerCase().trim()))
   const filteredSample = SAMPLE_DEVOTEES.filter(s => !realNames.has(s.name.toLowerCase().trim()))
   
-  return [...realBookings, ...filteredSample]
+  // Combine real bookings and sample pool
+  const combined = [...realList, ...filteredSample]
+
+  // Randomize order (Fisher-Yates shuffle)
+  for (let i = combined.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = combined[i]
+    combined[i] = combined[j]
+    combined[j] = temp
+  }
+
+  return combined
 }

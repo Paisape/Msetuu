@@ -479,7 +479,8 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             setLiveCounter(prev => prev + 1)
             if (devotees[0]?.name) {
               const newDevoteeCity = [devotees[0].city, devotees[0].state].filter(Boolean).join(', ')
-              setRealBookings(prev => [{ name: devotees[0].name, city: newDevoteeCity }, ...prev])
+              setRotatingDevotees(prev => [{ name: devotees[0].name, city: newDevoteeCity }, ...prev])
+              setActiveBookingIdx(0)
             }
           } catch (err: any) {
             setError(err.message)
