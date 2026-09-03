@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { getMergedDevoteeList, calculateDynamicCounter } from '@/libs/socialProof'
+import { getMergedDevoteeList, calculateDynamicCounter, SAMPLE_DEVOTEES } from '@/libs/socialProof'
 
 type Devotee = {
   name: string
