@@ -95,6 +95,7 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
   const [order, setOrder] = useState<Record<string, any> | null>(null)
   const [trail, setTrail] = useState<TrailEntry[]>([])
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [sendingSms, setSendingSms] = useState(false)
