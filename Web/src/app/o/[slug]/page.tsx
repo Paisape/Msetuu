@@ -131,12 +131,12 @@ export default async function OfferPage({ params }: Props) {
     .trim()
 
   return (
-    <div className="relative min-h-screen bg-[#FAF8EB] flex flex-col items-center justify-start">
+    <div className="relative min-h-screen bg-[#FAF8EB] flex flex-col items-center justify-start pb-24 sm:pb-28">
       {/* 1. Paste raw HTML design content dynamically, layout-independent */}
       <div 
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: cleanedHtmlContent }} 
-        className="w-full min-h-screen flex-grow"
+        className="w-full max-w-2xl mx-auto"
       />
 
       {/* 2. Mount the floating modal checkout form */}
