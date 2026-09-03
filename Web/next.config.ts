@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
   rewrites: async () => {
     return [
       { source: '/', destination: '/front-pages/landing-page' },
+      { source: '/about', destination: '/front-pages/about' },
       { source: '/login', destination: '/en/login' },
       { source: '/register', destination: '/en/register' },
       { source: '/MsetuAdmin', destination: '/en/apps/mandir-setu' },
