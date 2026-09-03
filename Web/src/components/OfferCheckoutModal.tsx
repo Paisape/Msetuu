@@ -169,7 +169,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   const [activeBookingIdx, setActiveBookingIdx] = useState(0)
   const [isFading, setIsFading] = useState(false)
 
-  // 1. Automatic Name Rotation (every 3.5s with subtle fade animation)
+  // 1. Automatic Devotee Name Rotation (every 3.8s with subtle fade animation)
   useEffect(() => {
     if (rotatingDevotees.length <= 1) return
     const timer = setInterval(() => {
@@ -181,27 +181,6 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
     }, 3800)
     return () => clearInterval(timer)
   }, [rotatingDevotees.length])
-
-  // 2. Automatic Live Counter progression & Hourly update
-  useEffect(() => {
-    const updateCounter = () => {
-      const computed = calculateDynamicCounter(baseInitial, 0)
-      setLiveCounter(prev => Math.max(prev, computed))
-    }
-
-    // Update on minute / hour interval
-    const counterTimer = setInterval(updateCounter, 60000)
-
-    // Micro live increment every 45-75s while browsing page
-    const microIncrement = setInterval(() => {
-      setLiveCounter(prev => prev + 1)
-    }, 55000)
-
-    return () => {
-      clearInterval(counterTimer)
-      clearInterval(microIncrement)
-    }
-  }, [])
 
   const [devotees, setDevotees] = useState<Devotee[]>([
     { name: '', gotra: '', dob: '', phone: '', email: '' }

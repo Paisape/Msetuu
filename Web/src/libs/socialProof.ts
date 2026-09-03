@@ -1,7 +1,6 @@
 /**
- * Realistic Social Proof & Dynamic Hourly Counter Engine for Mandirsetuu Offer Pages.
- * Allows realistic simulated progression every hour + name rotations, seamlessly
- * integrating real live bookings.
+ * Social Proof & Booking Counter Engine for Mandirsetuu Offer Pages.
+ * Accurately calculates: Start Counter Offset (Configured in Admin) + Real Completed Orders.
  */
 
 export const SAMPLE_DEVOTEES: { name: string; city: string }[] = [
@@ -36,38 +35,15 @@ export const SAMPLE_DEVOTEES: { name: string; city: string }[] = [
 ]
 
 /**
- * Deterministically computes the dynamic counter for the current hour and day in Indian Standard Time (IST).
- * Increases realistically hour-by-hour (averaging 8 - 18 bookings per hour).
+ * Calculates the exact real counter: Base Start Number (configured by Admin) + Real Completed Orders in DB.
  */
-export function calculateDynamicCounter(baseCounter: number = 10000, realOrdersCount: number = 0, targetDate?: Date): number {
-  const now = targetDate || new Date()
-  const istOffsetMs = 5.5 * 60 * 60 * 1000
-  const istDate = new Date(now.getTime() + istOffsetMs)
-
-  const istYear = istDate.getUTCFullYear()
-  const startOfYear = new Date(Date.UTC(istYear, 0, 1))
-  const dayOfYear = Math.floor((istDate.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
-  const currentHour = istDate.getUTCHours() // 0 to 23
-  const currentMinute = istDate.getUTCMinutes() // 0 to 59
-
-  // Sum pseudo-random hourly rates for all completed hours of the day
-  let hourlyProgress = 0
-  for (let h = 0; h < currentHour; h++) {
-    const rateForHour = ((dayOfYear * 13 + h * 7) % 11) + 8 // 8 to 18 per hour
-    hourlyProgress += rateForHour
-  }
-
-  // Fraction of the current hour
-  const thisHourRate = ((dayOfYear * 13 + currentHour * 7) % 11) + 8
-  const minuteProgress = Math.floor((currentMinute / 60) * thisHourRate)
-
-  // Daily baseline accumulation + hourly progression + real bookings
-  const dailyBase = dayOfYear * 120
-  return baseCounter + dailyBase + hourlyProgress + minuteProgress + realOrdersCount
+export function calculateDynamicCounter(baseCounter: number = 0, realOrdersCount: number = 0): number {
+  return Number(baseCounter || 0) + Number(realOrdersCount || 0)
 }
 
 /**
- * Merges live real bookings with the sample pool so names rotate continuously.
+ * Merges real live bookings with sample devotee pool for continuous rotation.
+ * Real bookings from DB are always prioritized at the top of the queue.
  */
 export function getMergedDevoteeList(realBookings: { name: string; city: string }[] = []): { name: string; city: string }[] {
   if (!realBookings || realBookings.length === 0) {
