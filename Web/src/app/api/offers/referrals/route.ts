@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
-import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { requireAdmin, requireUser, handleApiError } from '@/libs/api-auth'
 
 // GET /api/offers/referrals - List all referral codes (Admin only)
 export async function GET() {
