@@ -6,7 +6,7 @@
 
 import prisma from '@/libs/prisma'
 import { createInvoiceForOrder } from '@/libs/invoice'
-import { paymentSuccessEmail, adminOfferBookingSuccessEmail } from '@/libs/emailTemplates'
+import { devoteeOfferBookingInvoiceEmail, adminOfferBookingSuccessEmail } from '@/libs/emailTemplates'
 import { sendEmail } from '@/libs/email'
 import { sendOrderConfirmationSms } from '@/libs/sms'
 import { getSettingsForCategory } from '@/libs/appSettings'
@@ -20,11 +20,20 @@ export interface ConfirmOfferBookingOptions {
   notes?: string
 }
 
-export async function confirmOfferBookingAndNotify(opts: ConfirmOfferBookingOptions) {
+export async function confirmOfferBookingAndNotify(
+  input: ConfirmOfferBookingOptions | string,
+  legacyPaymentId?: string,
+  legacyPaymentMethod?: string
+) {
+  const opts: ConfirmOfferBookingOptions =
+    typeof input === 'string'
+      ? { orderId: input, paymentId: legacyPaymentId, paymentMethod: legacyPaymentMethod }
+      : input
+
   const {
     orderId,
     paymentId,
-    paymentMethod = 'ONLINE',
+    paymentMethod = 'Online (Razorpay)',
     paymentDetails,
     reconciledStatus = 'RECONCILED_AUTO',
     notes
@@ -40,28 +49,20 @@ export async function confirmOfferBookingAndNotify(opts: ConfirmOfferBookingOpti
   })
 
   if (!existingOrder) {
-    throw new Error(`OfferLinkOrder with ID ${orderId} not found.`)
+    throw new Error(`OfferLinkOrder ${orderId} not found`)
   }
 
-  // 2. Update Order to SUCCESS & Reconciled
+  // 2. Mark order as SUCCESS and record payment details
   const updateData: Record<string, any> = {
     paymentStatus: 'SUCCESS',
     reconciledStatus,
     reconciledAt: new Date()
   }
 
-  if (paymentId) {
-    updateData.paymentId = paymentId
-  }
-  if (paymentMethod) {
-    updateData.paymentMethod = paymentMethod
-  }
-  if (paymentDetails) {
-    updateData.paymentDetails = paymentDetails
-  }
-  if (notes) {
-    updateData.reconciliationNotes = notes
-  }
+  if (paymentId) updateData.paymentId = paymentId
+  if (paymentMethod) updateData.paymentMethod = paymentMethod
+  if (paymentDetails) updateData.paymentDetails = paymentDetails
+  if (notes) updateData.reconciliationNotes = notes
 
   const updatedOrder = await prisma.offerLinkOrder.update({
     where: { id: orderId },
@@ -74,10 +75,10 @@ export async function confirmOfferBookingAndNotify(opts: ConfirmOfferBookingOpti
 
   const primaryDevotee = updatedOrder.devotees.find(d => d.isPrimary) || updatedOrder.devotees[0]
   const customerName = primaryDevotee?.name || 'Devotee'
-  const customerEmail = primaryDevotee?.email || null
-  const customerPhone = primaryDevotee?.phone || null
+  const customerEmail = primaryDevotee?.email || updatedOrder.devotees.find(d => d.email && d.email.includes('@'))?.email || null
+  const customerPhone = primaryDevotee?.phone || updatedOrder.devotees.find(d => d.phone && d.phone.trim())?.phone || null
 
-  // 3. GST Invoice Generation (Isolated try-catch)
+  // 3. Invoice Generation (No GST mentioned for special devotional offerings)
   let invoice: any = null
   try {
     invoice = await createInvoiceForOrder({
@@ -86,24 +87,27 @@ export async function confirmOfferBookingAndNotify(opts: ConfirmOfferBookingOpti
       userId: 'guest',
       customerName,
       customerEmail,
-      itemLabel: `Offer booking: ${updatedOrder.offerLink.title}`,
+      itemLabel: `Offering Seva: ${updatedOrder.offerLink.title}`,
       amountCharged: Number(updatedOrder.amount),
-      gstPercentage: Number(updatedOrder.offerLink.gstRate),
-      gstInclusive: updatedOrder.offerLink.gstIncluded
+      gstPercentage: 0,
+      gstInclusive: true
     })
   } catch (invErr) {
     console.error(`[OfferBooking] Invoice generation failed for order ${orderId}:`, invErr)
   }
 
-  // 4. Devotee Email Receipt (Isolated try-catch)
+  // 4. Devotee Branded Receipt & Invoice Email (Isolated try-catch)
   if (customerEmail && customerEmail.includes('@')) {
     try {
-      const { subject, html } = paymentSuccessEmail({
+      const { subject, html } = devoteeOfferBookingInvoiceEmail({
         customerName,
-        itemLabel: `Offer booking: ${updatedOrder.offerLink.title}`,
+        campaignTitle: updatedOrder.offerLink.title,
         amount: Number(updatedOrder.amount),
         orderId: updatedOrder.id,
-        invoiceNumber: invoice?.invoiceNumber || `INV-${new Date().getFullYear()}-${updatedOrder.id.slice(0, 8)}`
+        invoiceNumber: invoice?.invoiceNumber || `INV-${new Date().getFullYear()}-${updatedOrder.id.slice(0, 8).toUpperCase()}`,
+        paymentMethod: updatedOrder.paymentMethod || paymentMethod || 'Online (Razorpay)',
+        devotees: updatedOrder.devotees as any[],
+        createdAt: updatedOrder.createdAt
       })
       await sendEmail({ to: customerEmail, subject, html })
     } catch (mailErr) {

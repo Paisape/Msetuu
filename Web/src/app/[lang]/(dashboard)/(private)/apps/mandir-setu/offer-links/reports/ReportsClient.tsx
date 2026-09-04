@@ -846,15 +846,38 @@ export default function ReportsClient() {
             </>
           )}
         </DialogContent>
-        <DialogActions className='justify-between px-6 pb-4'>
-          <Button 
-            variant='outlined' 
-            onClick={() => { setDetailOpen(false); router.push(`/${locale}/apps/mandir-setu/orders/offer/${selectedOrder?.id}`); }} 
-            startIcon={<i className='tabler-external-link' />}
-            className='border-slate-300 text-slate-700 font-medium text-xs'
-          >
-            Full Order Details Page
-          </Button>
+        <DialogActions className='justify-between px-6 pb-4 flex-wrap gap-2'>
+          <div className='flex gap-2 flex-wrap'>
+            <Button 
+              variant='outlined' 
+              onClick={() => { setDetailOpen(false); router.push(`/${locale}/apps/mandir-setu/orders/offer/${selectedOrder?.id}`); }} 
+              startIcon={<i className='tabler-external-link' />}
+              className='border-slate-300 text-slate-700 font-medium text-xs'
+            >
+              Full Order Details Page
+            </Button>
+            <Button
+              variant='outlined'
+              onClick={async () => {
+                if (!selectedOrder) return
+                try {
+                  const res = await fetch(`/api/invoices?orderId=${selectedOrder.id}`)
+                  const data = await res.json()
+                  if (Array.isArray(data) && data.length > 0) {
+                    window.open(`/${locale}/apps/mandir-setu/accounts/invoices/${data[0].id}`, '_blank')
+                  } else {
+                    alert('No invoice generated yet for this pending booking.')
+                  }
+                } catch {
+                  alert('Unable to load invoice.')
+                }
+              }}
+              startIcon={<i className='tabler-file-invoice' />}
+              className='border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold text-xs'
+            >
+              📄 View / Print Receipt
+            </Button>
+          </div>
           <Button onClick={() => setDetailOpen(false)} style={{ color: '#FF671F' }} className='font-bold text-xs'>
             Close
           </Button>

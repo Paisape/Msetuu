@@ -76,6 +76,25 @@ export async function createInvoiceForOrder(input: CreateInvoiceInput) {
     gstAmount = 0
   }
 
+  // Ensure a valid userId that exists in User table (avoids foreign key constraint failure for guest/offer orders)
+  let validUserId = input.userId
+  if (!validUserId || validUserId === 'guest') {
+    if (input.customerEmail) {
+      const u = await prisma.user.findFirst({ where: { email: input.customerEmail } })
+      if (u) validUserId = u.id
+    }
+    if (!validUserId || validUserId === 'guest') {
+      const fallbackUser = (await prisma.user.findFirst({ where: { role: 'ADMIN' } })) || (await prisma.user.findFirst())
+      if (fallbackUser) {
+        validUserId = fallbackUser.id
+      }
+    }
+  }
+
+  if (!validUserId) {
+    validUserId = 'guest'
+  }
+
   try {
     const invoiceNumber = await nextInvoiceNumber()
     return await prisma.invoice.create({
@@ -83,7 +102,7 @@ export async function createInvoiceForOrder(input: CreateInvoiceInput) {
         invoiceNumber,
         orderType: input.orderType,
         orderId: input.orderId,
-        userId: input.userId,
+        userId: validUserId,
         customerName: input.customerName,
         customerEmail: input.customerEmail,
         itemLabel: input.itemLabel,
@@ -104,7 +123,7 @@ export async function createInvoiceForOrder(input: CreateInvoiceInput) {
           invoiceNumber: fallbackInvoiceNumber,
           orderType: input.orderType,
           orderId: input.orderId,
-          userId: input.userId,
+          userId: validUserId,
           customerName: input.customerName,
           customerEmail: input.customerEmail,
           itemLabel: input.itemLabel,

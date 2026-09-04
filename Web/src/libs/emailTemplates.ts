@@ -387,3 +387,127 @@ export function adminOfferBookingSuccessEmail(opts: {
 
   return { subject, html: renderEmailLayout(body, `New Campaign Booking: ${opts.campaignTitle}`) }
 }
+
+export function devoteeOfferBookingInvoiceEmail(opts: {
+  customerName: string
+  campaignTitle: string
+  amount: number
+  orderId: string
+  invoiceNumber: string
+  paymentMethod?: string
+  devotees: {
+    name: string
+    gotra?: string
+    dob?: string
+    city?: string | null
+    state?: string | null
+  }[]
+  createdAt: Date
+}): { subject: string; html: string } {
+  const shortOrderId = opts.orderId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()
+  const subject = `🌸 Booking Confirmed & Receipt: ${opts.campaignTitle} (#MS-${shortOrderId})`
+  const trackUrl = `${APP_URL}/t/?id=${shortOrderId}`
+
+  const devoteesList = opts.devotees
+    .map(
+      (d, i) => `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${i + 1}. ${escapeHtml(d.name)}</td>
+        <td style="padding: 10px 14px; color: #64748b;">${escapeHtml(d.gotra || '—')}</td>
+        <td style="padding: 10px 14px; color: #64748b;">${escapeHtml([d.city, d.state].filter(Boolean).join(', ') || '—')}</td>
+      </tr>
+    `
+    )
+    .join('')
+
+  const body = `
+    <!-- Header Divine Banner -->
+    <div style="background: linear-gradient(135deg, #fff7ed 0%, #ecfdf5 100%); border: 1.5px solid #fed7aa; padding: 22px 18px; border-radius: 14px; text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 32px; line-height: 1; margin-bottom: 8px;">🌸 🙏 ✨</div>
+      <h2 style="margin: 0; color: #9a3412; font-size: 21px; font-weight: 800; letter-spacing: -0.2px;">Booking Confirmed & Blessed</h2>
+      <p style="margin: 6px 0 0; color: #006241; font-size: 15px; font-weight: 700;">${escapeHtml(opts.campaignTitle)}</p>
+    </div>
+
+    <p style="font-size: 15px; color: #1f2937; line-height: 1.6; margin-bottom: 18px;">
+      Namaste <strong>${escapeHtml(opts.customerName)}</strong> ji,<br />
+      Thank you for your sacred offering. We are pleased to confirm that your puja seva booking has been successfully recorded. May the blessings of the divine almighty shower peace, prosperity, and spiritual fulfillment upon you and your family.
+    </p>
+
+    <!-- Official Booking Receipt Card -->
+    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+      <div style="background: #006241; color: #ffffff; padding: 12px 18px; display: table; width: 100%; box-sizing: border-box;">
+        <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Official Booking Receipt</span>
+        <span style="float: right; background: #ffffff; color: #006241; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">PAID</span>
+      </div>
+
+      <table width="100%" cellpadding="10" cellspacing="0" style="font-size: 13px; border-collapse: collapse;">
+        <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600; width: 42%;">Receipt / Invoice No.</td>
+          <td style="color: #0f172a; font-weight: 800; text-align: right; font-family: monospace;">${escapeHtml(opts.invoiceNumber)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600;">Order ID</td>
+          <td style="color: #ea580c; font-weight: 800; text-align: right; font-family: monospace;">#MS-${shortOrderId}</td>
+        </tr>
+        <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600;">Booking Date</td>
+          <td style="color: #0f172a; text-align: right; font-weight: 600;">${opts.createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600;">Seva / Offering</td>
+          <td style="color: #0f172a; font-weight: 700; text-align: right;">${escapeHtml(opts.campaignTitle)}</td>
+        </tr>
+        <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600;">Total Devotees Booked</td>
+          <td style="color: #0f172a; text-align: right; font-weight: 700;">${opts.devotees.length} Devotee(s)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="color: #64748b; font-weight: 600;">Payment Mode</td>
+          <td style="color: #0284c7; text-align: right; font-weight: 700;">${escapeHtml(opts.paymentMethod || 'Online (Razorpay)')}</td>
+        </tr>
+        <tr style="background: #fff7ed;">
+          <td style="color: #9a3412; font-weight: 800; font-size: 14px;">Total Amount Paid</td>
+          <td style="color: #006241; font-weight: 900; font-size: 18px; text-align: right;">₹${opts.amount.toLocaleString('en-IN')}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Registered Devotees Table -->
+    ${opts.devotees.length > 0 ? `
+      <div style="margin-bottom: 24px;">
+        <h4 style="margin: 0 0 10px; color: #1e293b; font-size: 14px; font-weight: 700;">👥 Devotee(s) for Puja Sankalp</h4>
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 12px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8fafc; color: #475569; text-align: left; font-weight: 700; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 10px 14px;">Name</th>
+              <th style="padding: 10px 14px;">Gotra</th>
+              <th style="padding: 10px 14px;">City / State</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${devoteesList}
+          </tbody>
+        </table>
+      </div>
+    ` : ''}
+
+    <!-- Live Tracking CTA -->
+    <div style="text-align: center; margin: 30px 0 24px;">
+      <a href="${trackUrl}" style="display: inline-block; background: linear-gradient(135deg, #006241 0%, #047857 100%); color: #ffffff; text-decoration: none; font-weight: 800; font-size: 14px; padding: 14px 34px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,98,65,0.25);">
+        📍 Track Your Booking & Video Details
+      </a>
+      <p style="margin: 10px 0 0; font-size: 12px; color: #64748b;">
+        Tracking URL: <a href="${trackUrl}" style="color: #006241; font-family: monospace; font-weight: 600;">${trackUrl}</a>
+      </p>
+    </div>
+
+    <div style="background: #f0fdf4; border: 1px dashed #86efac; border-radius: 10px; padding: 14px; text-align: center; margin-top: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #166534; font-weight: 500;">
+        "ॐ सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः । सर्वे भद्राणि पश्यन्तु मा कश्चिद्दुःखभाग्भवेत् ॥"
+      </p>
+    </div>
+  `
+
+  return { subject, html: renderEmailLayout(body, `Booking confirmed for ${opts.campaignTitle}. Receipt No: ${opts.invoiceNumber}`) }
+}
+

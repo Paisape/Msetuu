@@ -41,7 +41,8 @@ const MODULE_LINK: Record<string, string> = {
   CHADHAVA: 'chadhava',
   EPUJA: 'epuja',
   KUNDLI: 'kundli',
-  ECOMMERCE: 'ecommerce'
+  ECOMMERCE: 'ecommerce',
+  OFFER: 'offer'
 }
 
 const InvoicePreviewClient = ({ id }: { id: string }) => {
@@ -80,6 +81,8 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
     ? `/apps/mandir-setu/orders/${MODULE_LINK[invoice.orderType]}/${invoice.orderId}`
     : null
 
+  const hasGst = invoice.gstPercentage > 0 && invoice.gstAmount > 0
+
   return (
     <div className='p-6'>
       <div className='flex items-center justify-between mb-4 flex-wrap gap-3 print:hidden'>
@@ -93,7 +96,7 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
             </Button>
           )}
           <Button onClick={() => window.print()} variant='contained' size='small' startIcon={<i className='tabler-printer' />}>
-            Print
+            Print Receipt / Invoice
           </Button>
         </div>
       </div>
@@ -106,7 +109,7 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
                 Mandirsetuu
               </Typography>
               <Typography variant='body2' className='text-textSecondary'>
-                GST Invoice
+                {hasGst ? 'Tax / GST Invoice' : 'Booking Receipt & Invoice'}
               </Typography>
             </div>
             <div className='text-right'>
@@ -114,7 +117,7 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
                 {invoice.invoiceNumber}
               </Typography>
               <Typography variant='body2' className='text-textSecondary'>
-                Issued: {new Date(invoice.issuedAt).toLocaleDateString('en-IN')}
+                Issued: {new Date(invoice.issuedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
               </Typography>
               <Chip
                 size='small'
@@ -130,18 +133,20 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
           <Grid container spacing={4} className='mb-6'>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant='caption' className='text-textSecondary block'>
-                Billed To
+                Billed / Issued To
               </Typography>
               <Typography className='font-medium'>{invoice.customerName}</Typography>
-              <Typography variant='body2' className='text-textSecondary'>
-                {invoice.customerEmail}
-              </Typography>
+              {invoice.customerEmail && (
+                <Typography variant='body2' className='text-textSecondary'>
+                  {invoice.customerEmail}
+                </Typography>
+              )}
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }} className='sm:text-right'>
               <Typography variant='caption' className='text-textSecondary block'>
-                Order Type
+                Order Type / Service
               </Typography>
-              <Typography className='font-medium'>{invoice.orderType}</Typography>
+              <Typography className='font-medium'>{invoice.orderType === 'OFFER' ? 'Special Campaign Seva' : invoice.orderType}</Typography>
             </Grid>
           </Grid>
 
@@ -149,35 +154,39 @@ const InvoicePreviewClient = ({ id }: { id: string }) => {
             <TableHead>
               <TableRow>
                 <TableCell>Description</TableCell>
-                <TableCell align='right'>Taxable Value</TableCell>
-                <TableCell align='right'>GST ({invoice.gstPercentage}%)</TableCell>
-                <TableCell align='right'>Total</TableCell>
+                {hasGst && <TableCell align='right'>Taxable Value</TableCell>}
+                {hasGst && <TableCell align='right'>GST ({invoice.gstPercentage}%)</TableCell>}
+                <TableCell align='right'>Total Amount</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               <TableRow>
                 <TableCell>{invoice.itemLabel}</TableCell>
-                <TableCell align='right'>₹{invoice.subtotal}</TableCell>
-                <TableCell align='right'>₹{invoice.gstAmount}</TableCell>
-                <TableCell align='right'>₹{invoice.total}</TableCell>
+                {hasGst && <TableCell align='right'>₹{invoice.subtotal.toLocaleString('en-IN')}</TableCell>}
+                {hasGst && <TableCell align='right'>₹{invoice.gstAmount.toLocaleString('en-IN')}</TableCell>}
+                <TableCell align='right' className='font-bold'>₹{invoice.total.toLocaleString('en-IN')}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
 
           <div className='flex justify-end mb-6'>
             <div className='w-full sm:w-64'>
-              <div className='flex justify-between mb-1'>
-                <Typography variant='body2'>Taxable Value</Typography>
-                <Typography variant='body2'>₹{invoice.subtotal}</Typography>
-              </div>
-              <div className='flex justify-between mb-1'>
-                <Typography variant='body2'>GST ({invoice.gstPercentage}%)</Typography>
-                <Typography variant='body2'>₹{invoice.gstAmount}</Typography>
-              </div>
-              <Divider className='my-2' />
-              <div className='flex justify-between'>
-                <Typography className='font-bold'>Total Paid</Typography>
-                <Typography className='font-bold'>₹{invoice.total}</Typography>
+              {hasGst && (
+                <>
+                  <div className='flex justify-between mb-1'>
+                    <Typography variant='body2'>Taxable Value</Typography>
+                    <Typography variant='body2'>₹{invoice.subtotal.toLocaleString('en-IN')}</Typography>
+                  </div>
+                  <div className='flex justify-between mb-1'>
+                    <Typography variant='body2'>GST ({invoice.gstPercentage}%)</Typography>
+                    <Typography variant='body2'>₹{invoice.gstAmount.toLocaleString('en-IN')}</Typography>
+                  </div>
+                  <Divider className='my-2' />
+                </>
+              )}
+              <div className='flex justify-between items-center'>
+                <Typography className='font-bold text-slate-800'>Total Paid</Typography>
+                <Typography className='font-black text-lg text-emerald-800'>₹{invoice.total.toLocaleString('en-IN')}</Typography>
               </div>
             </div>
           </div>
