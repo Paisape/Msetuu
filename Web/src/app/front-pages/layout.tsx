@@ -18,6 +18,8 @@ import FrontLayout from '@components/layout/front-pages'
 import ScrollToTop from '@core/components/scroll-to-top'
 import DevotionalMusic from '@/components/DevotionalMusic'
 
+import MetaPixel from '@/components/MetaPixel'
+
 // Util Imports
 import { getSystemMode } from '@core/utils/serverHelpers'
 
@@ -45,6 +47,7 @@ const Layout = async ({ children }: ChildrenType) => {
         <link rel='stylesheet' href='https://api.fontshare.com/v2/css?f[]=synonym@1&display=swap' />
       </head>
       <body className='flex is-full min-bs-full flex-auto flex-col'>
+        <MetaPixel />
         <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
         <Providers direction='ltr'>
           <BlankLayout systemMode={systemMode}>

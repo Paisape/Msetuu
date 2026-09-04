@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { getMergedDevoteeList, calculateDynamicCounter, SAMPLE_DEVOTEES } from '@/libs/socialProof'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type Devotee = {
   name: string
@@ -206,7 +207,16 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
         { enableHighAccuracy: true, timeout: 10000 }
       )
     }
-  }, [isOpen])
+    if (isOpen) {
+      trackMetaEvent('InitiateCheckout', {
+        content_name: offerLink.title,
+        content_ids: [offerLink.id],
+        content_type: 'product',
+        value: parseFloat(offerLink.offerPrice) || 0,
+        currency: 'INR'
+      })
+    }
+  }, [isOpen, offerLink])
 
   // Resolve partner name from code helper
   const resolvePartner = async (code: string) => {
@@ -482,6 +492,18 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
             setConfirmedOrderId(orderId)
             setSuccess(true)
             setIsOpen(false)
+
+            // Track Meta Pixel Purchase Conversion Event
+            trackMetaEvent('Purchase', {
+              value: finalAmount,
+              currency: 'INR',
+              content_name: offerLink.title,
+              content_ids: [offerLink.id],
+              content_type: 'product',
+              num_items: devotees.length,
+              order_id: orderId
+            })
+
             const countToAdd = Math.max(1, devotees.length)
             setLiveCounter(prev => prev + countToAdd)
             

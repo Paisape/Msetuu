@@ -22,6 +22,8 @@ import { i18n } from '@configs/i18n'
 // Util Imports
 import { getSystemMode } from '@core/utils/serverHelpers'
 
+import MetaPixel from '@/components/MetaPixel'
+
 // Style Imports
 import '@/app/globals.css'
 
@@ -51,6 +53,7 @@ const RootLayout = async (props: ChildrenType & { params: Promise<{ lang: string
     <TranslationWrapper headersList={headersList} lang={lang}>
       <html id='__next' lang={lang} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
+          <MetaPixel />
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
           {children}
         </body>
