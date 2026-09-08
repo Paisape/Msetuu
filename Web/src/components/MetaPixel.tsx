@@ -12,6 +12,13 @@ function MetaPixelTracker() {
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
       window.fbq('track', 'PageView')
+
+      const searchQuery = searchParams?.get('search') || searchParams?.get('q') || searchParams?.get('query')
+      if (searchQuery) {
+        window.fbq('track', 'Search', {
+          search_string: searchQuery
+        })
+      }
     }
   }, [pathname, searchParams])
 

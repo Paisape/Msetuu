@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 
 import { useSession } from 'next-auth/react'
 
+import { trackMetaEvent } from '@/libs/metaPixel'
+
 export type CartItem = {
   id: string
   name: string
@@ -76,6 +78,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       saveCart([...cart, { ...item, quantity: 1 }])
     }
 
+    trackMetaEvent('AddToCart', {
+      content_name: item.name,
+      content_ids: [item.id],
+      content_type: 'product',
+      value: item.price,
+      currency: 'INR'
+    })
+
     setCartOpen(true) // Open cart drawer automatically on adding
   }
 
@@ -121,6 +131,14 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
     const itemsToProcess = opts?.itemsOverride ?? cart
 
     if (itemsToProcess.length === 0) return { success: false, errors: ['Your cart is empty.'] }
+
+    const totalAmount = itemsToProcess.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0)
+    trackMetaEvent('InitiateCheckout', {
+      content_ids: itemsToProcess.map(i => i.id),
+      num_items: itemsToProcess.length,
+      value: totalAmount,
+      currency: 'INR'
+    })
 
     try {
       const { loadRazorpayScript } = await import('@/libs/razorpayClient')
@@ -224,6 +242,15 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
           try {
             const { openRazorpayCheckout } = await import('@/libs/razorpayClient')
 
+            trackMetaEvent('AddPaymentInfo', {
+              content_name: item.name,
+              content_ids: [item.id],
+              content_type: 'product',
+              value: (amount || 0) / 100,
+              currency: currency || 'INR',
+              order_id: rzpOrderId
+            })
+
             openRazorpayCheckout({
               key,
               amount,
@@ -253,6 +280,16 @@ return { success: false, errors: ['You must be logged in to checkout.'] }
                   if (!verifyRes.ok) {
                     reject(new Error(verifyData?.error || 'Payment signature verification failed.'))
                   } else {
+                    trackMetaEvent('Purchase', {
+                      content_name: item.name,
+                      content_ids: [item.id],
+                      content_type: 'product',
+                      value: (amount || 0) / 100,
+                      currency: currency || 'INR',
+                      order_id: orderId,
+                      num_items: item.quantity || 1
+                    })
+
                     successfulOrderIds.push(orderId)
                     resolve()
                   }

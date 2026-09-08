@@ -21,6 +21,7 @@ import ServiceFaq from '@/components/ServiceFaq'
 import DetailPageTabs from '@/components/DetailPageTabs'
 import MediaCarousel, { type MediaGalleryItem } from '@/components/MediaCarousel'
 import { effectivePrice, hasOfferDiscount, gstLabel, type Priced } from '@/libs/pricing'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type Product = Priced & {
   id: string
@@ -57,7 +58,19 @@ const EcommerceDetailPage = () => {
         if (!res.ok) throw new Error('Not found')
         return res.json()
       })
-      .then(data => setProduct(data))
+      .then(data => {
+        setProduct(data)
+        if (data) {
+          trackMetaEvent('ViewContent', {
+            content_name: data.name,
+            content_category: data.category,
+            content_ids: [data.id],
+            content_type: 'product',
+            value: effectivePrice(data),
+            currency: 'INR'
+          })
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])

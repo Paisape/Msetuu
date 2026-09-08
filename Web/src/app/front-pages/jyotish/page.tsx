@@ -17,6 +17,7 @@ import ServiceFaq from '@/components/ServiceFaq'
 import HowItWorksSection, { DEFAULT_HOW_IT_WORKS_STEPS } from '@/components/HowItWorksSection'
 import PageBanner from '@/components/PageBanner'
 import { effectivePrice, hasOfferDiscount, gstLabel } from '@/libs/pricing'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type JyotishCategory = {
   id: string
@@ -75,9 +76,16 @@ const JyotishPage = () => {
     fetch('/api/jyotish/categories')
       .then(res => res.json())
       .then(data => {
+        setCategories(data)
         if (Array.isArray(data) && data.length > 0) {
-          setCategories(data)
           setFormData(prev => ({ ...prev, categoryName: prev.categoryName || data[0].name }))
+          trackMetaEvent('ViewContent', {
+            content_name: 'Vedic Jyotish Consultation',
+            content_category: 'Astrology',
+            content_type: 'product',
+            value: data[0]?.price30 || 0,
+            currency: 'INR'
+          })
         }
       })
       .catch(() => {
@@ -145,6 +153,13 @@ const JyotishPage = () => {
 
     setSubmitting(true)
 
+    trackMetaEvent('InitiateCheckout', {
+      content_name: `Jyotish Consultation - ${category.name}`,
+      content_category: 'Astrology',
+      value: fee,
+      currency: 'INR'
+    })
+
     try {
       const response = await fetch('/api/jyotish', {
         method: 'POST',
@@ -175,6 +190,14 @@ const JyotishPage = () => {
         if (!scriptLoaded) {
           throw new Error('Failed to load Razorpay payment SDK. Check your internet connection.')
         }
+
+        trackMetaEvent('AddPaymentInfo', {
+          content_name: `Jyotish Consultation - ${category.name}`,
+          content_category: 'Astrology',
+          value: (data.razorpayOrder.amount || 0) / 100,
+          currency: data.razorpayOrder.currency || 'INR',
+          order_id: data.razorpayOrder.id
+        })
 
         openRazorpayCheckout({
           key: data.razorpayOrder.key,
@@ -210,6 +233,14 @@ const JyotishPage = () => {
                 throw new Error(verifyData?.error || 'Payment signature verification failed.')
               }
 
+              trackMetaEvent('Purchase', {
+                content_name: `Jyotish Consultation - ${category.name}`,
+                content_category: 'Astrology',
+                value: (data.razorpayOrder.amount || 0) / 100,
+                currency: data.razorpayOrder.currency || 'INR',
+                order_id: data.booking.id
+              })
+
               setBookedId(data.booking.id)
               setSuccess(true)
               setFormData(emptyForm())
@@ -224,6 +255,14 @@ const JyotishPage = () => {
           }
         })
       } else {
+        trackMetaEvent('Purchase', {
+          content_name: `Jyotish Consultation - ${category.name}`,
+          content_category: 'Astrology',
+          value: fee,
+          currency: 'INR',
+          order_id: data.booking.id
+        })
+
         setBookedId(data.booking.id)
         setSuccess(true)
         setFormData(emptyForm())

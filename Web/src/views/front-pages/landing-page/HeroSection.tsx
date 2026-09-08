@@ -12,6 +12,7 @@ import classnames from 'classnames'
 
 import styles from './styles.module.css'
 import frontCommonStyles from '@views/front-pages/styles.module.css'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type Slide = {
   title: string
@@ -141,7 +142,17 @@ const HeroSection = () => {
           </div>
 
           <div className='mt-8 w-full max-w-md'>
-            <form action='/front-pages/ecommerce' method='GET' className='relative flex items-center'>
+            <form
+              action='/front-pages/ecommerce'
+              method='GET'
+              className='relative flex items-center'
+              onSubmit={e => {
+                const input = (e.currentTarget.elements.namedItem('search') as HTMLInputElement)?.value
+                if (input?.trim()) {
+                  trackMetaEvent('Search', { search_string: input.trim() })
+                }
+              }}
+            >
               <input
                 type='text'
                 name='search'

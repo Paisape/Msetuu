@@ -194,6 +194,18 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   ])
 
   useEffect(() => {
+    if (offerLink?.id) {
+      trackMetaEvent('ViewContent', {
+        content_name: offerLink.title,
+        content_ids: [offerLink.id],
+        content_type: 'product',
+        value: parseFloat(offerLink.offerPrice) || 0,
+        currency: 'INR'
+      })
+    }
+  }, [offerLink?.id, offerLink?.title, offerLink?.offerPrice])
+
+  useEffect(() => {
     if (isOpen && typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -415,6 +427,13 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
 
   const addPerson = () => {
     setDevotees([...devotees, { name: '', gotra: '', dob: '', phone: devotees[0].phone, email: '' }])
+    trackMetaEvent('AddToCart', {
+      content_name: offerLink.title,
+      content_ids: [offerLink.id],
+      content_type: 'product',
+      value: basePrice,
+      currency: 'INR'
+    })
   }
 
   const removePerson = (index: number) => {
@@ -462,6 +481,16 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
       }
 
       const { orderId, razorpayOrder } = data
+
+      // Track AddPaymentInfo when entering payment stage
+      trackMetaEvent('AddPaymentInfo', {
+        content_name: offerLink.title,
+        content_ids: [offerLink.id],
+        content_type: 'product',
+        value: finalAmount,
+        currency: 'INR',
+        order_id: orderId
+      })
 
       const options = {
         key: razorpayOrder.key,

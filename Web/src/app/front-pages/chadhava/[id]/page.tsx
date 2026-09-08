@@ -20,6 +20,7 @@ import ServiceFaq from '@/components/ServiceFaq'
 import DetailPageTabs from '@/components/DetailPageTabs'
 import MediaCarousel, { type MediaGalleryItem } from '@/components/MediaCarousel'
 import { effectivePrice, hasOfferDiscount, gstLabel } from '@/libs/pricing'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type ChadhavaListing = {
   id: string
@@ -53,7 +54,19 @@ const ChadhavaDetailPage = () => {
         if (!res.ok) throw new Error('Not found')
         return res.json()
       })
-      .then(data => setListing(data))
+      .then(data => {
+        setListing(data)
+        if (data) {
+          trackMetaEvent('ViewContent', {
+            content_name: data.title,
+            content_category: 'Chadhava',
+            content_ids: [data.id],
+            content_type: 'product',
+            value: effectivePrice(data as any),
+            currency: 'INR'
+          })
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])

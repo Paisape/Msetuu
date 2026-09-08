@@ -20,6 +20,7 @@ import ServiceFaq from '@/components/ServiceFaq'
 import DetailPageTabs from '@/components/DetailPageTabs'
 import MediaCarousel, { type MediaGalleryItem } from '@/components/MediaCarousel'
 import { effectivePrice, hasOfferDiscount, gstLabel, type Priced } from '@/libs/pricing'
+import { trackMetaEvent } from '@/libs/metaPixel'
 
 type PujaPackage = Priced & {
   id: string
@@ -57,7 +58,20 @@ const EpujaDetailPage = () => {
         if (!res.ok) throw new Error('Not found')
         return res.json()
       })
-      .then(data => setListing(data))
+      .then(data => {
+        setListing(data)
+        if (data) {
+          const minPrice = data.packages?.length ? Math.min(...data.packages.map((p: any) => effectivePrice(p))) : 0
+          trackMetaEvent('ViewContent', {
+            content_name: data.title,
+            content_category: data.category || 'EPuja',
+            content_ids: [data.id],
+            content_type: 'product',
+            value: minPrice,
+            currency: 'INR'
+          })
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
