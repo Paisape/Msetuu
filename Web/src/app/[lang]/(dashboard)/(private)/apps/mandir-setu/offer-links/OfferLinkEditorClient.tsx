@@ -34,6 +34,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
   const [gstRate, setGstRate] = useState('0')
   const [htmlContent, setHtmlContent] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [showLiveCounter, setShowLiveCounter] = useState(true)
   const [supportPhone, setSupportPhone] = useState('')
   const [initialCounter, setInitialCounter] = useState('10000')
 
@@ -66,6 +67,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         setGstRate(offer.gstRate.toString())
         setHtmlContent(offer.htmlContent)
         setIsActive(offer.isActive)
+        setShowLiveCounter(offer.showLiveCounter ?? true)
         setSupportPhone(offer.supportPhone || '')
         setInitialCounter((offer.initialCounter ?? 10000).toString())
       } catch (err: any) {
@@ -93,6 +95,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
         gstRate: Number(gstRate),
         htmlContent,
         isActive,
+        showLiveCounter,
         supportPhone: supportPhone.trim() || null,
         initialCounter: Number(initialCounter || 0)
       }
@@ -196,7 +199,7 @@ export default function OfferLinkEditorClient({ editId }: Props) {
             helperText='Base counter starting number. Total shown on campaign page = Start Counter + Completed Orders.'
           />
 
-          <div className='flex items-center gap-4'>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-orange-50/50 border border-orange-200/60 sm:col-span-2'>
             <FormControlLabel
               control={
                 <Checkbox
@@ -204,7 +207,31 @@ export default function OfferLinkEditorClient({ editId }: Props) {
                   onChange={(e) => setIsActive(e.target.checked)}
                 />
               }
-              label='Active and visible'
+              label={
+                <div>
+                  <span className='font-bold text-slate-800 text-sm'>Campaign Active & Visible</span>
+                  <Typography variant='caption' display='block' color='textSecondary'>
+                    Enable public access to this offer link
+                  </Typography>
+                </div>
+              }
+            />
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showLiveCounter}
+                  onChange={(e) => setShowLiveCounter(e.target.checked)}
+                />
+              }
+              label={
+                <div>
+                  <span className='font-bold text-[#FF671F] text-sm'>🔥 Show Live Devotee Counter & Social Proof Ticker</span>
+                  <Typography variant='caption' display='block' color='textSecondary'>
+                    Display floating badge (e.g. 10,000+ devotees booked) and live booking popup toast
+                  </Typography>
+                </div>
+              }
             />
           </div>
         </div>

@@ -120,6 +120,7 @@ export default async function OfferPage({ params }: Props) {
     gstIncluded: offer.gstIncluded,
     gstRate: offer.gstRate.toString(),
     supportPhone: offer.supportPhone || '',
+    showLiveCounter: (offer as any).showLiveCounter ?? true,
     initialCounter,
     displayCounter,
     recentBookings

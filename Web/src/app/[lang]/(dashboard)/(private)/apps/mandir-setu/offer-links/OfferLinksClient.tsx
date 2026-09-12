@@ -28,6 +28,7 @@ type OfferLink = {
   gstIncluded: boolean
   gstRate: string
   isActive: boolean
+  showLiveCounter?: boolean
   createdAt: string
   _count: {
     orders: number
@@ -194,11 +195,18 @@ export default function OfferLinksClient() {
                   <TableCell className='text-center font-semibold text-slate-600'>{link._count.analytics}</TableCell>
                   <TableCell className='text-center font-bold text-slate-800'>{link._count.orders}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={link.isActive ? 'Active' : 'Disabled'} 
-                      size='small'
-                      color={link.isActive ? 'success' : 'default'}
-                    />
+                    <div className='flex flex-col gap-1 items-start'>
+                      <Chip 
+                        label={link.isActive ? 'Active' : 'Disabled'} 
+                        size='small'
+                        color={link.isActive ? 'success' : 'default'}
+                      />
+                      {link.showLiveCounter === false ? (
+                        <Chip label='Counter: OFF' size='small' variant='outlined' color='warning' />
+                      ) : (
+                        <Chip label='Counter: ON' size='small' variant='outlined' color='success' />
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className='text-right space-x-1'>
                     <IconButton 

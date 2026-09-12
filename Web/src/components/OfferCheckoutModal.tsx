@@ -25,6 +25,7 @@ type Props = {
     gstIncluded: boolean
     gstRate: string
     supportPhone?: string
+    showLiveCounter?: boolean
     initialCounter?: number
     displayCounter?: number
     recentBookings?: { name: string; city: string }[]
@@ -35,15 +36,15 @@ const translations = {
   en: {
     bookNow: 'Book Now',
     devoteeDetails: 'Enter Devotee Details',
-    primaryContact: 'Primary Contact',
+    primaryContact: 'Primary WhatsApp Contact',
     name: 'Devotee Name *',
     gotra: 'Gotra (Optional)',
     dob: 'Date of Birth (Optional)',
-    phone: 'Mobile / WhatsApp No *',
+    phone: 'WhatsApp Number *',
     email: 'Email ID (Optional)',
-    pincode: 'Pincode (6-Digits)',
-    locality: 'Locality / Area',
-    city: 'City / District',
+    pincode: 'Pincode (Optional)',
+    locality: 'Locality / Area (Optional)',
+    city: 'City / District (Optional)',
     state: 'State',
     addPerson: 'Add Extra Person',
     price: 'Price',
@@ -55,7 +56,7 @@ const translations = {
     cancel: 'Cancel',
     processing: 'Processing...',
     person: 'Person',
-    sameAsPrimary: 'Same as primary',
+    sameAsPrimary: 'Same as primary WhatsApp number',
     orderIdLabel: 'Order ID',
     supportContact: 'For details contact:',
     devoteesBooked: 'Devotees Booked',
@@ -64,15 +65,15 @@ const translations = {
   hi: {
     bookNow: 'अभी बुक करें',
     devoteeDetails: 'श्रद्धालु का विवरण दर्ज करें',
-    primaryContact: 'मुख्य संपर्क',
+    primaryContact: 'मुख्य व्हाट्सएप संपर्क',
     name: 'श्रद्धालु का नाम *',
     gotra: 'गोत्र (वैकल्पिक)',
     dob: 'जन्म तिथि (वैकल्पिक)',
-    phone: 'मोबाइल / व्हाट्सएप नंबर *',
+    phone: 'व्हाट्सएप नंबर *',
     email: 'ईमेल आईडी (वैकल्पिक)',
-    pincode: 'पिनकोड (6 अंक)',
-    locality: 'इलाका / क्षेत्र',
-    city: 'शहर / जिला',
+    pincode: 'पिनकोड (वैकल्पिक)',
+    locality: 'इलाका / क्षेत्र (वैकल्पिक)',
+    city: 'शहर / जिला (वैकल्पिक)',
     state: 'राज्य',
     addPerson: 'अतिरिक्त व्यक्ति जोड़ें',
     price: 'मूल्य',
@@ -84,7 +85,7 @@ const translations = {
     cancel: 'रद्द करें',
     processing: 'प्रक्रिया जारी है...',
     person: 'व्यक्ति',
-    sameAsPrimary: 'मुख्य नंबर के समान',
+    sameAsPrimary: 'मुख्य व्हाट्सएप नंबर के समान',
     orderIdLabel: 'ऑर्डर आईडी',
     supportContact: 'विवरण के लिए संपर्क करें:',
     devoteesBooked: 'श्रद्धालु सेवा बुक कर चुके हैं',
@@ -93,15 +94,15 @@ const translations = {
   mr: {
     bookNow: 'आताच बुक करा',
     devoteeDetails: 'श्रद्धाळू तपशील प्रविष्ट करा',
-    primaryContact: 'मुख्य संपर्क',
+    primaryContact: 'मुख्य व्हॉट्सॲप संपर्क',
     name: 'श्रद्धाळूचे नाव *',
     gotra: 'गोत्र (पर्यायी)',
     dob: 'जन्म तारीख (पर्यायी)',
-    phone: 'मोबाईल / व्हॉट्सॲप नंबर *',
-    email: 'ईमेल आयडी (वैकल्पिक)',
-    pincode: 'पिनकोड (6 अंक)',
-    locality: 'परिसर / भाग',
-    city: 'शहर / जिल्हा',
+    phone: 'व्हॉट्सॲप नंबर *',
+    email: 'ईमेल आयडी (पर्यायी)',
+    pincode: 'पिनकोड (पर्यायी)',
+    locality: 'परिसर / भाग (पर्यायी)',
+    city: 'शहर / जिल्हा (पर्यायी)',
     state: 'राज्य',
     addPerson: 'अतिरिक्त व्यक्ती जोडा',
     price: 'किंमत',
@@ -113,7 +114,7 @@ const translations = {
     cancel: 'रद्द करा',
     processing: 'प्रक्रिया सुरू आहे...',
     person: 'व्यक्ती',
-    sameAsPrimary: 'मुख्य नंबर प्रमाणे',
+    sameAsPrimary: 'मुख्य व्हॉट्सॲप नंबर प्रमाणे',
     orderIdLabel: 'ऑर्डर आयडी',
     supportContact: 'अधिक माहितीसाठी संपर्क करा:',
     devoteesBooked: 'श्रद्धळूंची बुकिंग पूर्ण झाली',
@@ -122,15 +123,15 @@ const translations = {
   gu: {
     bookNow: 'અત્યારે જ બુક કરો',
     devoteeDetails: 'શ્રદ્ધાળુની વિગત દાખલ કરો',
-    primaryContact: 'મુખ્ય સંપર્ક',
+    primaryContact: 'મુખ્ય વોટ્સએપ સંપર્ક',
     name: 'શ્રદ્ધાળુનું નામ *',
     gotra: 'ગોત્ર (વૈકલ્પિક)',
     dob: 'જન્મ તારીખ (વૈકલ્પિક)',
-    phone: 'મોબાઇલ / વોટ્સએપ નંબર *',
+    phone: 'વોટ્સએપ નંબર *',
     email: 'ઈમેલ આઈડી (વૈકલ્પિક)',
-    pincode: 'પિનકોડ (6 અંક)',
-    locality: 'વિસ્તાર / સોસાયટી',
-    city: 'શહેર / જિલ્લો',
+    pincode: 'પિનકોડ (વૈકલ્પિક)',
+    locality: 'વિસ્તાર / સોસાયટી (વૈકલ્પિક)',
+    city: 'શહેર / જિલ્લો (વૈકલ્પિક)',
     state: 'રાજ્ય',
     addPerson: 'વધારાની વ્યક્તિ ઉમેરો',
     price: 'કિંમત',
@@ -142,7 +143,7 @@ const translations = {
     cancel: 'રદ કરો',
     processing: 'પ્રક્રિયા ચાલુ છે...',
     person: 'વ્યક્તિ',
-    sameAsPrimary: 'મુખ્ય નંબર મુજબ',
+    sameAsPrimary: 'મુખ્ય વોટ્સએપ નંબર મુજબ',
     orderIdLabel: 'ઓર્ડર આઈડી',
     supportContact: 'વિગતો માટે સંપર્ક કરો:'
   }
@@ -590,7 +591,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
   return (
     <>
       {/* Floating Side Social Proof Toast (Positioned below main image, floating on right side) */}
-      {liveCounter !== undefined && (
+      {offerLink.showLiveCounter !== false && liveCounter !== undefined && (
         <div className="fixed bottom-20 right-3 sm:bottom-24 sm:right-6 z-[999] max-w-[280px] sm:max-w-xs transition-all duration-500 animate-in fade-in slide-in-from-right-4">
           <div 
             onClick={() => setIsOpen(true)}
@@ -817,11 +818,11 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                           />
                         </div>
 
-                        {/* Address & Pincode Auto-lookup Section */}
+                        {/* Address & Pincode Section (Optional) */}
                         <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-orange-50/40 p-3.5 rounded-xl border border-orange-100/80">
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                              <span>📮 {t.pincode || 'पिनकोड'}</span>
+                              <span>📮 {t.pincode}</span>
                               {pincodeLoading && <span className="text-[10px] text-[#FF671F] font-bold animate-pulse">खोज रहे हैं...</span>}
                               {pincodeError && <span className="text-[10px] text-red-500 font-bold">अमान्य पिनकोड</span>}
                               {!pincodeLoading && !pincodeError && devotee.pincode && devotee.pincode.length === 6 && (
@@ -842,35 +843,23 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
 
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                              <span>🏘️ {t.locality || 'इलाका / क्षेत्र'}</span>
-                              {!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) && (
-                                <span className='text-[10px] text-slate-400 font-medium'>🔒 लॉक</span>
-                              )}
+                              <span>🏘️ {t.locality}</span>
                             </label>
                             <input
                               type="text"
-                              disabled={!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)}
                               value={devotee.locality || ''}
                               onChange={(e) => handleFieldChange(index, 'locality', e.target.value)}
-                              placeholder={Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) ? "e.g. Ring Road" : "पिनकोड से स्वतः भरेगा"}
-                              className={`w-full px-3 py-2 border rounded-lg text-sm transition-all ${
-                                Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)
-                                  ? 'border-slate-200 text-slate-700 focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm'
-                                  : 'border-slate-200/80 text-slate-400 bg-slate-100/80 cursor-not-allowed select-none'
-                              }`}
+                              placeholder="e.g. Ring Road / परिसर"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm transition-all"
                             />
                           </div>
 
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                              <span>🏙️ {t.city || 'शहर / राज्य'}</span>
-                              {!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) && (
-                                <span className='text-[10px] text-slate-400 font-medium'>🔒 लॉक</span>
-                              )}
+                              <span>🏙️ {t.city}</span>
                             </label>
                             <input
                               type="text"
-                              disabled={!Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)}
                               value={devotee.city ? (devotee.state ? `${devotee.city}, ${devotee.state}` : devotee.city) : (devotee.state || '')}
                               onChange={(e) => {
                                 const parts = e.target.value.split(',')
@@ -879,12 +868,8 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                                 if (parts[1]) updated[index].state = parts[1].trim()
                                 setDevotees(updated)
                               }}
-                              placeholder={Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError) ? "e.g. Surat, Gujarat" : "पिनकोड से स्वतः भरेगा"}
-                              className={`w-full px-3 py-2 border rounded-lg text-sm transition-all ${
-                                Boolean(devotee.pincode && devotee.pincode.length === 6 && !pincodeError)
-                                  ? 'border-slate-200 text-slate-700 focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm'
-                                  : 'border-slate-200/80 text-slate-400 bg-slate-100/80 cursor-not-allowed select-none'
-                              }`}
+                              placeholder="e.g. Surat, Gujarat"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white shadow-sm transition-all"
                             />
                           </div>
                         </div>
