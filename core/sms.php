@@ -38,6 +38,9 @@ function send_textzi_sms($mobile, $message, $template_id = null) {
     $activeTemplateId = $template_id ?: $defaultTemplateId;
     $formattedMobile = format_textzi_mobile($mobile);
 
+    // Enforce https://www.mandirsetuu.com with www for DLT compliance
+    $sanitizedMessage = preg_replace('#https?://(?!www\.)mandirsetuu\.com#i', 'https://www.mandirsetuu.com', (string)$message);
+
     if (empty($apiKey) || empty($userId)) {
         return [
             'success' => false,
@@ -50,7 +53,7 @@ function send_textzi_sms($mobile, $message, $template_id = null) {
         'user_id' => $userId,
         'mobile' => $formattedMobile,
         'template_id' => $activeTemplateId,
-        'message' => $message
+        'message' => $sanitizedMessage
     ];
 
     $apiUrl = 'https://api.textzi.in/v1/sms/send-url?' . http_build_query($params);

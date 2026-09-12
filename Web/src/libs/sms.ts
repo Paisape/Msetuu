@@ -68,12 +68,15 @@ export async function sendTextziSms(
   const finalTemplateId = templateId || defaultTemplateId
   const formattedMobile = formatTextziMobile(mobile)
 
+  // Enforce https://www.mandirsetuu.com with www in all SMS message bodies (DLT mandatory)
+  const sanitizedMessage = message.replace(/https?:\/\/(?!www\.)mandirsetuu\.com/gi, 'https://www.mandirsetuu.com')
+
   const redactedParams = new URLSearchParams({
     api_key: '••••',
     user_id: userId || '',
     mobile: formattedMobile,
     template_id: finalTemplateId,
-    message: message
+    message: sanitizedMessage
   })
   const redactedUrl = `https://api.textzi.in/v1/sms/send-url?${redactedParams.toString()}`
 
@@ -103,7 +106,7 @@ export async function sendTextziSms(
     user_id: userId,
     mobile: formattedMobile,
     template_id: finalTemplateId,
-    message: message
+    message: sanitizedMessage
   })
 
   const apiUrl = `https://api.textzi.in/v1/sms/send-url?${params.toString()}`
