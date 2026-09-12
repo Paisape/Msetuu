@@ -185,8 +185,9 @@ export async function POST(req: Request) {
     // 7c. DLT SMS Order Confirmation to customer's mobile
     const customerPhone = order.phone || order.user?.phone
     if (customerPhone && customerPhone.trim()) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
-      const trackLink = `${appUrl}/front-pages/track-order?id=${orderId}`
+      const cleanAlphanumeric = orderId.replace(/[^a-zA-Z0-9]/g, '')
+      const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
+      const trackLink = `https://www.mandirsetuu.com/t/?id=${shortOrderId}`
       await sendOrderConfirmationSms({
         mobile: customerPhone,
         orderId,

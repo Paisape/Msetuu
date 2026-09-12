@@ -3,7 +3,17 @@ import { NextResponse } from 'next/server'
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params
   const cleanId = rawId.replace(/^[#\s]*(MS-|ms-|ORD-|ord-)?/i, '').trim()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin
+  const origin = new URL(req.url).origin
+  let appUrl = 'https://www.mandirsetuu.com'
+  if (origin.includes('localhost')) {
+    appUrl = origin
+  } else if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+    let configured = process.env.NEXT_PUBLIC_APP_URL.trim()
+    if (configured.includes('mandirsetuu.com') && !configured.includes('www.mandirsetuu.com')) {
+      configured = configured.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+    }
+    appUrl = configured
+  }
 
   return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${cleanId}`, 307)
 }

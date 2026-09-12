@@ -266,10 +266,27 @@ export async function sendOrderConfirmationSms({
       'Dear Devotee, Your offering has been successfully booked. Your Order ID is {#alp#}. You can track your booking details here: {#urg#}.Team Mandirsetuu'
     const rawContent = template?.content || defaultContent
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
+    // Ensure tracking link strictly uses https://www.mandirsetuu.com as required by DLT whitelisting
+    let appUrl = 'https://www.mandirsetuu.com'
+    if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+      let configured = process.env.NEXT_PUBLIC_APP_URL.trim()
+      if (configured.startsWith('http://')) configured = configured.replace('http://', 'https://')
+      if (configured.includes('mandirsetuu.com') && !configured.includes('www.mandirsetuu.com')) {
+        configured = configured.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+      }
+      appUrl = configured
+    }
+
     const cleanAlphanumeric = orderId.replace(/[^a-zA-Z0-9]/g, '')
     const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
-    const finalTrackLink = trackLink || `${appUrl}/t/?id=${shortOrderId}`
+    
+    let finalTrackLink = trackLink || `${appUrl}/t/?id=${shortOrderId}`
+    if (finalTrackLink.includes('mandirsetuu.com') && !finalTrackLink.includes('www.mandirsetuu.com')) {
+      finalTrackLink = finalTrackLink.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+    }
+    if (finalTrackLink.startsWith('http://www.mandirsetuu.com')) {
+      finalTrackLink = finalTrackLink.replace('http://', 'https://')
+    }
 
     let message = rawContent
       .replace(/\{#alp#\}/g, shortOrderId)

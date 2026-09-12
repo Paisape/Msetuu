@@ -23,7 +23,16 @@ export async function GET(req: Request) {
   cleanId = cleanId.replace(/[^a-zA-Z0-9-]/g, '')
 
   const origin = new URL(req.url).origin
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (origin.includes('localhost') ? origin : 'https://www.mandirsetuu.com')
+  let appUrl = 'https://www.mandirsetuu.com'
+  if (origin.includes('localhost')) {
+    appUrl = origin
+  } else if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+    let configured = process.env.NEXT_PUBLIC_APP_URL.trim()
+    if (configured.includes('mandirsetuu.com') && !configured.includes('www.mandirsetuu.com')) {
+      configured = configured.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+    }
+    appUrl = configured
+  }
 
   if (cleanId) {
     return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${cleanId}`, 307)

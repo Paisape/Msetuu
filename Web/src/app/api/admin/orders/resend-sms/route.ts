@@ -66,10 +66,9 @@ export async function POST(req: Request) {
       }, { status: 400 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
     const cleanAlphanumeric = trackingId.replace(/[^a-zA-Z0-9]/g, '')
     const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
-    const trackLink = `${appUrl}/t/?id=${shortOrderId}`
+    const trackLink = `https://www.mandirsetuu.com/t/?id=${shortOrderId}`
 
     const smsResult = await sendOrderConfirmationSms({
       mobile: targetMobile,

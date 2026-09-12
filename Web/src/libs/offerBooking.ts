@@ -118,10 +118,9 @@ export async function confirmOfferBookingAndNotify(
   // 5. Devotee DLT SMS Order Confirmation (Isolated try-catch)
   if (customerPhone && customerPhone.trim()) {
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com'
       const cleanAlphanumeric = updatedOrder.id.replace(/[^a-zA-Z0-9]/g, '')
       const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
-      const trackLink = `${appUrl}/t/?id=${shortOrderId}`
+      const trackLink = `https://www.mandirsetuu.com/t/?id=${shortOrderId}`
       const smsRes = await sendOrderConfirmationSms({
         mobile: customerPhone,
         orderId: updatedOrder.id,
