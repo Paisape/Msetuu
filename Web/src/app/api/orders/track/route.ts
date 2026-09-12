@@ -11,9 +11,11 @@ export async function GET(req: Request) {
     }
 
     const rawTrimmed = rawId.trim()
-    const cleanId = rawTrimmed.replace(/^[#\s]*(MS\s*[-_]?|ORD\s*[-_]?)/i, '').trim()
+    let cleanId = rawTrimmed.replace(/^[#\s]*(MS\s*[-_]?|ORD\s*[-_]?)/i, '').trim()
+    cleanId = cleanId.replace(/[\.\s]+.*$/, '').trim()
+    cleanId = cleanId.replace(/[^a-zA-Z0-9-]/g, '')
 
-    const searchIds = Array.from(new Set([rawTrimmed, cleanId].filter(Boolean)))
+    const searchIds = Array.from(new Set([rawTrimmed, cleanId, cleanId.toLowerCase(), cleanId.toUpperCase()].filter(Boolean)))
     const whereConditions = searchIds.flatMap(sId => [
       { id: { equals: sId, mode: 'insensitive' as const } },
       { id: { startsWith: sId, mode: 'insensitive' as const } }

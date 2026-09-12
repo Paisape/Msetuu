@@ -23,12 +23,22 @@ function TrackOrderContent() {
   const [order, setOrder] = useState<any | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  const sanitizeId = (id: string) => {
+    return id
+      .trim()
+      .replace(/^[#\s]*(MS\s*[-_]?|ORD\s*[-_]?)/i, '')
+      .replace(/[\.\s]+.*$/, '')
+      .replace(/[^a-zA-Z0-9-]/g, '')
+      .trim()
+  }
+
   const fetchOrderDetails = async (id: string) => {
+    const cleaned = sanitizeId(id) || id.trim()
     setLoading(true)
     setErrorMsg(null)
     setOrder(null)
     try {
-      const res = await fetch(`/api/orders/track?id=${id.trim()}`)
+      const res = await fetch(`/api/orders/track?id=${encodeURIComponent(cleaned)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Order lookup failed.')
       setOrder(data)
@@ -42,8 +52,9 @@ function TrackOrderContent() {
   useEffect(() => {
     const id = searchParams.get('id')
     if (id) {
-      setOrderIdInput(id)
-      fetchOrderDetails(id)
+      const clean = sanitizeId(id) || id
+      setOrderIdInput(clean)
+      fetchOrderDetails(clean)
     }
   }, [searchParams])
 
@@ -55,9 +66,10 @@ function TrackOrderContent() {
 
   // Get active step index based on status
   const getActiveStep = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case 'PENDING':
         return 0
+      case 'CONFIRMED':
       case 'PROCESSING':
         return 1
       case 'COMPLETED':
@@ -129,7 +141,7 @@ function TrackOrderContent() {
                 </Typography>
               </div>
               <code className='px-3 py-1 bg-[#FF671F] text-white font-mono rounded-lg font-bold text-sm'>
-                {order.id}
+                {order.shortId || order.id}
               </code>
             </div>
 
