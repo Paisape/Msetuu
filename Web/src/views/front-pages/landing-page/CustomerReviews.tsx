@@ -31,6 +31,38 @@ type DisplayReview = {
   name: string
   position: string
   avatarSrc: string
+  initials: string
+  avatarColor: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error'
+}
+
+const FEMALE_NAMES = ['priya', 'pooja', 'ananya', 'neha', 'sunita', 'radha', 'shreya', 'rita', 'kavita', 'meera', 'divya', 'sneha', 'swati', 'anita', 'geeta', 'sita', 'anjali', 'aarti']
+const FEMALE_AVATARS = ['/images/avatars/2.png', '/images/avatars/4.png', '/images/avatars/8.png']
+const MALE_AVATARS = ['/images/avatars/1.png', '/images/avatars/3.png', '/images/avatars/5.png', '/images/avatars/6.png', '/images/avatars/7.png']
+const THEME_COLORS: ('primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error')[] = [
+  'primary',
+  'success',
+  'warning',
+  'info',
+  'secondary',
+  'error'
+]
+
+const getCustomerAvatar = (name: string, index: number): string => {
+  const firstName = (name || '').trim().split(/\s+/)[0]?.toLowerCase()
+  const isFemale = FEMALE_NAMES.some(fn => firstName.includes(fn))
+  if (isFemale) {
+    return FEMALE_AVATARS[index % FEMALE_AVATARS.length]
+  }
+  return MALE_AVATARS[index % MALE_AVATARS.length]
+}
+
+const getCustomerInitials = (name: string): string => {
+  if (!name || !name.trim()) return 'VC'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
 }
 
 // Shown only until real APPROVED reviews exist in the database (empty state before any customer
@@ -105,7 +137,16 @@ const ReviewsSlider = ({ data, onSliderInit }: { data: DisplayReview[]; onSlider
                   <Typography style={{ color: '#374151' }}>{item.desc}</Typography>
                   <Rating value={item.rating} readOnly sx={{ '& .MuiRating-iconFilled': { color: '#f59e0b' } }} />
                   <div className='flex items-center gap-x-3'>
-                    <CustomAvatar size={32} src={item.avatarSrc} alt={item.name} />
+                    <CustomAvatar
+                      size={36}
+                      src={item.avatarSrc}
+                      alt={item.name}
+                      skin='light'
+                      color={item.avatarColor}
+                      className='font-bold text-xs'
+                    >
+                      {item.initials}
+                    </CustomAvatar>
                     <div className='flex flex-col items-start'>
                       <Typography className='font-medium' style={{ color: '#0f172a' }}>
                         {item.name}
@@ -136,14 +177,19 @@ const CustomerReviews = () => {
         if (Array.isArray(reviews)) {
           const mapped = reviews
             .filter(r => r.comment)
-            .map(r => ({
-              desc: r.comment,
-              label: ORDER_TYPE_LABELS[r.orderType] || r.targetTitle || 'Verified Purchase',
-              rating: r.rating,
-              name: r.customerName || 'Verified Customer',
-              position: 'Verified Purchase',
-              avatarSrc: '/images/avatars/1.png'
-            }))
+            .map((r, index) => {
+              const name = r.customerName || 'Verified Customer'
+              return {
+                desc: r.comment,
+                label: ORDER_TYPE_LABELS[r.orderType] || r.targetTitle || 'Verified Purchase',
+                rating: r.rating,
+                name: name,
+                position: 'Verified Purchase',
+                avatarSrc: getCustomerAvatar(name, index),
+                initials: getCustomerInitials(name),
+                avatarColor: THEME_COLORS[index % THEME_COLORS.length]
+              }
+            })
 
           if (mapped.length > 0) setData(mapped)
         }
