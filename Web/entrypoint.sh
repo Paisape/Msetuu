@@ -18,17 +18,16 @@ fi
 
 # Attempt database migration push
 echo "=== Running Prisma DB Push ==="
-PRISMA_BIN="./node_modules/.bin/prisma"
-if [ -f "$PRISMA_BIN" ]; then
-  echo "Using local prisma binary: $PRISMA_BIN"
-  "$PRISMA_BIN" db push --schema=./src/prisma/schema.prisma --accept-data-loss 2>&1 \
+if [ -f "./node_modules/.bin/prisma" ]; then
+  ./node_modules/.bin/prisma db push --schema=./src/prisma/schema.prisma --accept-data-loss 2>&1 \
+    && echo "✓ DB Push successful." \
+    || echo "ERROR: DB Push failed - see output above."
+elif [ -f "./node_modules/prisma/build/index.js" ]; then
+  node ./node_modules/prisma/build/index.js db push --schema=./src/prisma/schema.prisma --accept-data-loss 2>&1 \
     && echo "✓ DB Push successful." \
     || echo "ERROR: DB Push failed - see output above."
 else
-  echo "Local prisma binary not found, using npx prisma@6.19.0"
-  npx --yes prisma@6.19.0 db push --schema=./src/prisma/schema.prisma --accept-data-loss 2>&1 \
-    && echo "✓ DB Push successful." \
-    || echo "ERROR: DB Push failed - see output above."
+  echo "Prisma CLI not found, skipping startup db push."
 fi
 
 # Attempt database seed (Disabled in production to prevent injecting dummy data on every redeploy)
