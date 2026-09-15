@@ -82,46 +82,39 @@ export async function PUT(req: Request) {
     }
 
     if (phone !== undefined) {
-      if (phone !== null && (typeof phone !== 'string' || phone.trim().length === 0)) {
-        return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 })
-      }
-      
-      let normalizedPhone: string | null = null
-
-      if (phone) {
+      if (phone === null || (typeof phone === 'string' && phone.trim().length === 0)) {
+        data.phone = null
+      } else if (typeof phone === 'string') {
         const clean = phone.trim().replace(/\s+/g, '')
+        const digitsOnly = clean.replace(/\D/g, '')
 
-        normalizedPhone = /^\d{10}$/.test(clean) ? `+91${clean}` : clean
-      }
+        if (digitsOnly.length < 10) {
+          return NextResponse.json({ error: 'Please provide a valid phone number (at least 10 digits).' }, { status: 400 })
+        }
 
-      // Check if phone is already taken by someone else
-      if (normalizedPhone) {
+        const normalizedPhone = /^\d{10}$/.test(clean) ? `+91${clean}` : clean
+
+        // Check if phone is already taken by someone else
         const existing = await prisma.user.findFirst({ where: { phone: normalizedPhone } })
 
         if (existing && existing.id !== user.id) {
           return NextResponse.json({ error: 'This phone number is already in use.' }, { status: 400 })
         }
+
+        data.phone = normalizedPhone
+      } else {
+        return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 })
       }
-
-      data.phone = normalizedPhone
     }
 
-    // Helper to verify if a number is an Indian mobile format (10 digits or 12 digits starting with 91)
-    const isIndianPhone = (ph: string | null | undefined): boolean => {
-      if (!ph) return false
-      const clean = ph.replace(/\D/g, '')
-
-      
-return clean.length === 10 || (clean.length === 12 && clean.startsWith('91'))
-    }
-
-    // Verify that the user still has at least one valid authentication method (email or +91 phone)
+    // Verify that the user still has at least one valid authentication method (email or phone)
     const finalEmail = data.email !== undefined ? data.email : user.email
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { phone: true } })
-    const finalPhone = data.phone !== undefined ? data.phone : dbUser?.phone
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { email: true, phone: true } })
+    const effectiveEmail = finalEmail || dbUser?.email
+    const effectivePhone = data.phone !== undefined ? data.phone : dbUser?.phone
 
-    if (!finalEmail && !isIndianPhone(finalPhone)) {
-      return NextResponse.json({ error: 'Email is required for international/email-only accounts.' }, { status: 400 })
+    if (!effectiveEmail && !effectivePhone) {
+      return NextResponse.json({ error: 'At least one contact method (email or phone number) is required.' }, { status: 400 })
     }
 
     if (image !== undefined) {
