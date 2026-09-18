@@ -1,0 +1,530 @@
+{
+  "info": {
+    "_postman_id": "9b12a832-6a4d-4bc5-8e77-mandirsetuu01",
+    "name": "Mandir Setuu API Collection",
+    "description": "Complete REST API collection for Mandir Setuu — covering Auth, Devotee Profile, Chadhava, E-Puja, E-Commerce Store, Offer Campaigns, Order Tracking, Astrology, and Content APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://www.mandirsetuu.com",
+      "type": "string"
+    },
+    {
+      "key": "bearerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sampleChadhavaId",
+      "value": "cms73kj69000qtm01v7ijgmtm",
+      "type": "string"
+    },
+    {
+      "key": "sampleEpujaId",
+      "value": "cms754340004lmr0180fzo030",
+      "type": "string"
+    },
+    {
+      "key": "sampleProductId",
+      "value": "cmsbzimzb00ehod01ohw6x4v0",
+      "type": "string"
+    },
+    {
+      "key": "sampleOrderId",
+      "value": "09F4E89B",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication & Mobile Auth",
+      "item": [
+        {
+          "name": "Send OTP (Login / Verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "send-otp"]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact\": \"9876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Sharma\",\n  \"email\": \"ramesh@example.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Mobile Login (JWT Bearer Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dev@mandirsetuu.com\",\n  \"password\": \"admin123\",\n  \"deviceId\": \"device-uuid-123\",\n  \"deviceName\": \"Pixel 8\",\n  \"os\": \"Android\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "login"]
+            }
+          }
+        },
+        {
+          "name": "Mobile Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"YOUR_REFRESH_TOKEN_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Devotee Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile (Email or Phone)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Sharma\",\n  \"email\": \"ramesh@example.com\",\n  \"gender\": \"Male\",\n  \"gotra\": \"Kashyap\",\n  \"occupation\": \"Engineer\",\n  \"dob\": \"1992-05-15\",\n  \"tob\": \"10:30\",\n  \"pob\": \"Varanasi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Chadhava (Offerings)",
+      "item": [
+        {
+          "name": "All Chadhava Listings (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/chadhava/listings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chadhava", "listings"]
+            }
+          }
+        },
+        {
+          "name": "Chadhava Listing Detail (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/chadhava/listings/{{sampleChadhavaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chadhava", "listings", "{{sampleChadhavaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Book Chadhava Offering",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chadhavaListingId\": \"{{sampleChadhavaId}}\",\n  \"name\": \"Ramesh Sharma\",\n  \"gender\": \"Male\",\n  \"dob\": \"1992-05-15\",\n  \"birthPlace\": \"Varanasi\",\n  \"comment\": \"Seeking blessings for family prosperity\",\n  \"persons\": [\n    {\n      \"name\": \"Ramesh Sharma\",\n      \"gotra\": \"Kashyap\"\n    },\n    {\n      \"name\": \"Priya Sharma\",\n      \"gotra\": \"Kashyap\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chadhava",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chadhava"]
+            }
+          }
+        },
+        {
+          "name": "My Chadhava Bookings (History)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chadhava",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chadhava"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. E-Puja Services",
+      "item": [
+        {
+          "name": "All E-Puja Listings (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/epuja/listings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epuja", "listings"]
+            }
+          }
+        },
+        {
+          "name": "E-Puja Listing Detail (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/epuja/listings/{{sampleEpujaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epuja", "listings", "{{sampleEpujaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Book E-Puja",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pujaListingId\": \"{{sampleEpujaId}}\",\n  \"name\": \"Ramesh Sharma\",\n  \"gender\": \"Male\",\n  \"dob\": \"1992-05-15\",\n  \"birthPlace\": \"Varanasi\",\n  \"sankalp\": \"Health, Peace and Wellbeing\",\n  \"devotees\": [\n    {\n      \"name\": \"Ramesh Sharma\",\n      \"gotra\": \"Kashyap\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/epuja",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epuja"]
+            }
+          }
+        },
+        {
+          "name": "My E-Puja Bookings (History)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epuja",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epuja"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. E-Commerce Store",
+      "item": [
+        {
+          "name": "All Products (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/ecommerce/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ecommerce", "products"]
+            }
+          }
+        },
+        {
+          "name": "Product Detail (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/ecommerce/products/{{sampleProductId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ecommerce", "products", "{{sampleProductId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Product Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{sampleProductId}}\",\n  \"quantity\": 1,\n  \"addressId\": \"optional-address-id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ecommerce",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ecommerce"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Offer Links & Campaigns",
+      "item": [
+        {
+          "name": "Offer Campaign Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offerLinkId\": \"sample-offer-id\",\n  \"primaryName\": \"Devotee Name\",\n  \"whatsappNumber\": \"9876543210\",\n  \"devotees\": [\n    {\n      \"name\": \"Devotee 1\",\n      \"gotra\": \"Kashyap\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/offers/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offers", "checkout"]
+            }
+          }
+        },
+        {
+          "name": "Verify Offer Payment (Razorpay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"offer-order-id\",\n  \"razorpayPaymentId\": \"pay_xxxxxx\",\n  \"razorpayOrderId\": \"order_xxxxxx\",\n  \"razorpaySignature\": \"signature_hash\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/offers/checkout/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offers", "checkout", "verify"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Order Tracking & Video Proof",
+      "item": [
+        {
+          "name": "Track Order (Short ID / UUID / SMS Link)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/track?id={{sampleOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "track"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{sampleOrderId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Short SMS Redirect (/t/?id=...)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/t/?id={{sampleOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["t", ""],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{sampleOrderId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Astrology & Panchang",
+      "item": [
+        {
+          "name": "Daily Panchang",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/astrology/panchang",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "astrology", "panchang"]
+            }
+          }
+        },
+        {
+          "name": "Daily Choghadiya",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/choghadiya",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "choghadiya"]
+            }
+          }
+        },
+        {
+          "name": "Kundli Listings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/kundli/listings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kundli", "listings"]
+            }
+          }
+        },
+        {
+          "name": "Jyotish Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jyotish/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jyotish", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Content, Banners & Reviews",
+      "item": [
+        {
+          "name": "Homepage Banners",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/banners",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners"]
+            }
+          }
+        },
+        {
+          "name": "Recent Customer Reviews",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews?recent=1&limit=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews"],
+              "query": [
+                { "key": "recent", "value": "1" },
+                { "key": "limit", "value": "8" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Site FAQs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/faqs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faqs"]
+            }
+          }
+        },
+        {
+          "name": "Contact Us Submission",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Devotee Name\",\n  \"email\": \"devotee@example.com\",\n  \"phone\": \"9876543210\",\n  \"message\": \"Inquiry about temple services\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contact"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
