@@ -76,6 +76,11 @@ const verticalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>>)
         ]
       },
       {
+        label: 'Blog Management',
+        icon: 'tabler-news',
+        href: '/apps/mandir-setu/content/blog'
+      },
+      {
         label: 'Config',
         icon: 'tabler-lock-cog',
         href: '/apps/mandir-setu/config'

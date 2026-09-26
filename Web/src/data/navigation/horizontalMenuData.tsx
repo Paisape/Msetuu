@@ -61,6 +61,7 @@ const horizontalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>
           { label: 'Blog Posts', href: '/apps/mandir-setu/content/blog' }
         ]
       },
+      { label: 'Blog Management', href: '/apps/mandir-setu/content/blog' },
       { label: 'Offer Links', href: '/apps/mandir-setu/offer-links' }
     ]
   },
