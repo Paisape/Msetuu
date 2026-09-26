@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/', destination: '/front-pages/landing-page' },
       { source: '/about', destination: '/front-pages/about' },
+      { source: '/blog', destination: '/front-pages/blog' },
+      { source: '/blog/:path*', destination: '/front-pages/blog/:path*' },
       { source: '/login', destination: '/en/login' },
       { source: '/register', destination: '/en/register' },
       { source: '/MsetuAdmin', destination: '/en/apps/mandir-setu' },
@@ -39,7 +41,7 @@ const nextConfig: NextConfig = {
         locale: false
       },
       {
-        source: '/:path((?!en|fr|ar|front-pages|o|t|track|images|uploads|audio|api|favicon.ico|login|next.svg|vercel.svg).*)*',
+        source: '/:path((?!en|fr|ar|front-pages|blog|about|o|t|track|images|uploads|audio|api|favicon.ico|login|next.svg|vercel.svg).*)*',
         destination: '/en/:path*',
         permanent: true,
         locale: false

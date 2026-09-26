@@ -94,7 +94,8 @@ const FrontMenu = (props: Props) => {
     { label: 'Jyotish', href: '/front-pages/jyotish' },
     { label: 'E-commerce', href: '/front-pages/ecommerce' },
     { label: 'Yatra', href: '/front-pages/yatra' },
-    { label: '3D Darshan', href: '/front-pages/darshan-3d' }
+    { label: '3D Darshan', href: '/front-pages/darshan-3d' },
+    { label: 'Blog', href: '/front-pages/blog' }
   ]
 
   return (

@@ -598,6 +598,53 @@ const reviewColumns: ColumnConfig[] = [
   { key: 'status', label: 'Status', render: item => <Chip size='small' label={item.status} color={statusColor(item.status) as any} /> }
 ]
 
+// -- Blog Posts -----------------------------------------------------------
+const BLOG_CATEGORIES = [
+  { value: 'Devotional', label: 'Devotional' },
+  { value: 'E-Puja', label: 'E-Puja' },
+  { value: 'Chadhava', label: 'Chadhava' },
+  { value: 'Vedic Wisdom', label: 'Vedic Wisdom' },
+  { value: 'Jyotish & Astrology', label: 'Jyotish & Astrology' },
+  { value: 'Sacred Temples', label: 'Sacred Temples' },
+  { value: 'Festivals & Vrat', label: 'Festivals & Vrat' },
+  { value: 'Mantras & Slokas', label: 'Mantras & Slokas' }
+]
+
+const blogFields: FieldConfig[] = [
+  { key: 'title', label: 'Article Title', type: 'text', required: true },
+  { key: 'slug', label: 'URL Slug (leave blank to auto-generate from title)', type: 'text', helperText: 'e.g. sacred-significance-of-rudrabhishek' },
+  { key: 'category', label: 'Category', type: 'select', required: true, options: BLOG_CATEGORIES, defaultValue: 'Devotional' },
+  { key: 'featuredImage', label: 'Featured Image', type: 'image', uploadType: 'banner', helperText: 'Recommended dimensions: 1200x630 (16:9 ratio).' },
+  { key: 'authorName', label: 'Author Name', type: 'text', defaultValue: 'Mandirsetuu Team' },
+  { key: 'readTimeMinutes', label: 'Read Time (minutes)', type: 'number', optional: true, helperText: 'Auto-calculated from word count if left blank.' },
+  { key: 'excerpt', label: 'Excerpt / Summary', type: 'textarea', helperText: 'Short preview shown on Google and post cards (1-2 sentences).' },
+  { key: 'content', label: 'Article Content (HTML or text)', type: 'textarea', required: true, helperText: 'Use <h2>, <h3>, <p>, <ul>, <li> tags for rich formatting.' },
+  { key: 'tags', label: 'Tags / Keywords (comma-separated)', type: 'text', helperText: 'e.g. Shani Dev, Chadhava, Mustard Oil' },
+  { key: 'metaTitle', label: 'SEO Meta Title (optional)', type: 'text', helperText: 'Defaults to Article Title if left blank.' },
+  { key: 'metaDescription', label: 'SEO Meta Description (optional)', type: 'textarea', helperText: 'Defaults to Excerpt if left blank.' },
+  { key: 'canonicalUrl', label: 'Canonical URL (optional)', type: 'text' },
+  { key: 'published', label: 'Published (Live on website)', type: 'boolean', defaultValue: true }
+]
+
+const blogColumns: ColumnConfig[] = [
+  {
+    key: 'featuredImage',
+    label: '',
+    render: item =>
+      item.featuredImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.featuredImage} alt='' className='w-12 h-12 object-cover rounded' />
+      ) : (
+        <div className='w-12 h-12 bg-slate-100 rounded flex items-center justify-center text-[10px] text-slate-400'>No img</div>
+      )
+  },
+  { key: 'title', label: 'Title' },
+  { key: 'category', label: 'Category', render: item => <Chip size='small' label={item.category || 'General'} color='primary' variant='outlined' /> },
+  { key: 'authorName', label: 'Author' },
+  { key: 'viewsCount', label: 'Views', render: item => item.viewsCount ?? 0 },
+  { key: 'published', label: 'Status', render: item => <Chip size='small' label={item.published ? 'Published' : 'Draft'} color={item.published ? 'success' : 'default'} /> }
+]
+
 const TABS = [
   { label: 'Banners', Component: () => <EntityManager title='Banner' listUrl='/api/banners?all=1' itemUrl={(id: string) => `/api/banners/${id}`} fields={bannerFields} columns={bannerColumns} /> },
   { label: 'Shop Purposes', Component: () => <EntityManager title='Shop Purpose' listUrl='/api/shop-purposes' itemUrl={(id: string) => `/api/shop-purposes/${id}`} fields={purposeFields} columns={purposeColumns} /> },
@@ -774,7 +821,20 @@ const TABS = [
       />
     )
   },
-  { label: 'About Us', Component: () => <AboutUsManager /> }
+  { label: 'About Us', Component: () => <AboutUsManager /> },
+  {
+    label: 'Blog Posts',
+    Component: () => (
+      <EntityManager
+        title='Blog Post'
+        listUrl='/api/blog?all=1'
+        itemUrl={(id: string) => `/api/blog/${id}`}
+        fields={blogFields}
+        columns={blogColumns}
+        emptyMessage='No blog articles published yet — write your first Vedic or devotional article!'
+      />
+    )
+  }
 ]
 
 // Must stay 1:1 with the TABS array above (same order, same count) — a mismatch here silently
@@ -797,7 +857,8 @@ const SLUG_TO_INDEX: Record<string, number> = {
   'how-it-works': 13,
   'reviews': 14,
   'contact-messages': 15,
-  'about-us': 16
+  'about-us': 16,
+  'blog': 17
 }
 
 const ContentManagementClient = ({ slug }: { slug: string }) => {

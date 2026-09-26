@@ -115,6 +115,9 @@ const Footer = ({ mode }: { mode: Mode }) => {
                 <Typography component={Link} href='/front-pages/about' color='white' className='opacity-[0.78]'>
                   About Us
                 </Typography>
+                <Typography component={Link} href='/front-pages/blog' color='white' className='opacity-[0.78]'>
+                  Blog
+                </Typography>
                 <Typography component={Link} href='/front-pages/contact' color='white' className='opacity-[0.78]'>
                   Contact Us
                 </Typography>

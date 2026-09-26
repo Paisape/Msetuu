@@ -71,7 +71,8 @@ const verticalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>>)
           { label: 'How It Works', href: '/apps/mandir-setu/content/how-it-works' },
           { label: 'Reviews', href: '/apps/mandir-setu/content/reviews' },
           { label: 'Contact Messages', href: '/apps/mandir-setu/content/contact-messages' },
-          { label: 'About Us', href: '/apps/mandir-setu/content/about-us' }
+          { label: 'About Us', href: '/apps/mandir-setu/content/about-us' },
+          { label: 'Blog Posts', href: '/apps/mandir-setu/content/blog' }
         ]
       },
       {

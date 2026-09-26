@@ -31,7 +31,8 @@ const VALID_MODULES = [
   'how-it-works',
   'reviews',
   'contact-messages',
-  'about-us'
+  'about-us',
+  'blog'
 ]
 
 const ContentManagementModulePage = async (props: Props) => {
