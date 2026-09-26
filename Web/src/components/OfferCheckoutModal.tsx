@@ -38,15 +38,13 @@ const translations = {
     devoteeDetails: 'Enter Devotee Details',
     primaryContact: 'Primary WhatsApp Contact',
     name: 'Devotee Name *',
-    gotra: 'Gotra (Optional)',
-    dob: 'Date of Birth (Optional)',
     phone: 'WhatsApp Number *',
     email: 'Email ID (Optional)',
     pincode: 'Pincode (Optional)',
     locality: 'Locality / Area (Optional)',
     city: 'City / District (Optional)',
     state: 'State',
-    addPerson: 'Add Extra Person',
+    addFamilyMember: 'Add Family Member',
     price: 'Price',
     gst: 'GST',
     total: 'Total Amount',
@@ -67,15 +65,13 @@ const translations = {
     devoteeDetails: 'श्रद्धालु का विवरण दर्ज करें',
     primaryContact: 'मुख्य व्हाट्सएप संपर्क',
     name: 'श्रद्धालु का नाम *',
-    gotra: 'गोत्र (वैकल्पिक)',
-    dob: 'जन्म तिथि (वैकल्पिक)',
     phone: 'व्हाट्सएप नंबर *',
     email: 'ईमेल आईडी (वैकल्पिक)',
     pincode: 'पिनकोड (वैकल्पिक)',
     locality: 'इलाका / क्षेत्र (वैकल्पिक)',
     city: 'शहर / जिला (वैकल्पिक)',
     state: 'राज्य',
-    addPerson: 'अतिरिक्त व्यक्ति जोड़ें',
+    addFamilyMember: 'परिवार का सदस्य जोड़ें',
     price: 'मूल्य',
     gst: 'जीएसटी',
     total: 'कुल राशि',
@@ -96,15 +92,13 @@ const translations = {
     devoteeDetails: 'श्रद्धाळू तपशील प्रविष्ट करा',
     primaryContact: 'मुख्य व्हॉट्सॲप संपर्क',
     name: 'श्रद्धाळूचे नाव *',
-    gotra: 'गोत्र (पर्यायी)',
-    dob: 'जन्म तारीख (पर्यायी)',
     phone: 'व्हॉट्सॲप नंबर *',
     email: 'ईमेल आयडी (पर्यायी)',
     pincode: 'पिनकोड (पर्यायी)',
     locality: 'परिसर / भाग (पर्यायी)',
     city: 'शहर / जिल्हा (पर्यायी)',
     state: 'राज्य',
-    addPerson: 'अतिरिक्त व्यक्ती जोडा',
+    addFamilyMember: 'कुटुंबातील सदस्य जोडा',
     price: 'किंमत',
     gst: 'जीएसटी',
     total: 'एकूण रक्कम',
@@ -125,15 +119,13 @@ const translations = {
     devoteeDetails: 'શ્રદ્ધાળુની વિગત દાખલ કરો',
     primaryContact: 'મુખ્ય વોટ્સએપ સંપર્ક',
     name: 'શ્રદ્ધાળુનું નામ *',
-    gotra: 'ગોત્ર (વૈકલ્પિક)',
-    dob: 'જન્મ તારીખ (વૈકલ્પિક)',
     phone: 'વોટ્સએપ નંબર *',
     email: 'ઈમેલ આઈડી (વૈકલ્પિક)',
     pincode: 'પિનકોડ (વૈકલ્પિક)',
     locality: 'વિસ્તાર / સોસાયટી (વૈકલ્પિક)',
     city: 'શહેર / જિલ્લો (વૈકલ્પિક)',
     state: 'રાજ્ય',
-    addPerson: 'વધારાની વ્યક્તિ ઉમેરો',
+    addFamilyMember: 'પરિવારના સભ્ય ઉમેરો',
     price: 'કિંમત',
     gst: 'જીએસટી',
     total: 'કુલ રકમ',
@@ -759,27 +751,6 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.gotra}</label>
-                      <input
-                        type="text"
-                        value={devotee.gotra}
-                        onChange={(e) => handleFieldChange(index, 'gotra', e.target.value)}
-                        placeholder="e.g. कश्यप / Kashyap"
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white transition-all shadow-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.dob}</label>
-                      <input
-                        type="date"
-                        value={devotee.dob}
-                        onChange={(e) => handleFieldChange(index, 'dob', e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:border-[#FF671F] focus:ring-1 focus:ring-[#FF671F] bg-white transition-all shadow-sm"
-                      />
-                    </div>
-
                     {index === 0 ? (
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">{t.phone}</label>
@@ -884,7 +855,7 @@ export default function OfferCheckoutModal({ offerLink }: Props) {
                 onClick={addPerson}
                 className="w-full py-3.5 border border-dashed border-[#FF671F] hover:bg-orange-500/5 text-[#FF671F] rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-1.5 active:scale-[0.99]"
               >
-                <i className="tabler-plus" /> {t.addPerson} (+ ₹{offerLink.offerPrice})
+                <i className="tabler-plus" /> {t.addFamilyMember} (+ ₹{offerLink.offerPrice})
               </button>
 
               {/* Price Breakdown */}
