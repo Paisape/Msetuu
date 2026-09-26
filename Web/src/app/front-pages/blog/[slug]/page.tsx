@@ -40,6 +40,7 @@ const FALLBACK_ARTICLES: Record<string, any> = {
     metaDescription: 'Discover why offering mustard oil and black sesame seeds to Shani Dev on Saturdays pacifies Sade Sati and restores karmic harmony.',
     publishedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     viewsCount: 342
   },
   'benefits-of-rudrabhishek-puja-kashi-vishwanath': {
@@ -67,6 +68,7 @@ const FALLBACK_ARTICLES: Record<string, any> = {
     metaDescription: 'Learn about the sacred benefits of Maha Rudrabhishek at Kashi Vishwanath Jyotirlinga for health, peace, and spiritual growth.',
     publishedAt: new Date(Date.now() - 86400000).toISOString(),
     createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
     viewsCount: 512
   },
   'understanding-navagraha-shanti-vedic-astrology': {
@@ -87,6 +89,7 @@ const FALLBACK_ARTICLES: Record<string, any> = {
     metaDescription: 'Learn how Navagraha Shanti rituals harmonize the 9 planetary energies and remove astrological obstacles.',
     publishedAt: new Date(Date.now() - 172800000).toISOString(),
     createdAt: new Date(Date.now() - 172800000).toISOString(),
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
     viewsCount: 289
   }
 }
@@ -101,7 +104,7 @@ async function getPostBySlug(slug: string) {
     })
 
     if (post) {
-      // Increment view count asynchronously
+      // Increment views count asynchronously
       prisma.blogPost
         .update({
           where: { id: post.id },
@@ -222,9 +225,10 @@ export default async function BlogPostPage(props: Props) {
 
   const relatedPosts = await getRelatedPosts(post.slug, post.category)
   const currentUrl = `https://mandirsetuu.com/blog/${post.slug}`
+  const tagList = post.tags ? post.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []
 
   // Google JSON-LD schema for BlogPosting
-  const schemaData = {
+  const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
@@ -232,13 +236,18 @@ export default async function BlogPostPage(props: Props) {
     image: [post.featuredImage || DEFAULT_IMAGE],
     datePublished: post.publishedAt || post.createdAt,
     dateModified: post.updatedAt || post.createdAt,
+    articleSection: post.category || 'Devotional',
+    keywords: post.tags || undefined,
+    timeRequired: `PT${post.readTimeMinutes || 5}M`,
     author: {
       '@type': 'Person',
-      name: post.authorName || 'Mandirsetuu Team'
+      name: post.authorName || 'Mandirsetuu Team',
+      url: 'https://mandirsetuu.com/about'
     },
     publisher: {
       '@type': 'Organization',
       name: 'Mandirsetuu',
+      url: 'https://mandirsetuu.com',
       logo: {
         '@type': 'ImageObject',
         url: 'https://mandirsetuu.com/images/mandirsetuu-logo.png'
@@ -250,32 +259,74 @@ export default async function BlogPostPage(props: Props) {
     }
   }
 
-  const tagList = post.tags ? post.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []
+  // Google JSON-LD schema for Breadcrumbs
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://mandirsetuu.com'
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: 'https://mandirsetuu.com/blog'
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: currentUrl
+      }
+    ]
+  }
 
   return (
     <article className='min-h-screen bg-white'>
-      {/* JSON-LD Schema */}
+      {/* JSON-LD Schemas */}
       <script
         type='application/ld+json'
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
+      />
+      <script
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      {/* Breadcrumb Header */}
-      <div className='bg-emerald-50/50 border-b border-emerald-100/60 py-4'>
-        <div className='max-w-4xl mx-auto px-4 sm:px-6 flex items-center gap-2 text-xs sm:text-sm text-slate-500 overflow-x-auto scrollbar-none'>
-          <Link href='/' className='hover:text-[#006241] whitespace-nowrap'>
-            Home
+      {/* Breadcrumb Bar */}
+      <div className='bg-emerald-50/50 border-b border-emerald-100/60 py-3.5'>
+        <div className='max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between text-xs sm:text-sm text-slate-500'>
+          <div className='flex items-center gap-2 overflow-x-auto scrollbar-none'>
+            <Link href='/' className='hover:text-[#006241] whitespace-nowrap'>
+              Home
+            </Link>
+            <span>/</span>
+            <Link href='/blog' className='hover:text-[#006241] whitespace-nowrap'>
+              Blog
+            </Link>
+            {post.category && (
+              <>
+                <span>/</span>
+                <Link
+                  href={`/blog?category=${encodeURIComponent(post.category)}`}
+                  className='text-[#006241] font-semibold hover:underline whitespace-nowrap'
+                >
+                  {post.category}
+                </Link>
+              </>
+            )}
+          </div>
+
+          <Link
+            href='/blog'
+            className='hidden sm:inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#006241]'
+          >
+            &larr; All Articles
           </Link>
-          <span>/</span>
-          <Link href='/blog' className='hover:text-[#006241] whitespace-nowrap'>
-            Blog
-          </Link>
-          {post.category && (
-            <>
-              <span>/</span>
-              <span className='text-[#006241] font-medium whitespace-nowrap'>{post.category}</span>
-            </>
-          )}
         </div>
       </div>
 
@@ -283,9 +334,12 @@ export default async function BlogPostPage(props: Props) {
         {/* Article Meta Bar */}
         <div className='flex items-center gap-3 text-xs sm:text-sm text-slate-500 mb-4'>
           {post.category && (
-            <span className='px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-[#006241]'>
+            <Link
+              href={`/blog?category=${encodeURIComponent(post.category)}`}
+              className='px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-[#006241] hover:bg-emerald-200 transition-colors'
+            >
               {post.category}
-            </span>
+            </Link>
           )}
           <span>•</span>
           <span>
@@ -301,7 +355,7 @@ export default async function BlogPostPage(props: Props) {
           <span>⏳ {post.readTimeMinutes || 5} min read</span>
         </div>
 
-        {/* Title */}
+        {/* Article Heading */}
         <h1 className='text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight mb-6'>
           {post.title}
         </h1>
@@ -313,7 +367,7 @@ export default async function BlogPostPage(props: Props) {
           </p>
         )}
 
-        {/* Author Card & Social Share */}
+        {/* Author Card & Social Share Bar */}
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5 border-y border-slate-200/80 mb-8'>
           <div className='flex items-center gap-3'>
             <div className='w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-[#006241] font-bold text-base shadow-sm'>
@@ -357,24 +411,25 @@ export default async function BlogPostPage(props: Props) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Tags */}
+        {/* Interactive Tags Section */}
         {tagList.length > 0 && (
           <div className='mt-10 pt-6 border-t border-slate-200 flex items-center flex-wrap gap-2'>
             <span className='text-xs font-bold text-slate-400 uppercase tracking-wider mr-1'>
               🏷️ Tags:
             </span>
             {tagList.map((tag: string, idx: number) => (
-              <span
+              <Link
                 key={idx}
-                className='px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200'
+                href={`/blog?search=${encodeURIComponent(tag)}`}
+                className='px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 transition-colors'
               >
                 #{tag}
-              </span>
+              </Link>
             ))}
           </div>
         )}
 
-        {/* Spiritual Action Box (Contextual CTA) */}
+        {/* Devotional CTA Box */}
         <div className='my-14 rounded-3xl p-8 sm:p-10 bg-emerald-900 text-white shadow-xl relative overflow-hidden'>
           <div className='absolute -right-8 -bottom-8 text-8xl opacity-10 pointer-events-none'>
             🛕
@@ -402,7 +457,7 @@ export default async function BlogPostPage(props: Props) {
           </div>
         </div>
 
-        {/* Related Articles */}
+        {/* Related Articles Section */}
         {relatedPosts.length > 0 && (
           <div className='mt-16 pt-10 border-t border-slate-200'>
             <h3 className='text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2'>
