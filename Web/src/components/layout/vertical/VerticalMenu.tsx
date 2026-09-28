@@ -134,10 +134,14 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
             <MenuItem href={`/${locale}/apps/mandir-setu/content/contact-messages`}>Contact Messages</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/sms-templates`}>SMS Templates</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/about-us`}>About Us</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/blog`}>Blog Posts</MenuItem>
           </SubMenu>
           <SubMenu label='Referrals' icon={<i className='tabler-arrows-left-right' />}>
             <MenuItem href={`/${locale}/apps/mandir-setu/referrals/payouts`}>Payout Requests</MenuItem>
           </SubMenu>
+          <MenuItem href={`/${locale}/apps/mandir-setu/blog`} icon={<i className='tabler-news' />}>
+            Blog Management
+          </MenuItem>
           <MenuItem href={`/${locale}/apps/mandir-setu/config`} icon={<i className='tabler-settings' />}>
             Settings
           </MenuItem>
