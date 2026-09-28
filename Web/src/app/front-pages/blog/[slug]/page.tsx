@@ -12,88 +12,6 @@ type Props = {
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1609766857041-ed402ea8069a?q=80&w=1200&auto=format&fit=crop'
 
-const FALLBACK_ARTICLES: Record<string, any> = {
-  'significance-of-offering-oil-kala-til-shani-dev': {
-    id: 'sample-1',
-    slug: 'significance-of-offering-oil-kala-til-shani-dev',
-    title: 'The Sacred Significance of Offering Mustard Oil and Kala Til to Shani Dev',
-    excerpt:
-      'Discover why offering mustard oil (Telabhishekam) and black sesame seeds (Kala Til) on Saturdays pacifies Shani Sade Sati and brings peace, prosperity, and karmic balance.',
-    content: `<p>Lord Shani, the dispenser of karma in Vedic astrology, rewards discipline, honesty, and spiritual surrender while removing arrogance and worldly delusions.</p>
-<h2>Why Mustard Oil is Offered to Shani Maharaj</h2>
-<p>According to ancient Puranic legends, during the Ramayana era, Lord Hanuman rescued Shani Dev from Ravana's imprisonment. During the fierce battle, Shani Dev suffered severe bodily wounds. Lord Hanuman applied pure mustard oil to Shani Dev's wounds to relieve his intense burning sensation. Touched by Hanuman ji's devotion and seva, Shani Dev declared that anyone who lovingly offers mustard oil to him—especially on Saturdays—will be protected from the harsh afflictions of Sade Sati and Dhaiya.</p>
-<h2>The Vedic Power of Kala Til (Black Sesame Seeds)</h2>
-<p>Black sesame seeds possess strong planetary resonance with Saturn. In Vedic Havans and Chadhava, Kala Til absorbs negative energies, cleanses ancestral debts (Pitri Dosha), and bestows longevity and inner strength.</p>
-<h2>How to Perform the Offering</h2>
-<ul>
-<li>Bathe early on Saturday morning before sunrise or at twilight.</li>
-<li>Offer pure mustard oil with black sesame seeds at a consecrated Shani temple.</li>
-<li>Chant the Shani Gayatri Mantra or the Beej Mantra: <em>"Om Sham Shanaishcharaye Namah"</em> 108 times.</li>
-<li>Feed crows or offer food to the needy as a gesture of unconditional charity.</li>
-</ul>`,
-    featuredImage: 'https://images.unsplash.com/photo-1609766857041-ed402ea8069a?q=80&w=1200&auto=format&fit=crop',
-    category: 'Chadhava',
-    tags: 'Shani Dev, Chadhava, Mustard Oil, Kala Til, Astrology, Sade Sati',
-    authorName: 'Acharya Pt. Ramesh Shastri',
-    readTimeMinutes: 5,
-    metaTitle: 'Sacred Significance of Offering Mustard Oil to Shani Dev | Mandirsetuu',
-    metaDescription: 'Discover why offering mustard oil and black sesame seeds to Shani Dev on Saturdays pacifies Sade Sati and restores karmic harmony.',
-    publishedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    viewsCount: 342
-  },
-  'benefits-of-rudrabhishek-puja-kashi-vishwanath': {
-    id: 'sample-2',
-    slug: 'benefits-of-rudrabhishek-puja-kashi-vishwanath',
-    title: 'Immense Spiritual Benefits of Rudrabhishek Puja at Kashi Vishwanath',
-    excerpt:
-      'Learn about the transformative vibrations of Maha Rudrabhishek performed by Vedic Acharyas with Panchamrit at the sacred Jyotirlinga of Kashi Vishwanath.',
-    content: `<p>Rudrabhishek is one of the most powerful and auspicious Vedic rituals dedicated to Lord Shiva. When performed at Kashi Vishwanath—the eternal cosmic city of Lord Shiva—the spiritual merits multiply manifold.</p>
-<h2>What is Rudrabhishek?</h2>
-<p>The term 'Rudra' refers to the fierce, transformative manifestation of Lord Shiva, while 'Abhishek' means ritualistic sacred bathing with holy substances including Gangajal, milk, curd, honey, ghee, sugarcane juice, and sacred vibhuti.</p>
-<h2>Key Spiritual Benefits</h2>
-<ul>
-<li>Neutralizes planetary doshas and negative cosmic influences.</li>
-<li>Brings harmony, good health, and longevity to the entire family.</li>
-<li>Removes financial obstacles and career hurdles through divine grace.</li>
-<li>Fulfills genuine sankalpas and deep spiritual aspirations.</li>
-</ul>`,
-    featuredImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
-    category: 'E-Puja',
-    tags: 'Lord Shiva, Rudrabhishek, Kashi Vishwanath, E-Puja, Vedic Rituals',
-    authorName: 'Dr. Ananya Sharma',
-    readTimeMinutes: 4,
-    metaTitle: 'Benefits of Rudrabhishek Puja at Kashi Vishwanath | Mandirsetuu',
-    metaDescription: 'Learn about the sacred benefits of Maha Rudrabhishek at Kashi Vishwanath Jyotirlinga for health, peace, and spiritual growth.',
-    publishedAt: new Date(Date.now() - 86400000).toISOString(),
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    viewsCount: 512
-  },
-  'understanding-navagraha-shanti-vedic-astrology': {
-    id: 'sample-3',
-    slug: 'understanding-navagraha-shanti-vedic-astrology',
-    title: 'Understanding Navagraha Shanti: Harmonizing the Nine Planetary Energies',
-    excerpt:
-      'Explore how each of the nine celestial planets (Navagrahas) influences your life path and how personalized Vedic pujas restore cosmic alignment.',
-    content: `<p>In Vedic astrology (Jyotish), our earthly experiences, health, prosperity, and challenges are deeply intertwined with the cosmic rhythms of the Navagrahas—Surya, Chandra, Mangala, Budha, Guru, Shukra, Shani, Rahu, and Ketu.</p>
-<h2>Why Navagraha Shanti is Essential</h2>
-<p>When planetary alignments in your Janam Kundli are afflicted or placed in unfavorable houses, anushthans and dedicated Navagraha pujas channel specific sound vibrations (mantras) and yagnas to calm hostile planetary rays and enhance beneficial influences.</p>`,
-    featuredImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop',
-    category: 'Jyotish & Astrology',
-    tags: 'Navagraha, Kundli, Jyotish, Vedic Astrology, Remedial Pujas',
-    authorName: 'Jyotish Ratna Pt. Alok Kumar',
-    readTimeMinutes: 6,
-    metaTitle: 'Navagraha Shanti Puja & Vedic Astrology Guide | Mandirsetuu',
-    metaDescription: 'Learn how Navagraha Shanti rituals harmonize the 9 planetary energies and remove astrological obstacles.',
-    publishedAt: new Date(Date.now() - 172800000).toISOString(),
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    updatedAt: new Date(Date.now() - 172800000).toISOString(),
-    viewsCount: 289
-  }
-}
-
 async function getPostBySlug(slug: string) {
   try {
     const post = await prisma.blogPost.findFirst({
@@ -136,10 +54,6 @@ async function getPostBySlug(slug: string) {
     console.error('Error fetching blog post by slug:', err)
   }
 
-  if (FALLBACK_ARTICLES[slug]) {
-    return FALLBACK_ARTICLES[slug]
-  }
-
   return null
 }
 
@@ -157,10 +71,10 @@ async function getRelatedPosts(currentSlug: string, category?: string | null) {
 
     if (related && related.length > 0) return related
   } catch {
-    // Fallback
+    // Return empty if no related posts
   }
 
-  return Object.values(FALLBACK_ARTICLES).filter(p => p.slug !== currentSlug).slice(0, 3)
+  return []
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
