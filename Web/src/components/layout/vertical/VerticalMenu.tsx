@@ -128,6 +128,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
             <MenuItem href={`/${locale}/apps/mandir-setu/content/astrologers`}>Astrologers</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-categories`}>Jyotish Categories</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/jyotish-time-slots`}>Jyotish Time Slots</MenuItem>
+            <MenuItem href={`/${locale}/apps/mandir-setu/content/darshan-daily`}>Daily Darshan</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/faqs`}>FAQs</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/how-it-works`}>How It Works</MenuItem>
             <MenuItem href={`/${locale}/apps/mandir-setu/content/reviews`}>Reviews</MenuItem>
