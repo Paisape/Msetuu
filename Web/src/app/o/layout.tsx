@@ -1,6 +1,7 @@
 import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 import MetaPixel from '@/components/MetaPixel'
+import GoogleTag from '@/components/GoogleTag'
 
 export const metadata = {
   title: 'Mandirsetuu — Special Offers & Pujas',
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="en" className="w-full" suppressHydrationWarning>
       <body className="flex w-full min-h-screen flex-col" suppressHydrationWarning>
         <MetaPixel />
+        <GoogleTag />
         {children}
       </body>
     </html>

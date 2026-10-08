@@ -19,6 +19,7 @@ import ScrollToTop from '@core/components/scroll-to-top'
 import DevotionalMusic from '@/components/DevotionalMusic'
 
 import MetaPixel from '@/components/MetaPixel'
+import GoogleTag from '@/components/GoogleTag'
 
 // Util Imports
 import { getSystemMode } from '@core/utils/serverHelpers'
@@ -48,6 +49,7 @@ const Layout = async ({ children }: ChildrenType) => {
       </head>
       <body className='flex is-full min-bs-full flex-auto flex-col'>
         <MetaPixel />
+        <GoogleTag />
         <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
         <Providers direction='ltr'>
           <BlankLayout systemMode={systemMode}>

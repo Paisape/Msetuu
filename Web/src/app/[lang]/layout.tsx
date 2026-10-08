@@ -23,6 +23,7 @@ import { i18n } from '@configs/i18n'
 import { getSystemMode } from '@core/utils/serverHelpers'
 
 import MetaPixel from '@/components/MetaPixel'
+import GoogleTag from '@/components/GoogleTag'
 
 // Style Imports
 import '@/app/globals.css'
@@ -54,6 +55,7 @@ const RootLayout = async (props: ChildrenType & { params: Promise<{ lang: string
       <html id='__next' lang={lang} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <MetaPixel />
+          <GoogleTag />
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
           {children}
         </body>
