@@ -2,7 +2,7 @@
 
 import Script from 'next/script'
 
-const GA_MEASUREMENT_ID = 'G-24H4MZD84X'
+const GA_MEASUREMENT_ID = 'G-80Q4QJM6DD'
 
 export default function GoogleTag() {
   return (
