@@ -1223,6 +1223,17 @@ model BlogPost {
   @@index([category])
 }
 
+// Media asset library: persistent records of all uploaded images and videos for offer links & content.
+model MediaAsset {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String   @unique
+  fileType  String   // "IMAGE", "VIDEO", "AUDIO", "DOCUMENT"
+  mimeType  String
+  fileSize  Int      // size in bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-
-
+  @@index([fileType])
+  @@index([createdAt])
+}

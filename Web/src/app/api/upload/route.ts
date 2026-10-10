@@ -54,6 +54,8 @@ const TARGET_DIMENSIONS: Record<string, { width: number; height: number; fit: 'c
   qr: { width: 600, height: 600, fit: 'inside' },
   proof: { width: 1400, height: 1400, fit: 'inside' },
   scan: { width: 2000, height: 2600, fit: 'inside' },
+  asset: { width: 2560, height: 2560, fit: 'inside' },
+  media: { width: 2560, height: 2560, fit: 'inside' },
   default: { width: 1200, height: 1200, fit: 'inside' }
 }
 
@@ -95,7 +97,7 @@ export async function POST(req: Request) {
         position: 'centre'
       })
 
-      if (uploadType !== 'qr' && uploadType !== 'proof' && uploadType !== 'scan') {
+      if (uploadType !== 'qr' && uploadType !== 'proof' && uploadType !== 'scan' && uploadType !== 'asset' && uploadType !== 'media') {
         const watermarkSvg = `
           <svg width="200" height="40">
             <rect x="0" y="0" width="200" height="40" fill="black" opacity="0.4" rx="5" />
