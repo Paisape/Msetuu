@@ -21,19 +21,20 @@ async function ensureMediaAssetTableExists() {
   try {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "MediaAsset" (
-        "id" TEXT NOT NULL PRIMARY KEY,
+        "id" TEXT PRIMARY KEY,
         "fileName" TEXT NOT NULL,
-        "fileUrl" TEXT NOT NULL,
+        "fileUrl" TEXT UNIQUE NOT NULL,
         "fileType" TEXT NOT NULL,
         "mimeType" TEXT NOT NULL,
         "fileSize" INTEGER NOT NULL,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE UNIQUE INDEX IF NOT EXISTS "MediaAsset_fileUrl_key" ON "MediaAsset"("fileUrl");
-      CREATE INDEX IF NOT EXISTS "MediaAsset_fileType_idx" ON "MediaAsset"("fileType");
-      CREATE INDEX IF NOT EXISTS "MediaAsset_createdAt_idx" ON "MediaAsset"("createdAt");
     `)
+
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "MediaAsset_fileType_idx" ON "MediaAsset"("fileType");`).catch(() => {})
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "MediaAsset_createdAt_idx" ON "MediaAsset"("createdAt");`).catch(() => {})
+
     tableVerified = true
   } catch (err) {
     console.error('[MediaAsset DB Init Error]:', err)
