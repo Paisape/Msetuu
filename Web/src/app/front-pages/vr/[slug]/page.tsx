@@ -2,8 +2,6 @@
 
 import { useState, useEffect, use, useRef } from 'react'
 import Link from 'next/link'
-import GoogleAdSense from '@/components/ads/GoogleAdSense'
-import AdBanner from '@/components/ads/AdBanner'
 
 type VrMediaItem = {
   id: string
@@ -18,18 +16,6 @@ type VrMediaItem = {
   createdAt: string
 }
 
-type AdConfig = {
-  clientId: string
-  autoAdsEnabled: boolean
-  prerollEnabled: boolean
-  prerollSeconds: number
-  overlayAdsEnabled: boolean
-  prerollSlotId: string
-  headerSlotId: string
-  bottomSlotId: string
-  sidebarSlotId: string
-}
-
 export default function VrExperiencePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const [item, setItem] = useState<VrMediaItem | null>(null)
@@ -37,12 +23,6 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
-
-  // AdSense & Pre-Roll / Overlay States
-  const [adConfig, setAdConfig] = useState<AdConfig | null>(null)
-  const [showPreRoll, setShowPreRoll] = useState(false)
-  const [preRollTimer, setPreRollTimer] = useState(5)
-  const [showOverlayAd, setShowOverlayAd] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -65,48 +45,7 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
       .finally(() => {
         setLoading(false)
       })
-
-    // Load AdSense Config
-    fetch('/api/adsense')
-      .then(res => res.json())
-      .then(data => {
-        setAdConfig(data)
-        if (data.prerollEnabled) {
-          setShowPreRoll(true)
-          setPreRollTimer(data.prerollSeconds || 5)
-        }
-        if (data.overlayAdsEnabled !== undefined) {
-          setShowOverlayAd(data.overlayAdsEnabled)
-        }
-      })
-      .catch(() => null)
   }, [slug])
-
-  // Pre-Roll Countdown Timer effect — mandatory completion before video/VR starts
-  useEffect(() => {
-    if (!showPreRoll) return
-
-    if (preRollTimer > 0) {
-      const timer = setTimeout(() => {
-        setPreRollTimer(prev => prev - 1)
-      }, 1000)
-      return () => clearTimeout(timer)
-    } else {
-      // Auto-start VR experience as soon as mandatory pre-roll ad timer finishes
-      setShowPreRoll(false)
-      if (videoRef.current) {
-        videoRef.current.play().catch(() => null)
-      }
-    }
-  }, [showPreRoll, preRollTimer])
-
-  // Handle dismissal of Pre-Roll Ad
-  const handleDismissPreRoll = () => {
-    setShowPreRoll(false)
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => null)
-    }
-  }
 
   const copyLink = () => {
     if (typeof window !== 'undefined') {
@@ -148,9 +87,6 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
 
   return (
     <div className='min-h-screen bg-slate-950 text-slate-100 flex flex-col'>
-      {/* Inject Google AdSense Script */}
-      <GoogleAdSense />
-
       {/* Top Navigation */}
       <header className='border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50 px-4 py-3'>
         <div className='max-w-6xl mx-auto flex items-center justify-between'>
@@ -168,51 +104,15 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
         </div>
       </header>
 
-      {/* Header Banner Ad Slot */}
-      <div className='max-w-6xl mx-auto w-full px-4 pt-4'>
-        <AdBanner slotType='header' />
-      </div>
-
       {/* Main VR Viewer Area */}
       <main className='max-w-6xl mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-8'>
         {/* Left / Main Section: Media Player */}
         <div className='flex-1 flex flex-col gap-6'>
           <div className='relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-amber-500/20 shadow-2xl shadow-amber-950/30 group'>
             
-            {/* 1. MANDATORY PRE-ROLL AD OVERLAY (Before Start Video / VR — No Skip Button) */}
-            {showPreRoll && (
-              <div className='absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center border-2 border-amber-500/40 rounded-2xl'>
-                <div className='max-w-md w-full flex flex-col items-center gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-xl shadow-2xl'>
-                  <div className='flex items-center justify-between w-full border-b border-slate-800 pb-3'>
-                    <span className='text-xs font-semibold text-amber-400 uppercase tracking-widest flex items-center gap-1.5'>
-                      <span>📺</span> Sponsor Advertisement
-                    </span>
-                    <span className='text-xs font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30'>
-                      {preRollTimer > 0 ? `VR starts in ${preRollTimer}s` : 'Starting VR...'}
-                    </span>
-                  </div>
-
-                  {/* Pre-Roll Ad Banner Container */}
-                  <div className='w-full min-h-[140px] flex items-center justify-center bg-slate-950/80 rounded-lg p-2 border border-slate-800'>
-                    <AdBanner slotId={adConfig?.prerollSlotId} slotType='bottom' />
-                  </div>
-
-                  {/* Mandatory Non-Skippable Timer Bar */}
-                  <div className='w-full py-2.5 px-4 bg-slate-950/90 border border-slate-800 rounded-lg text-slate-300 text-xs font-medium flex items-center justify-center gap-2'>
-                    <div className='w-2 h-2 rounded-full bg-amber-400 animate-ping'></div>
-                    <span>
-                      {preRollTimer > 0
-                        ? `Please wait ${preRollTimer} seconds for VR Virtual Darshan to load...`
-                        : 'Starting 360° VR Experience...'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. MAIN MEDIA PLAYER (3D Tour HTML5 / VR Video / HD Video / 360 Image) */}
+            {/* MAIN MEDIA PLAYER (3D Tour HTML5 / VR Video / HD Video / 360 Image) */}
             {item.mediaUrl.endsWith('.htm') || item.mediaUrl.endsWith('.html') || item.mediaUrl.includes('/tours/') ? (
-              /* Interactive 3D Virtual Tour (3DVista / TDV Player / Pannellum / Marzipano) */
+              /* Interactive 3D Virtual Tour (Unity WebGL / 3DVista / TDV Player / Pannellum / Marzipano) */
               <div className='relative w-full h-full bg-black flex items-center justify-center'>
                 <iframe
                   src={item.mediaUrl}
@@ -228,7 +128,7 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
                 src={item.mediaUrl}
                 poster={item.thumbnailUrl || undefined}
                 controls
-                autoPlay={!showPreRoll}
+                autoPlay
                 playsInline
                 loop
                 className='w-full h-full object-contain'
@@ -239,7 +139,7 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
                 src={item.mediaUrl}
                 poster={item.thumbnailUrl || undefined}
                 controls
-                autoPlay={!showPreRoll}
+                autoPlay
                 playsInline
                 loop
                 className='w-full h-full object-contain'
@@ -252,28 +152,11 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
                   alt={item.title}
                   className='w-full h-full object-cover'
                 />
-                <div className='absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-6'>
+                <div className='absolute inset-0 bg-gradient-t from-slate-950/80 via-transparent to-transparent flex items-end p-6'>
                   <div className='bg-slate-900/90 backdrop-blur border border-amber-500/30 rounded-lg px-4 py-2 text-xs font-semibold text-amber-300 tracking-wide flex items-center gap-2'>
                     <span>🥽 360° VR Panoramic Darshan Mode Active</span>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* 3. ON-SCREEN OVERLAY AD (Floating on player bottom) */}
-            {showOverlayAd && !showPreRoll && (
-              <div className='absolute bottom-3 left-1/2 -translate-x-1/2 z-30 max-w-[90%] sm:max-w-md w-full bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-2 shadow-2xl flex flex-col items-center'>
-                <div className='flex items-center justify-between w-full px-2 pb-1 border-b border-slate-800/80 mb-1'>
-                  <span className='text-[10px] uppercase font-bold tracking-wider text-amber-400'>Ad Overlay</span>
-                  <button
-                    onClick={() => setShowOverlayAd(false)}
-                    className='text-slate-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 transition-colors'
-                    title='Close Ad'
-                  >
-                    ✕ Close
-                  </button>
-                </div>
-                <AdBanner slotId={adConfig?.prerollSlotId} slotType='bottom' className='!my-0' />
               </div>
             )}
 
@@ -299,14 +182,9 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
               </p>
             )}
           </div>
-
-          {/* Bottom Banner Ad Slot */}
-          <div className='w-full bg-slate-900/40 border border-slate-800/60 rounded-xl p-2'>
-            <AdBanner slotType='bottom' />
-          </div>
         </div>
 
-        {/* Right Section: Sidebar + QR Code + Sharing + Sidebar Ad */}
+        {/* Right Section: Sidebar + QR Code + Sharing */}
         <aside className='w-full lg:w-80 flex flex-col gap-6'>
           {/* Shareable QR Code Card */}
           <div className='bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-xl p-6 flex flex-col items-center text-center shadow-lg'>
@@ -328,11 +206,6 @@ export default function VrExperiencePage({ params }: { params: Promise<{ slug: s
             >
               {copied ? '✓ Link Copied to Clipboard!' : '📋 Copy VR Link'}
             </button>
-          </div>
-
-          {/* Sidebar Banner Ad Slot */}
-          <div className='bg-slate-900/40 border border-slate-800/60 rounded-xl p-2'>
-            <AdBanner slotType='sidebar' />
           </div>
         </aside>
       </main>
