@@ -169,12 +169,12 @@ export async function generateDailySummaryData(referenceDate?: Date): Promise<Da
         paymentStatus: { in: ['SUCCESS', 'PAID'] }
       },
       include: {
-        product: { select: { title: true } }
+        product: { select: { name: true } }
       }
     })
 
     for (const ord of productOrders) {
-      const title = ord.product?.title || 'Divine Product'
+      const title = ord.product?.name || 'Divine Product'
       const amt = Number(ord.totalAmount || 0)
       const qty = ord.quantity || 1
       addEntry(title, 'Ecommerce', amt, qty, ord.createdAt)

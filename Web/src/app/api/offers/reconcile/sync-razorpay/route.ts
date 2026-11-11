@@ -98,7 +98,8 @@ export async function POST(req: Request) {
           gatewayType: 'RAZORPAY_API',
           totalProcessed: pendingOrders.length,
           totalMatched: reconciledCount,
-          totalDiscrepant: 0
+          totalDiscrepant: 0,
+          runByAdminId: admin?.id || 'admin'
         }
       }).catch(() => null)
     }

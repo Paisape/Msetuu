@@ -23,7 +23,7 @@ async function nextInvoiceNumber(): Promise<string> {
   // Find the latest invoice created this year to extract the highest sequence number
   const lastInvoice = await prisma.invoice.findFirst({
     where: { invoiceNumber: { startsWith: `INV-${year}-` } },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { issuedAt: 'desc' }
   })
 
   let nextSeq = 1

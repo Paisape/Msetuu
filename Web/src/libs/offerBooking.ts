@@ -132,7 +132,8 @@ export async function confirmOfferBookingAndNotify(
     }
   }
 
-  // 6. Admin Notification Email (Isolated try-catch)
+  // 6. Admin Notification Email (Disabled per request - transactional devotee emails & DLT SMS remain active)
+  /*
   try {
     const totalDevoteesCount = await prisma.offerLinkDevotee.count({
       where: { order: { offerLinkId: updatedOrder.offerLinkId, paymentStatus: 'SUCCESS' } }
@@ -173,6 +174,7 @@ export async function confirmOfferBookingAndNotify(
   } catch (adminMailErr) {
     console.error(`[OfferBooking] Admin notification failed for order ${orderId}:`, adminMailErr)
   }
+  */
 
   return updatedOrder
 }
