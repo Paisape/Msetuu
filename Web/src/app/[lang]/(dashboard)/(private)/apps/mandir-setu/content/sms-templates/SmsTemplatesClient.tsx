@@ -619,7 +619,13 @@ export default function SmsTemplatesClient() {
             <div>
               <strong>Gateway Response Payload:</strong>
               <Paper variant='outlined' className='p-3 mt-1 bg-gray-900 text-green-400 text-xs font-mono overflow-auto max-h-60'>
-                <pre>{JSON.stringify(JSON.parse(selectedLog.response), null, 2)}</pre>
+                <pre>{(() => {
+                  try {
+                    return JSON.stringify(JSON.parse(selectedLog.response), null, 2)
+                  } catch {
+                    return selectedLog.response
+                  }
+                })()}</pre>
               </Paper>
             </div>
           )}
