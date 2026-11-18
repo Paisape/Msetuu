@@ -25,6 +25,39 @@ export async function expireStaleVideos(): Promise<void> {
   ])
 }
 
+let offerLinkColsChecked = false
+export async function ensureOfferLinkOrderVideoColumns() {
+  if (offerLinkColsChecked) return
+  try {
+    await prisma.$executeRawUnsafe(`
+      DO $$ 
+      BEGIN 
+        BEGIN
+          ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;
+          ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUploadedAt" TIMESTAMP(3);
+          ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoExpired" BOOLEAN NOT NULL DEFAULT false;
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+        BEGIN
+          ALTER TABLE offerlinkorder ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;
+          ALTER TABLE offerlinkorder ADD COLUMN IF NOT EXISTS "videoUploadedAt" TIMESTAMP(3);
+          ALTER TABLE offerlinkorder ADD COLUMN IF NOT EXISTS "videoExpired" BOOLEAN NOT NULL DEFAULT false;
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+        BEGIN
+          ALTER TABLE "offerlinkorder" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;
+          ALTER TABLE "offerlinkorder" ADD COLUMN IF NOT EXISTS "videoUploadedAt" TIMESTAMP(3);
+          ALTER TABLE "offerlinkorder" ADD COLUMN IF NOT EXISTS "videoExpired" BOOLEAN NOT NULL DEFAULT false;
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+      END $$;
+    `)
+    offerLinkColsChecked = true
+  } catch (err) {
+    console.error('[ensureOfferLinkOrderVideoColumns]:', err)
+  }
+}
+
 export function isValidDriveLink(url: string): boolean {
   if (typeof url !== 'string' || !url.trim()) return false
 
@@ -37,8 +70,14 @@ export function isValidDriveLink(url: string): boolean {
   }
 }
 
-function extractFolderId(folderUrl: string): string | null {
+export function extractFolderId(folderUrl: string): string | null {
   const match = folderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/) || folderUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+
+  return match ? match[1] : null
+}
+
+export function extractFileId(fileUrl: string): string | null {
+  const match = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/)
 
   return match ? match[1] : null
 }
@@ -52,12 +91,19 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const SHORT_ID_PATTERN = /^[0-9a-f]{8,12}$/i
 
 function orderIdFromFilename(filename: string): string | null {
+  if (!filename) return null
   let base = filename.replace(/\.[^./\\]+$/, '').trim() // strip extension
   base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
 
   if (ORDER_ID_PATTERN.test(base)) return base.toLowerCase()
   if (UUID_PATTERN.test(base)) return base.toLowerCase()
-  if (SHORT_ID_PATTERN.test(base)) return base.toLowerCase()
+  if (SHORT_ID_PATTERN.test(base)) {
+    // If it's pure decimal digits with NO hex characters (e.g. 45736423), it's only valid if it originally had an extension (.mp4 etc)
+    const hasExtension = /\.[a-zA-Z0-9]+$/.test(filename)
+    const isPureDecimal = /^\d+$/.test(base)
+    if (isPureDecimal && !hasExtension) return null
+    return base.toLowerCase()
+  }
 
   return null
 }
@@ -116,6 +162,26 @@ async function listDriveFolderViaApi(folderId: string, apiKey: string): Promise<
  */
 async function scrapeDriveFolderHtml(folderUrl: string): Promise<{ orderId: string; fileUrl: string }[]> {
   try {
+    // 0. If user provided a direct file link instead of a folder:
+    const directFileId = extractFileId(folderUrl)
+    if (folderUrl.includes('/file/d/') && directFileId) {
+      const res = await fetch(folderUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
+      })
+      if (res.ok) {
+        const fileHtml = await res.text()
+        const titleMatch = fileHtml.match(/<title>([^<]+)<\/title>/i)
+        const title = titleMatch ? titleMatch[1].replace(/ - Google Drive$/i, '').trim() : ''
+        const orderId = orderIdFromFilename(title)
+        if (orderId) {
+          return [{ orderId, fileUrl: `https://drive.google.com/file/d/${directFileId}/view` }]
+        }
+      }
+    }
+
     // Fetch folder HTML page
     const res = await fetch(folderUrl, {
       headers: {
@@ -126,85 +192,78 @@ async function scrapeDriveFolderHtml(folderUrl: string): Promise<{ orderId: stri
     
     if (!res.ok) {
       console.warn('Failed to fetch Google Drive folder page: Status', res.status)
-      
-return []
+      return []
     }
     
     const html = await res.text()
     const results: { orderId: string; fileUrl: string }[] = []
     
-    // 1. Google INITIAL_DATA JSON payload file matching regex:
-    // Google Drive structures data in JSON array format like: ["file_id", "filename", "mimeType", ...]
-    // We search for file IDs (25-45 char alphanumeric) followed by filenames containing a CUID (starting with 'c')
-    const regex = /"([a-zA-Z0-9_-]{25,50})"\s*,\s*"([^"]+)"/g
-    let match
+    // 1. Search for video filenames ending in video extensions (.mp4, .mov, .m4v, .webm, .mkv, .avi)
+    const videoFileRegex = /"([^"\\]+?\.(?:mp4|mov|m4v|webm|mkv|avi))"/gi
+    let fileMatch
 
-    while ((match = regex.exec(html)) !== null) {
-      const fileId = match[1]
-      const filename = match[2]
+    while ((fileMatch = videoFileRegex.exec(html)) !== null) {
+      const fullFilename = fileMatch[1]
+      const orderId = orderIdFromFilename(fullFilename)
+      if (!orderId) continue
+
+      const matchIndex = fileMatch.index
+      const surround = html.substring(Math.max(0, matchIndex - 500), Math.min(html.length, matchIndex + 500))
       
-      // Match cuid format (length 25), full uuid format (36 chars), or short order id (8 hex chars)
-      const idMatch = filename.match(/(c[a-z0-9]{24})/i) || 
-                      filename.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ||
-                      filename.match(/\b([0-9a-f]{8})\b/i)
+      const fileIdMatches = surround.match(/[a-zA-Z0-9_-]{25,45}/g) || []
+      const validFileIds = fileIdMatches.filter(id =>
+        id.toLowerCase() !== orderId.toLowerCase() &&
+        !id.toLowerCase().includes('drive') &&
+        !id.toLowerCase().includes('google') &&
+        !id.toLowerCase().includes('video') &&
+        !id.toLowerCase().includes('script') &&
+        !id.toLowerCase().includes('http')
+      )
 
-      if (idMatch) {
-        const orderId = idMatch[1].toLowerCase()
-        const fileUrl = `https://drive.google.com/file/d/${fileId}/view`
-
-        results.push({ orderId, fileUrl })
-        console.log(`Found mapping: Order ID ${orderId} -> File ID ${fileId}`)
+      if (validFileIds.length > 0) {
+        results.push({
+          orderId,
+          fileUrl: `https://drive.google.com/file/d/${validFileIds[0]}/view`
+        })
       }
     }
-    
-    // 2. Fallback: Parse via broad proximity scanning if strict regex didn't yield matches
+
+    // 2. Strict CUID or UUID fallback (NEVER match pure numbers like 45736423 without video extension)
     if (results.length === 0) {
-      console.log('Fallback scanning: searching for CUID / UUID / Short ID references directly in page...')
-      const cuids = Array.from(new Set([
+      const strictIds = Array.from(new Set([
         ...(html.match(/c[a-z0-9]{24}/g) || []),
-        ...(html.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || []),
-        ...(html.match(/\b[0-9a-f]{8}\b/gi) || [])
+        ...(html.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [])
       ]))
-      
-      for (const cuid of cuids) {
-        const index = html.indexOf(cuid)
 
-        // Look within +/- 300 characters for potential Google Drive file IDs
-        const surround = html.substring(Math.max(0, index - 300), Math.min(html.length, index + 300))
-        const fileIdMatches = surround.match(/[a-zA-Z0-9_-]{28,45}/g) || []
-        
-        // Filter out CUID itself, common values, extensions, or URLs
-        const validFileIds = fileIdMatches.filter(id => 
-          id !== cuid && 
-          !id.includes('.') && 
-          !id.includes('/') && 
-          !id.includes('\\') && 
-          !id.includes('"') &&
-          !id.includes('type')
+      for (const id of strictIds) {
+        const orderId = id.toLowerCase()
+        const index = html.indexOf(id)
+        const surround = html.substring(Math.max(0, index - 500), Math.min(html.length, index + 500))
+        const fileIdMatches = surround.match(/[a-zA-Z0-9_-]{25,45}/g) || []
+        const validFileIds = fileIdMatches.filter(fId =>
+          fId.toLowerCase() !== orderId &&
+          !fId.toLowerCase().includes('drive') &&
+          !fId.toLowerCase().includes('google') &&
+          !fId.toLowerCase().includes('video') &&
+          !fId.toLowerCase().includes('script') &&
+          !fId.toLowerCase().includes('http')
         )
-        
         if (validFileIds.length > 0) {
-          const fileId = validFileIds[0]
-
           results.push({
-            orderId: cuid,
-            fileUrl: `https://drive.google.com/file/d/${fileId}/view`
+            orderId,
+            fileUrl: `https://drive.google.com/file/d/${validFileIds[0]}/view`
           })
-          console.log(`Found proximity mapping: Order ID ${cuid} -> File ID ${fileId}`)
         }
       }
     }
-    
+
     // Deduplicate results
     const uniqueResults = new Map<string, string>()
-
     results.forEach(r => uniqueResults.set(r.orderId, r.fileUrl))
-
     return Array.from(uniqueResults.entries()).map(([orderId, fileUrl]) => ({ orderId, fileUrl }))
   } catch (err) {
     console.error('Error in scrapeDriveFolderHtml:', err)
-    
-return []
+    return []
   }
 }
 
@@ -224,9 +283,6 @@ export async function parseDriveFolder(folderUrl: string): Promise<{ orderId: st
       return await listDriveFolderViaApi(folderId, apiKey)
     } catch (err) {
       console.error('[videoUpload] Drive API folder listing failed, falling back to HTML scan:', err)
-
-      // Fall through to the best-effort scrape below rather than failing outright — a
-      // temporary Drive API hiccup shouldn't block the admin entirely.
     }
   }
 

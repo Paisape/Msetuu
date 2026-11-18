@@ -3,33 +3,19 @@ import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
-import { isValidDriveLink, parseDriveFolder } from '@/libs/videoUpload'
-
-let campaignVideoColsVerified = false
-async function ensureCampaignVideoColumns() {
-  if (campaignVideoColsVerified) return
-  try {
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;
-      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUploadedAt" TIMESTAMP(3);
-      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoExpired" BOOLEAN NOT NULL DEFAULT false;
-    `)
-    campaignVideoColsVerified = true
-  } catch (err) {
-    console.error('[VideoUpload Campaign DB Columns]:', err)
-  }
-}
+import { isValidDriveLink, parseDriveFolder, ensureOfferLinkOrderVideoColumns } from '@/libs/videoUpload'
 import { sendEmail } from '@/libs/email'
 import { videoReadyEmail } from '@/libs/emailTemplates'
 import { notifyUser } from '@/libs/notificationSystem'
 import { sendVideoUploadedSms } from '@/libs/sms'
 
-type BatchItemInput = { orderType: 'CHADHAVA' | 'EPUJA'; orderId: string; driveLink: string }
+type BatchItemInput = { orderType: 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'; orderId: string; driveLink: string }
 
 // GET /api/operation/video-upload — admin: batch history (most recent first)
 export async function GET() {
   try {
     await requireAdmin()
+    await ensureOfferLinkOrderVideoColumns()
 
     const batches = await prisma.videoUploadBatch.findMany({
       include: { items: { orderBy: { createdAt: 'asc' } }, createdBy: { select: { name: true, email: true } } },
@@ -49,7 +35,7 @@ export async function POST(req: Request) {
   try {
     const admin = await requireAdmin()
 
-    await ensureCampaignVideoColumns()
+    await ensureOfferLinkOrderVideoColumns()
 
     const body = await req.json()
     const mode = body?.mode // 'FOLDER' or 'MANUAL' (default 'MANUAL')
@@ -133,18 +119,41 @@ export async function POST(req: Request) {
         const cleanId = orderId.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
 
         if (orderType === 'CAMPAIGN') {
-          // 1. Try exact match (big ID)
-          order = await prisma.offerLinkOrder.findUnique({
-            where: { id: orderId },
-            include: { devotees: true, offerLink: true }
-          }).catch(() => null)
+          const campaignInclude = {
+            devotees: true,
+            offerLink: { select: { id: true, title: true } }
+          }
+
+          // 1. Try exact match (big ID, clean ID, or case-insensitive)
+          order = await prisma.offerLinkOrder.findFirst({
+            where: {
+              OR: [
+                { id: orderId },
+                { id: cleanId },
+                { id: { equals: cleanId, mode: 'insensitive' } },
+                { id: { equals: cleanId.toLowerCase() } }
+              ]
+            },
+            include: campaignInclude
+          }).catch(err => {
+            console.error('[VideoUpload Campaign exact lookup error]:', err)
+            return null
+          })
 
           // 2. Fallback: try prefix match (short 8-char ID)
           if (!order && cleanId.length >= 6) {
             order = await prisma.offerLinkOrder.findFirst({
-              where: { id: { startsWith: cleanId, mode: 'insensitive' } },
-              include: { devotees: true, offerLink: true }
-            }).catch(() => null)
+              where: {
+                OR: [
+                  { id: { startsWith: cleanId, mode: 'insensitive' } },
+                  { id: { startsWith: cleanId.toLowerCase() } }
+                ]
+              },
+              include: campaignInclude
+            }).catch(err => {
+              console.error('[VideoUpload Campaign prefix match error]:', err)
+              return null
+            })
           }
 
           if (order) {
@@ -196,10 +205,28 @@ export async function POST(req: Request) {
         const uploadedAt = new Date()
 
         if (orderType === 'CAMPAIGN') {
-          await prisma.offerLinkOrder.update({
-            where: { id: order.id },
-            data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
-          })
+          try {
+            await prisma.offerLinkOrder.update({
+              where: { id: order.id },
+              data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
+            })
+          } catch (updateErr) {
+            console.warn('[VideoUpload Campaign update error, running raw SQL update]:', updateErr)
+            await ensureOfferLinkOrderVideoColumns()
+            await prisma.$executeRawUnsafe(
+              `UPDATE "OfferLinkOrder" SET "videoUrl" = $1, "videoUploadedAt" = $2, "videoExpired" = false WHERE id = $3`,
+              driveLink,
+              uploadedAt,
+              order.id
+            ).catch(() => {
+              return prisma.$executeRawUnsafe(
+                `UPDATE offerlinkorder SET "videoUrl" = $1, "videoUploadedAt" = $2, "videoExpired" = false WHERE id = $3`,
+                driveLink,
+                uploadedAt,
+                order.id
+              )
+            })
+          }
         } else {
           const model = orderType === 'CHADHAVA' ? prisma.chadhavaOrder : prisma.pujaOrder
           await (model as any).update({

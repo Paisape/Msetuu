@@ -2,21 +2,38 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
+import { ensureOfferLinkOrderVideoColumns } from '@/libs/videoUpload'
 
 // GET /api/offer/orders — Admin only: lists all offer orders (standard offer orders + offer link promotion bookings)
 export async function GET(req: Request) {
   try {
     await requireAdmin()
 
-    const [standardOrders, linkOrders] = await Promise.all([
-      prisma.offerOrder.findMany({
-        include: {
-          offer: true,
-          user: { select: { name: true, email: true } }
+    await ensureOfferLinkOrderVideoColumns()
+
+    const standardOrdersPromise = prisma.offerOrder.findMany({
+      include: {
+        offer: true,
+        user: { select: { name: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    }).catch(err => {
+      console.error('[OfferOrders] standardOrders error:', err)
+      return []
+    })
+
+    const linkOrdersPromise = prisma.offerLinkOrder.findMany({
+      include: {
+        offerLink: {
+          select: { id: true, title: true }
         },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.offerLinkOrder.findMany({
+        devotees: true
+      },
+      orderBy: { createdAt: 'desc' }
+    }).catch(async err => {
+      console.warn('[OfferOrders] linkOrders findMany error, retrying with column ensure:', err?.message)
+      await ensureOfferLinkOrderVideoColumns()
+      return prisma.offerLinkOrder.findMany({
         include: {
           offerLink: {
             select: { id: true, title: true }
@@ -24,8 +41,13 @@ export async function GET(req: Request) {
           devotees: true
         },
         orderBy: { createdAt: 'desc' }
+      }).catch(retryErr => {
+        console.error('[OfferOrders] linkOrders retry failed:', retryErr)
+        return []
       })
-    ])
+    })
+
+    const [standardOrders, linkOrders] = await Promise.all([standardOrdersPromise, linkOrdersPromise])
 
     const formattedLinkOrders = linkOrders.map(l => {
       const primaryDevotee = l.devotees.find(d => d.isPrimary) || l.devotees[0] || {}
