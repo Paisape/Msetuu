@@ -1,6 +1,3 @@
-// Next Imports
-import { Plus_Jakarta_Sans } from 'next/font/google'
-
 // MUI Imports
 import type { Theme } from '@mui/material/styles'
 
@@ -16,7 +13,7 @@ import shadows from './shadows'
 import customShadows from './customShadows'
 import typography from './typography'
 
-const plus_jakarta_sans = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700', '800'] })
+const FONT_FAMILY = "'Plus Jakarta Sans', sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial"
 
 const theme = (settings: Settings, mode: SystemMode, direction: Theme['direction']): Theme => {
   return {
@@ -35,7 +32,7 @@ const theme = (settings: Settings, mode: SystemMode, direction: Theme['direction
       }
     },
     shadows: shadows(mode),
-    typography: typography(plus_jakarta_sans.style.fontFamily),
+    typography: typography(FONT_FAMILY),
     customShadows: customShadows(mode),
     mainColorChannels: {
       light: '47 43 61',
