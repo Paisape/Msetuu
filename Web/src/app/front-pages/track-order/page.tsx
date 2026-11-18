@@ -81,6 +81,34 @@ function TrackOrderContent() {
 
   const steps = ['Order Placed', 'Processing Offering', 'Completed / Proof Uploaded']
 
+  const getEmbedVideoUrl = (url?: string | null) => {
+    if (!url) return ''
+    const trimmed = url.trim()
+    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+    if (driveMatch && driveMatch[1]) {
+      return `https://drive.google.com/file/d/${driveMatch[1]}/preview`
+    }
+    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+    if (idMatch && idMatch[1] && trimmed.includes('drive.google.com')) {
+      return `https://drive.google.com/file/d/${idMatch[1]}/preview`
+    }
+    return trimmed
+  }
+
+  const getDownloadVideoUrl = (url?: string | null) => {
+    if (!url) return ''
+    const trimmed = url.trim()
+    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+    if (driveMatch && driveMatch[1]) {
+      return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`
+    }
+    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+    if (idMatch && idMatch[1] && trimmed.includes('drive.google.com')) {
+      return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`
+    }
+    return trimmed
+  }
+
   return (
     <div className='flex flex-col items-center justify-start min-h-screen bg-[#FAF8EB] p-4 py-12 w-full'>
       <div className='max-w-2xl w-full flex flex-col gap-6'>
@@ -183,21 +211,38 @@ function TrackOrderContent() {
                   </Typography>
                   <Paper className='overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center relative shadow-inner'>
                     <iframe
-                      src={order.videoUrl}
+                      src={getEmbedVideoUrl(order.videoUrl)}
                       className='w-full h-full border-0 absolute inset-0'
                       allow='autoplay; encrypted-media'
                       allowFullScreen
                     />
                   </Paper>
-                  <Button
-                    variant='outlined'
-                    href={order.videoUrl}
-                    target='_blank'
-                    className='w-full py-2.5 border-[#FF671F] text-[#FF671F] font-bold hover:bg-orange-50 rounded-xl flex items-center justify-center gap-1.5 mt-2'
-                    style={{ borderColor: '#FF671F', color: '#FF671F' }}
-                  >
-                    Watch Directly on Google Drive ↗
-                  </Button>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1'>
+                    <Button
+                      variant='contained'
+                      href={getDownloadVideoUrl(order.videoUrl)}
+                      target='_blank'
+                      download
+                      startIcon={<i className='tabler-download' />}
+                      className='w-full py-2.5 bg-[#006241] hover:bg-[#004d33] text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm'
+                      style={{ backgroundColor: '#006241', color: '#ffffff' }}
+                    >
+                      Download Video
+                    </Button>
+                    <Button
+                      variant='outlined'
+                      href={order.videoUrl}
+                      target='_blank'
+                      startIcon={<i className='tabler-external-link' />}
+                      className='w-full py-2.5 border-[#FF671F] text-[#FF671F] font-bold hover:bg-orange-50 rounded-xl flex items-center justify-center gap-1.5'
+                      style={{ borderColor: '#FF671F', color: '#FF671F' }}
+                    >
+                      Watch on Google Drive ↗
+                    </Button>
+                  </div>
+                  <Typography variant='caption' className='text-slate-500 text-center'>
+                    You can watch the video proof above or tap <strong>Download Video</strong> to save a permanent copy to your device.
+                  </Typography>
                 </div>
               ) : (
                 order.status === 'COMPLETED' && (

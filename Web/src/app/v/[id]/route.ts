@@ -5,6 +5,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id: rawId } = await params
   const cleanId = rawId.replace(/^[#\s]*(MS-|ms-|ORD-|ord-)?/i, '').trim()
 
+  const origin = new URL(req.url).origin
+  let appUrl = 'https://www.mandirsetuu.com'
+  if (origin.includes('localhost')) {
+    appUrl = origin
+  } else if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+    let configured = process.env.NEXT_PUBLIC_APP_URL.trim()
+    if (configured.includes('mandirsetuu.com') && !configured.includes('www.mandirsetuu.com')) {
+      configured = configured.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+    }
+    appUrl = configured
+  }
+
   // 1. Try OfferLinkOrder (New Campaigns)
   const offerLinkOrder = await prisma.offerLinkOrder.findFirst({
     where: {
@@ -12,10 +24,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         { id: { equals: cleanId, mode: 'insensitive' } },
         { id: { startsWith: cleanId, mode: 'insensitive' } }
       ]
-    }
+    },
+    select: { id: true, videoUrl: true }
   })
   if (offerLinkOrder) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin
     return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${offerLinkOrder.id}`)
   }
 
@@ -27,10 +39,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         { id: { startsWith: cleanId, mode: 'insensitive' } }
       ]
     },
-    select: { videoUrl: true }
+    select: { id: true, videoUrl: true }
   })
-  if (offerOrder?.videoUrl) {
-    return NextResponse.redirect(offerOrder.videoUrl)
+  if (offerOrder) {
+    return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${offerOrder.id}`)
   }
 
   // 3. Try ChadhavaOrder
@@ -41,10 +53,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         { id: { startsWith: cleanId, mode: 'insensitive' } }
       ]
     },
-    select: { videoUrl: true }
+    select: { id: true, videoUrl: true }
   })
-  if (chadhavaOrder?.videoUrl) {
-    return NextResponse.redirect(chadhavaOrder.videoUrl)
+  if (chadhavaOrder) {
+    return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${chadhavaOrder.id}`)
   }
 
   // 4. Try PujaOrder
@@ -55,12 +67,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         { id: { startsWith: cleanId, mode: 'insensitive' } }
       ]
     },
-    select: { videoUrl: true }
+    select: { id: true, videoUrl: true }
   })
-  if (pujaOrder?.videoUrl) {
-    return NextResponse.redirect(pujaOrder.videoUrl)
+  if (pujaOrder) {
+    return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${pujaOrder.id}`)
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin
   return NextResponse.redirect(`${appUrl}/front-pages/track-order?id=${cleanId}&error=no_video`)
 }

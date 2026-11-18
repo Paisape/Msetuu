@@ -311,7 +311,86 @@ export async function sendOrderConfirmationSms({
   }
 }
 
+/**
+ * Dispatch Video Uploaded SMS using DLT Template (Textzi Gateway)
+ *
+ * Registered DLT Template ID: 1177178781884860240
+ * Content: "Dear Devotee, the video of your offering for Order ID: {#alp#} has been uploaded. Watch it here: {#urg#}. The video will be removed from our server after 10 days. Please download it for your records. Team Mandirsetuu"
+ */
+export async function sendVideoUploadedSms({
+  mobile,
+  orderId,
+  videoLink
+}: {
+  mobile: string
+  orderId: string
+  videoLink?: string
+}): Promise<SendSmsResult> {
+  if (!mobile || !mobile.trim()) {
+    return { success: false, message: 'Missing mobile number.' }
+  }
+
+  try {
+    let template = await prisma.smsTemplate.findFirst({
+      where: {
+        active: true,
+        OR: [
+          { category: 'VIDEO_UPLOADED' },
+          { templateId: '1177178781884860240' },
+          { name: { contains: 'Video Uploaded', mode: 'insensitive' } },
+          { name: { contains: 'POD', mode: 'insensitive' } }
+        ]
+      }
+    })
+
+    const templateId = template?.templateId || '1177178781884860240'
+    const defaultContent =
+      'Dear Devotee, the video of your offering for Order ID: {#alp#} has been uploaded. Watch it here: {#urg#}. The video will be removed from our server after 10 days. Please download it for your records. Team Mandirsetuu'
+    const rawContent = template?.content || defaultContent
+
+    let appUrl = 'https://www.mandirsetuu.com'
+    if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+      let configured = process.env.NEXT_PUBLIC_APP_URL.trim()
+      if (configured.startsWith('http://')) configured = configured.replace('http://', 'https://')
+      if (configured.includes('mandirsetuu.com') && !configured.includes('www.mandirsetuu.com')) {
+        configured = configured.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+      }
+      appUrl = configured
+    }
+
+    const cleanAlphanumeric = orderId.replace(/[^a-zA-Z0-9]/g, '')
+    const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
+
+    let finalVideoLink = videoLink || `${appUrl}/v/${shortOrderId}`
+    if (finalVideoLink.includes('mandirsetuu.com') && !finalVideoLink.includes('www.mandirsetuu.com')) {
+      finalVideoLink = finalVideoLink.replace('mandirsetuu.com', 'www.mandirsetuu.com')
+    }
+    if (finalVideoLink.startsWith('http://www.mandirsetuu.com')) {
+      finalVideoLink = finalVideoLink.replace('http://', 'https://')
+    }
+
+    let message = rawContent
+      .replace(/\{#alp#\}/g, shortOrderId)
+      .replace(/\{#urg#\}/g, finalVideoLink)
+      .replace(/\{#orderId#\}/g, shortOrderId)
+      .replace(/\{#videoLink#\}/g, finalVideoLink)
+      .replace(/\{#order_id#\}/g, shortOrderId)
+      .replace(/\{#link#\}/g, finalVideoLink)
+      .replace(/\{#url#\}/g, finalVideoLink)
+      .replace(/\{#num#\}/g, shortOrderId)
+      .replace(/\{#var#\}/g, shortOrderId)
+      .replace(/\{orderId\}/g, shortOrderId)
+      .replace(/\{videoLink\}/g, finalVideoLink)
+
+    return await sendTextziSms(mobile, message, templateId)
+  } catch (err: any) {
+    console.error('[SMS] Failed to send video uploaded SMS:', err)
+    return { success: false, message: err.message || 'Failed to send SMS.' }
+  }
+}
+
 // Snake-case aliases matching core/sms.php specs
 export const send_textzi_sms = sendTextziSms
 export const send_otp_sms = sendOtpSms
 export const send_order_confirmation_sms = sendOrderConfirmationSms
+export const send_video_uploaded_sms = sendVideoUploadedSms

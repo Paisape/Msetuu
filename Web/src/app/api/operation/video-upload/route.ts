@@ -22,6 +22,7 @@ async function ensureCampaignVideoColumns() {
 import { sendEmail } from '@/libs/email'
 import { videoReadyEmail } from '@/libs/emailTemplates'
 import { notifyUser } from '@/libs/notificationSystem'
+import { sendVideoUploadedSms } from '@/libs/sms'
 
 type BatchItemInput = { orderType: 'CHADHAVA' | 'EPUJA'; orderId: string; driveLink: string }
 
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
         let order: any = null
         let customerName = 'Devotee'
         let customerEmail: string | null = null
+        let customerPhone: string | null = null
         let itemLabel = 'Campaign Offering'
         let userId: string | null = null
         let orderStatus = 'CONFIRMED'
@@ -149,6 +151,7 @@ export async function POST(req: Request) {
             const primaryDevotee = order.devotees?.find((d: any) => d.isPrimary) || order.devotees?.[0]
             customerName = primaryDevotee?.name || 'Devotee'
             customerEmail = primaryDevotee?.email || null
+            customerPhone = primaryDevotee?.phone || order.devotees?.[0]?.phone || null
             itemLabel = order.offerLink?.title || 'Campaign Offering'
             orderStatus = order.paymentStatus === 'SUCCESS' ? 'CONFIRMED' : order.paymentStatus
           }
@@ -158,20 +161,21 @@ export async function POST(req: Request) {
           // 1. Try exact match (big ID)
           order = await (model as any).findUnique({
             where: { id: orderId },
-            include: { user: { select: { name: true, email: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
+            include: { user: { select: { name: true, email: true, phone: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
           }).catch(() => null)
 
           // 2. Fallback: try prefix match (short ID)
           if (!order && cleanId.length >= 6) {
             order = await (model as any).findFirst({
               where: { id: { startsWith: cleanId, mode: 'insensitive' } },
-              include: { user: { select: { name: true, email: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
+              include: { user: { select: { name: true, email: true, phone: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
             }).catch(() => null)
           }
 
           if (order) {
             customerName = order.user?.name || 'Devotee'
             customerEmail = order.user?.email || null
+            customerPhone = order.user?.phone || null
             userId = order.userId || null
             itemLabel = (orderType === 'CHADHAVA' ? order.chadhavaListing?.title : order.pujaListing?.title) || 'Offering'
             orderStatus = order.status || 'CONFIRMED'
@@ -223,6 +227,13 @@ export async function POST(req: Request) {
           })
 
           await sendEmail({ to: customerEmail, subject, html }).catch(() => null)
+        }
+
+        if (customerPhone) {
+          await sendVideoUploadedSms({
+            mobile: customerPhone,
+            orderId: order.id
+          }).catch(err => console.error('[SMS] Video upload SMS failed:', err))
         }
 
         if (userId) {
