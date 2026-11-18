@@ -25,7 +25,12 @@ export async function GET(_req: Request, { params }: Params) {
       // Fallback lookup for OfferLinkOrder (Promotion / Campaign Links)
       const linkOrder = await prisma.offerLinkOrder.findUnique({
         where: { id },
-        include: { offerLink: true, devotees: true }
+        include: {
+          offerLink: {
+            select: { id: true, title: true, slug: true, salePrice: true, offerPrice: true }
+          },
+          devotees: true
+        }
       })
 
       if (linkOrder) {
@@ -123,7 +128,12 @@ export async function PATCH(req: Request, { params }: Params) {
       const updatedLinkOrder = await prisma.offerLinkOrder.update({
         where: { id },
         data: linkData,
-        include: { offerLink: true, devotees: true }
+        include: {
+          offerLink: {
+            select: { id: true, title: true, slug: true, salePrice: true, offerPrice: true }
+          },
+          devotees: true
+        }
       })
 
       const primaryDevotee = updatedLinkOrder.devotees.find(d => d.isPrimary) || updatedLinkOrder.devotees[0]

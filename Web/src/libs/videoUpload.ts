@@ -17,7 +17,11 @@ export async function expireStaleVideos(): Promise<void> {
     prisma.pujaOrder.updateMany({
       where: { videoUploadedAt: { lt: cutoff }, videoExpired: false, videoUrl: { not: null } },
       data: { videoUrl: null, videoExpired: true }
-    })
+    }),
+    prisma.offerLinkOrder.updateMany({
+      where: { videoUploadedAt: { lt: cutoff }, videoExpired: false, videoUrl: { not: null } },
+      data: { videoUrl: null, videoExpired: true }
+    }).catch(() => null)
   ])
 }
 
@@ -39,13 +43,23 @@ function extractFolderId(folderUrl: string): string | null {
   return match ? match[1] : null
 }
 
-// Order IDs in this app are Prisma cuid()s: lowercase alphanumeric, ~25 chars, starting with 'c'.
-const ORDER_ID_PATTERN = /^c[a-z0-9]{20,30}$/
+// Order IDs in this app can be:
+// 1. Prisma cuid()s (lowercase alphanumeric, ~25 chars, starting with 'c')
+// 2. Full uuid()s for Campaign / Offer Link orders (e.g. 7eb64e6a-d463-410c-b877-5bc3cd26b735)
+// 3. Short 8-character hex IDs (e.g. 7eb64e6a, #7EB64E6A, MS-7EB64E6A) shown on devotee receipts & SMS
+const ORDER_ID_PATTERN = /^c[a-z0-9]{20,30}$/i
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const SHORT_ID_PATTERN = /^[0-9a-f]{8,12}$/i
 
 function orderIdFromFilename(filename: string): string | null {
-  const base = filename.replace(/\.[^./\\]+$/, '').trim() // strip extension
+  let base = filename.replace(/\.[^./\\]+$/, '').trim() // strip extension
+  base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
 
-  return ORDER_ID_PATTERN.test(base) ? base : null
+  if (ORDER_ID_PATTERN.test(base)) return base.toLowerCase()
+  if (UUID_PATTERN.test(base)) return base.toLowerCase()
+  if (SHORT_ID_PATTERN.test(base)) return base.toLowerCase()
+
+  return null
 }
 
 /**
@@ -129,11 +143,13 @@ return []
       const fileId = match[1]
       const filename = match[2]
       
-      // Match cuid format (length 25, e.g. cmrqgaffz0000i0xo9cogfuq9)
-      const cuidMatch = filename.match(/(c[a-z0-9]{24})/)
+      // Match cuid format (length 25), full uuid format (36 chars), or short order id (8 hex chars)
+      const idMatch = filename.match(/(c[a-z0-9]{24})/i) || 
+                      filename.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ||
+                      filename.match(/\b([0-9a-f]{8})\b/i)
 
-      if (cuidMatch) {
-        const orderId = cuidMatch[1]
+      if (idMatch) {
+        const orderId = idMatch[1].toLowerCase()
         const fileUrl = `https://drive.google.com/file/d/${fileId}/view`
 
         results.push({ orderId, fileUrl })
@@ -143,8 +159,12 @@ return []
     
     // 2. Fallback: Parse via broad proximity scanning if strict regex didn't yield matches
     if (results.length === 0) {
-      console.log('Fallback scanning: searching for CUID references directly in page...')
-      const cuids = Array.from(new Set(html.match(/c[a-z0-9]{24}/g) || []))
+      console.log('Fallback scanning: searching for CUID / UUID / Short ID references directly in page...')
+      const cuids = Array.from(new Set([
+        ...(html.match(/c[a-z0-9]{24}/g) || []),
+        ...(html.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || []),
+        ...(html.match(/\b[0-9a-f]{8}\b/gi) || [])
+      ]))
       
       for (const cuid of cuids) {
         const index = html.indexOf(cuid)

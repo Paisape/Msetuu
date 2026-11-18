@@ -40,6 +40,8 @@ export async function GET(req: Request) {
         title: offerLinkOrder.offerLink?.title || 'Campaign Offering',
         name: primaryDevotee,
         status: offerLinkOrder.paymentStatus === 'SUCCESS' ? 'CONFIRMED' : offerLinkOrder.paymentStatus,
+        videoUrl: (offerLinkOrder as any).videoUrl,
+        videoUploadedAt: (offerLinkOrder as any).videoUploadedAt,
         createdAt: offerLinkOrder.createdAt
       })
     }

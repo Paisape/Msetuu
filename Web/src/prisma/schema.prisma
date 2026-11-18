@@ -1158,6 +1158,9 @@ model OfferLinkOrder {
   ipLocation          String?
   gpsLocation         String?
   userAgent           String?            // User Agent (Device, Browser, OS Telemetry)
+  videoUrl            String?
+  videoUploadedAt     DateTime?
+  videoExpired        Boolean            @default(false)
   createdAt           DateTime           @default(now())
   devotees            OfferLinkDevotee[]
 }

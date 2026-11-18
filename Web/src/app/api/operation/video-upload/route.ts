@@ -4,6 +4,21 @@ import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { isValidDriveLink, parseDriveFolder } from '@/libs/videoUpload'
+
+let campaignVideoColsVerified = false
+async function ensureCampaignVideoColumns() {
+  if (campaignVideoColsVerified) return
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;
+      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoUploadedAt" TIMESTAMP(3);
+      ALTER TABLE "OfferLinkOrder" ADD COLUMN IF NOT EXISTS "videoExpired" BOOLEAN NOT NULL DEFAULT false;
+    `)
+    campaignVideoColsVerified = true
+  } catch (err) {
+    console.error('[VideoUpload Campaign DB Columns]:', err)
+  }
+}
 import { sendEmail } from '@/libs/email'
 import { videoReadyEmail } from '@/libs/emailTemplates'
 import { notifyUser } from '@/libs/notificationSystem'
@@ -33,17 +48,19 @@ export async function POST(req: Request) {
   try {
     const admin = await requireAdmin()
 
+    await ensureCampaignVideoColumns()
+
     const body = await req.json()
     const mode = body?.mode // 'FOLDER' or 'MANUAL' (default 'MANUAL')
     
     let items: BatchItemInput[] = []
 
     if (mode === 'FOLDER') {
-      const orderType = body?.orderType // 'CHADHAVA' or 'EPUJA'
+      const orderType = body?.orderType // 'CHADHAVA', 'EPUJA', or 'CAMPAIGN'
       const folderLink = (body?.folderLink || '').trim()
 
-      if (orderType !== 'CHADHAVA' && orderType !== 'EPUJA') {
-        return NextResponse.json({ error: 'orderType must be CHADHAVA or EPUJA in folder mapping mode.' }, { status: 400 })
+      if (orderType !== 'CHADHAVA' && orderType !== 'EPUJA' && orderType !== 'CAMPAIGN') {
+        return NextResponse.json({ error: 'orderType must be CHADHAVA, EPUJA, or CAMPAIGN in folder mapping mode.' }, { status: 400 })
       }
 
       if (!isValidDriveLink(folderLink)) {
@@ -67,7 +84,7 @@ export async function POST(req: Request) {
       }
 
       items = parsed.map(p => ({
-        orderType: orderType as 'CHADHAVA' | 'EPUJA',
+        orderType: orderType as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN',
         orderId: p.orderId,
         driveLink: p.fileUrl
       }))
@@ -87,8 +104,8 @@ export async function POST(req: Request) {
       const orderId = (raw?.orderId || '').trim()
       const driveLink = (raw?.driveLink || '').trim()
 
-      if (orderType !== 'CHADHAVA' && orderType !== 'EPUJA') {
-        results.push({ orderType: String(orderType), orderId, driveLink, status: 'FAILED', errorReason: 'orderType must be CHADHAVA or EPUJA.' })
+      if (orderType !== 'CHADHAVA' && orderType !== 'EPUJA' && orderType !== 'CAMPAIGN') {
+        results.push({ orderType: String(orderType), orderId, driveLink, status: 'FAILED', errorReason: 'orderType must be CHADHAVA, EPUJA, or CAMPAIGN.' })
         continue
       }
 
@@ -103,12 +120,63 @@ export async function POST(req: Request) {
       }
 
       try {
-        const model = orderType === 'CHADHAVA' ? prisma.chadhavaOrder : prisma.pujaOrder
+        let order: any = null
+        let customerName = 'Devotee'
+        let customerEmail: string | null = null
+        let itemLabel = 'Campaign Offering'
+        let userId: string | null = null
+        let orderStatus = 'CONFIRMED'
 
-        const order = await (model as any).findUnique({
-          where: { id: orderId },
-          include: { user: { select: { name: true, email: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
-        })
+        // Clean ID (support #MS-7EB64E6A, 7eb64e6a, or full UUID/CUID)
+        const cleanId = orderId.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
+
+        if (orderType === 'CAMPAIGN') {
+          // 1. Try exact match (big ID)
+          order = await prisma.offerLinkOrder.findUnique({
+            where: { id: orderId },
+            include: { devotees: true, offerLink: true }
+          }).catch(() => null)
+
+          // 2. Fallback: try prefix match (short 8-char ID)
+          if (!order && cleanId.length >= 6) {
+            order = await prisma.offerLinkOrder.findFirst({
+              where: { id: { startsWith: cleanId, mode: 'insensitive' } },
+              include: { devotees: true, offerLink: true }
+            }).catch(() => null)
+          }
+
+          if (order) {
+            const primaryDevotee = order.devotees?.find((d: any) => d.isPrimary) || order.devotees?.[0]
+            customerName = primaryDevotee?.name || 'Devotee'
+            customerEmail = primaryDevotee?.email || null
+            itemLabel = order.offerLink?.title || 'Campaign Offering'
+            orderStatus = order.paymentStatus === 'SUCCESS' ? 'CONFIRMED' : order.paymentStatus
+          }
+        } else {
+          const model = orderType === 'CHADHAVA' ? prisma.chadhavaOrder : prisma.pujaOrder
+
+          // 1. Try exact match (big ID)
+          order = await (model as any).findUnique({
+            where: { id: orderId },
+            include: { user: { select: { name: true, email: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
+          }).catch(() => null)
+
+          // 2. Fallback: try prefix match (short ID)
+          if (!order && cleanId.length >= 6) {
+            order = await (model as any).findFirst({
+              where: { id: { startsWith: cleanId, mode: 'insensitive' } },
+              include: { user: { select: { name: true, email: true } }, ...(orderType === 'CHADHAVA' ? { chadhavaListing: true } : { pujaListing: true, pujaPackage: true }) }
+            }).catch(() => null)
+          }
+
+          if (order) {
+            customerName = order.user?.name || 'Devotee'
+            customerEmail = order.user?.email || null
+            userId = order.userId || null
+            itemLabel = (orderType === 'CHADHAVA' ? order.chadhavaListing?.title : order.pujaListing?.title) || 'Offering'
+            orderStatus = order.status || 'CONFIRMED'
+          }
+        }
 
         if (!order) {
           results.push({ orderType, orderId, driveLink, status: 'FAILED', errorReason: 'Order not found.' })
@@ -123,42 +191,48 @@ export async function POST(req: Request) {
 
         const uploadedAt = new Date()
 
-        await (model as any).update({
-          where: { id: orderId },
-          data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
-        })
+        if (orderType === 'CAMPAIGN') {
+          await prisma.offerLinkOrder.update({
+            where: { id: order.id },
+            data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
+          })
+        } else {
+          const model = orderType === 'CHADHAVA' ? prisma.chadhavaOrder : prisma.pujaOrder
+          await (model as any).update({
+            where: { id: order.id },
+            data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
+          })
+        }
 
         await logOrderTrail({
-          orderType,
-          orderId,
-          status: order.status,
+          orderType: orderType === 'CAMPAIGN' ? 'OFFER' : orderType,
+          orderId: order.id,
+          status: orderStatus,
           note: 'Video uploaded (Google Drive link attached) — visible to customer for 48 hours',
           actorId: admin.id,
           actorRole: 'ADMIN',
           req
-        })
+        }).catch(() => null)
 
-        const itemLabel = orderType === 'CHADHAVA' ? order.chadhavaListing?.title : order.pujaListing?.title
-
-        if (order.user?.email) {
+        if (customerEmail) {
           const { subject, html } = videoReadyEmail({
-            customerName: order.user.name || 'Devotee',
-            itemLabel: itemLabel || 'offering',
-            orderId,
+            customerName,
+            itemLabel,
+            orderId: order.id,
             videoUrl: driveLink
           })
 
-          await sendEmail({ to: order.user.email, subject, html })
+          await sendEmail({ to: customerEmail, subject, html }).catch(() => null)
         }
 
-        // Email already sent above via the dedicated video-ready template — only push/WhatsApp
-        // here to avoid a duplicate email through the notification system.
-        notifyUser(
-          order.userId,
-          `Your ${itemLabel || 'Puja'} Video Is Ready`,
-          `The video of your ${itemLabel || 'offering'} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`,
-          ['firebase', 'whatsapp']
-        )
+        if (userId) {
+          notifyUser(
+            userId,
+            `Your ${itemLabel || 'Puja'} Video Is Ready`,
+            `The video of your ${itemLabel || 'offering'} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`,
+            ['firebase', 'whatsapp']
+          ).catch(() => null)
+        }
 
         results.push({ orderType, orderId, driveLink, status: 'SUCCESS' })
       } catch (err) {

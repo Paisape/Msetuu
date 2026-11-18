@@ -24,7 +24,7 @@ import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import Box from '@mui/material/Box'
 
-type Row = { orderType: 'CHADHAVA' | 'EPUJA'; orderId: string; driveLink: string }
+type Row = { orderType: 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'; orderId: string; driveLink: string }
 
 type BatchItem = {
   id: string
@@ -51,7 +51,7 @@ const VideoUploadClient = () => {
   const [activeTab, setActiveTab] = useState<'folder' | 'manual'>('folder')
   
   // Folder Mode States
-  const [folderOrderType, setFolderOrderType] = useState<'CHADHAVA' | 'EPUJA'>('CHADHAVA')
+  const [folderOrderType, setFolderOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
   const [folderLink, setFolderLink] = useState('')
 
   // Manual Mode States
@@ -184,9 +184,10 @@ return
                 <Select
                   size='small'
                   value={folderOrderType}
-                  onChange={e => setFolderOrderType(e.target.value as 'CHADHAVA' | 'EPUJA')}
-                  sx={{ minWidth: 160 }}
+                  onChange={e => setFolderOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
+                  sx={{ minWidth: 170 }}
                 >
+                  <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
                   <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
                   <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
                 </Select>
@@ -209,6 +210,7 @@ return
                     onChange={e => updateRow(idx, { orderType: e.target.value as Row['orderType'] })}
                     sx={{ minWidth: 140 }}
                   >
+                    <MenuItem value='CAMPAIGN'>Campaign</MenuItem>
                     <MenuItem value='CHADHAVA'>Chadhava</MenuItem>
                     <MenuItem value='EPUJA'>E-Puja</MenuItem>
                   </Select>

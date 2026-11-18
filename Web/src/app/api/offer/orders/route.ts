@@ -18,7 +18,9 @@ export async function GET(req: Request) {
       }),
       prisma.offerLinkOrder.findMany({
         include: {
-          offerLink: true,
+          offerLink: {
+            select: { id: true, title: true }
+          },
           devotees: true
         },
         orderBy: { createdAt: 'desc' }
