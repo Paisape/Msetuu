@@ -63,8 +63,9 @@ export function isValidDriveLink(url: string): boolean {
 
   try {
     const parsed = new URL(url)
+    const host = parsed.hostname.toLowerCase()
 
-    return parsed.protocol === 'https:' && /drive\.google\.com|docs\.google\.com/.test(parsed.hostname)
+    return parsed.protocol === 'https:' && (host === 'drive.google.com' || host === 'docs.google.com')
   } catch {
     return false
   }
