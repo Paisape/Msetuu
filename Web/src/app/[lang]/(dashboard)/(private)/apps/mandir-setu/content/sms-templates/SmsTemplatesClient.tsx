@@ -87,6 +87,11 @@ export default function SmsTemplatesClient() {
   const [testResult, setTestResult] = useState<any | null>(null)
   const [resendingLogId, setResendingLogId] = useState<string | null>(null)
 
+  // Batch Resend State
+  const [selectedLogIds, setSelectedLogIds] = useState<string[]>([])
+  const [isBatchResending, setIsBatchResending] = useState(false)
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number; success: number; failed: number } | null>(null)
+
   const fetchTemplates = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -253,6 +258,72 @@ export default function SmsTemplatesClient() {
     }
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedLogIds(logs.map(l => l.id))
+    } else {
+      setSelectedLogIds([])
+    }
+  }
+
+  const handleSelectFailedOnly = () => {
+    const failedIds = logs.filter(l => l.status === 'FAILED').map(l => l.id)
+    setSelectedLogIds(failedIds)
+  }
+
+  const handleToggleSelectOne = (id: string) => {
+    setSelectedLogIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleBatchResend = async () => {
+    if (selectedLogIds.length === 0 || isBatchResending) return
+    setIsBatchResending(true)
+    setError(null)
+    setSuccess(null)
+
+    let successCount = 0
+    let failCount = 0
+
+    for (let i = 0; i < selectedLogIds.length; i++) {
+      const logId = selectedLogIds[i]
+      setBatchProgress({
+        current: i + 1,
+        total: selectedLogIds.length,
+        success: successCount,
+        failed: failCount
+      })
+
+      try {
+        const res = await fetch('/api/admin/sms-templates/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logId })
+        })
+        const data = await res.json()
+        if (res.ok && data.success) {
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch {
+        failCount++
+      }
+
+      // Small gentle delay (350ms) between dispatches to respect telecom gateway rate limit
+      if (i < selectedLogIds.length - 1) {
+        await new Promise(r => setTimeout(r, 350))
+      }
+    }
+
+    setSuccess(`Batch complete: ${successCount} re-sent successfully, ${failCount} failed.`)
+    setSelectedLogIds([])
+    setIsBatchResending(false)
+    setBatchProgress(null)
+    fetchLogs(page)
+  }
+
   const handleViewLogDetails = (log: SmsLog) => {
     setSelectedLog(log)
     setOpenLogDialog(true)
@@ -417,8 +488,60 @@ export default function SmsTemplatesClient() {
 
       {activeTab === 1 && (
         <Card>
-          <CardHeader title='SMS Request & Response Logs' subheader='Complete audit trail of all SMS delivery transactions' />
+          <CardHeader
+            title='SMS Request & Response Logs'
+            subheader='Complete audit trail of all SMS delivery transactions'
+            action={
+              <div className='flex gap-2 items-center flex-wrap'>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  color='error'
+                  onClick={handleSelectFailedOnly}
+                  disabled={isBatchResending || logs.filter(l => l.status === 'FAILED').length === 0}
+                >
+                  ⚠️ Select Failed ({logs.filter(l => l.status === 'FAILED').length})
+                </Button>
+                {selectedLogIds.length > 0 && (
+                  <>
+                    <Button
+                      size='small'
+                      variant='contained'
+                      color='primary'
+                      disabled={isBatchResending}
+                      onClick={handleBatchResend}
+                    >
+                      {isBatchResending ? (
+                        <span className='flex items-center gap-1.5'>
+                          <CircularProgress size={14} color='inherit' />
+                          Sending {batchProgress?.current || 0}/{batchProgress?.total || selectedLogIds.length}...
+                        </span>
+                      ) : (
+                        `🔁 Resend Selected (${selectedLogIds.length}) One-by-One`
+                      )}
+                    </Button>
+                    <Button
+                      size='small'
+                      variant='text'
+                      disabled={isBatchResending}
+                      onClick={() => setSelectedLogIds([])}
+                    >
+                      Clear
+                    </Button>
+                  </>
+                )}
+              </div>
+            }
+          />
           <CardContent>
+            {batchProgress && (
+              <div className='mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between text-xs font-semibold'>
+                <span>
+                  Processing dispatches: sending {batchProgress.current} of {batchProgress.total} (Success: {batchProgress.success}, Failed: {batchProgress.failed})
+                </span>
+                <CircularProgress size={16} />
+              </div>
+            )}
             {logsLoading ? (
               <div className='p-6 text-center'>
                 <CircularProgress size={24} />
@@ -429,6 +552,15 @@ export default function SmsTemplatesClient() {
                   <Table>
                     <TableHead>
                       <TableRow>
+                        <TableCell padding='checkbox'>
+                          <Checkbox
+                            size='small'
+                            indeterminate={selectedLogIds.length > 0 && selectedLogIds.length < logs.length}
+                            checked={logs.length > 0 && selectedLogIds.length === logs.length}
+                            onChange={e => handleSelectAll(e.target.checked)}
+                            disabled={isBatchResending || logs.length === 0}
+                          />
+                        </TableCell>
                         <TableCell>Timestamp</TableCell>
                         <TableCell>Recipient Mobile</TableCell>
                         <TableCell>Template ID</TableCell>
@@ -439,7 +571,15 @@ export default function SmsTemplatesClient() {
                     </TableHead>
                     <TableBody>
                       {logs.map(log => (
-                        <TableRow key={log.id} hover>
+                        <TableRow key={log.id} hover selected={selectedLogIds.includes(log.id)}>
+                          <TableCell padding='checkbox'>
+                            <Checkbox
+                              size='small'
+                              checked={selectedLogIds.includes(log.id)}
+                              onChange={() => handleToggleSelectOne(log.id)}
+                              disabled={isBatchResending}
+                            />
+                          </TableCell>
                           <TableCell className='text-xs whitespace-nowrap'>
                             {new Date(log.createdAt).toLocaleString()}
                           </TableCell>
@@ -471,7 +611,7 @@ export default function SmsTemplatesClient() {
                                 size='small'
                                 variant='outlined'
                                 color='primary'
-                                disabled={resendingLogId === log.id}
+                                disabled={resendingLogId === log.id || isBatchResending}
                                 onClick={() => handleResendLog(log.id)}
                               >
                                 {resendingLogId === log.id ? (
@@ -491,7 +631,7 @@ export default function SmsTemplatesClient() {
                       ))}
                       {logs.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className='text-center py-6 text-gray-500'>
+                          <TableCell colSpan={7} className='text-center py-6 text-gray-500'>
                             No delivery logs recorded yet.
                           </TableCell>
                         </TableRow>
