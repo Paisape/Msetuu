@@ -222,7 +222,9 @@ export async function sendOtpSms(
 
   // Look up custom template content text from DB if available
   let customContent: string | undefined
-  const dbTpl = await prisma.smsTemplate.findFirst({ where: { templateId: activeTemplateId, active: true } })
+  const dbTpl = activeTemplateId
+    ? await prisma.smsTemplate.findFirst({ where: { templateId: activeTemplateId, active: true } })
+    : null
   if (dbTpl) {
     customContent = dbTpl.content
   }
@@ -361,7 +363,10 @@ export async function sendVideoUploadedSms({
     const cleanAlphanumeric = orderId.replace(/[^a-zA-Z0-9]/g, '')
     const shortOrderId = (cleanAlphanumeric.length > 8 ? cleanAlphanumeric.slice(0, 8) : cleanAlphanumeric || 'ORDER').toUpperCase()
 
-    let finalVideoLink = videoLink || `${appUrl}/v/${shortOrderId}`
+    let finalVideoLink = videoLink || `${appUrl}/t/?id=${shortOrderId}`
+    if (finalVideoLink.includes('/v/')) {
+      finalVideoLink = finalVideoLink.replace(/\/v\/([^?&#\s]+)/, '/t/?id=$1')
+    }
     if (finalVideoLink.includes('mandirsetuu.com') && !finalVideoLink.includes('www.mandirsetuu.com')) {
       finalVideoLink = finalVideoLink.replace('mandirsetuu.com', 'www.mandirsetuu.com')
     }

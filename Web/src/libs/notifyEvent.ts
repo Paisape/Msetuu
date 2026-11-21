@@ -95,7 +95,8 @@ export async function notifyOrderAccepted(userId: string, moduleLabel: string, o
     const smsSettings = await getResolvedSettings('SMS')
     const waSettings = await getResolvedSettings('WHATSAPP')
 
-    const trackLink = `${APP_URL}/t/${orderId}`
+    const cleanShortId = orderId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase() || orderId
+    const trackLink = `${APP_URL}/t/?id=${cleanShortId}`
 
     // 1. Resolve SMS template
     let smsMessage = `Good news! Your ${moduleLabel} order (#${orderId.slice(-8)}) has been accepted and is now being processed.`
@@ -172,7 +173,8 @@ export async function notifyVideoUploaded(userId: string, moduleLabel: string, o
     const smsSettings = await getResolvedSettings('SMS')
     const waSettings = await getResolvedSettings('WHATSAPP')
 
-    const videoLink = `${APP_URL}/v/${orderId}`
+    const cleanShortId = orderId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase() || orderId
+    const videoLink = `${APP_URL}/t/?id=${cleanShortId}`
 
     // 1. Resolve SMS template
     let smsMessage = `The video of your ${moduleLabel} (#${orderId.slice(-8)}) has been uploaded and is ready to view.`
