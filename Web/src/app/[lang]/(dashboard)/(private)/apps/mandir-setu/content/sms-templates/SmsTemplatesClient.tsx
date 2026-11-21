@@ -85,6 +85,7 @@ export default function SmsTemplatesClient() {
   const [testTemplateId, setTestTemplateId] = useState('1177178593496518428')
   const [sendingTest, setSendingTest] = useState(false)
   const [testResult, setTestResult] = useState<any | null>(null)
+  const [resendingLogId, setResendingLogId] = useState<string | null>(null)
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true)
@@ -228,6 +229,27 @@ export default function SmsTemplatesClient() {
       setError(err instanceof Error ? err.message : 'Failed to send test SMS.')
     } finally {
       setSendingTest(false)
+    }
+  }
+
+  const handleResendLog = async (logId: string) => {
+    setResendingLogId(logId)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await fetch('/api/admin/sms-templates/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to resend SMS.')
+      setSuccess(data.message || 'SMS re-dispatched successfully!')
+      fetchLogs(page)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend SMS.')
+    } finally {
+      setResendingLogId(null)
     }
   }
 
@@ -444,9 +466,26 @@ export default function SmsTemplatesClient() {
                             />
                           </TableCell>
                           <TableCell align='right'>
-                            <Button size='small' variant='outlined' onClick={() => handleViewLogDetails(log)}>
-                              View Payload
-                            </Button>
+                            <div className='flex gap-1.5 justify-end'>
+                              <Button
+                                size='small'
+                                variant='outlined'
+                                color='primary'
+                                disabled={resendingLogId === log.id}
+                                onClick={() => handleResendLog(log.id)}
+                              >
+                                {resendingLogId === log.id ? (
+                                  <span className='flex items-center gap-1'>
+                                    <CircularProgress size={12} color='inherit' /> Resending...
+                                  </span>
+                                ) : (
+                                  '🔁 Resend'
+                                )}
+                              </Button>
+                              <Button size='small' variant='outlined' onClick={() => handleViewLogDetails(log)}>
+                                View Payload
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
