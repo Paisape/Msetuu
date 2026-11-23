@@ -188,6 +188,9 @@ export async function POST(req: Request) {
       )
     }
 
+    // Check if a video was already attached to this order (Option B: Silent Replace)
+    const isVideoUpdate = !!(order.videoUrl && !order.videoExpired)
+
     // 2. Upload file directly to Contabo Bucket
     const fileBytes = await file.arrayBuffer()
     const fileBuffer = Buffer.from(fileBytes)
@@ -245,45 +248,49 @@ export async function POST(req: Request) {
       orderType: orderType === 'CAMPAIGN' ? 'OFFER' : (orderType as any),
       orderId: order.id,
       status: orderStatus,
-      note: 'Video uploaded to Contabo Object Storage — visible to customer for 48 hours / 10 days',
+      note: isVideoUpdate
+        ? 'Video updated (re-uploaded to Contabo S3) — existing video replaced, SMS skipped to avoid duplicate notification'
+        : 'Video uploaded to Contabo Object Storage — visible to customer for 48 hours / 10 days',
       actorId: admin.id,
       actorRole: 'ADMIN',
       req
     }).catch(() => null)
 
-    // 5. Send Devotee Notifications
-    // Email
-    if (customerEmail) {
-      const { subject, html } = videoReadyEmail({
-        customerName,
-        itemLabel,
-        orderId: order.id,
-        videoUrl: contaboVideoUrl
-      })
-      await sendEmail({ to: customerEmail, subject, html }).catch(() => null)
-    }
-
-    // DLT SMS
+    // 5. Send Devotee Notifications (ONLY if this is a NEW video upload; skip on updates to avoid spam)
     let smsDispatched = false
-    if (customerPhone) {
-      const smsRes = await sendVideoUploadedSms({
-        mobile: customerPhone,
-        orderId: order.id
-      }).catch(err => {
-        console.error('[Contabo Upload] SMS failed:', err)
-        return { success: false }
-      })
-      smsDispatched = !!smsRes?.success
-    }
+    if (!isVideoUpdate) {
+      // Email
+      if (customerEmail) {
+        const { subject, html } = videoReadyEmail({
+          customerName,
+          itemLabel,
+          orderId: order.id,
+          videoUrl: contaboVideoUrl
+        })
+        await sendEmail({ to: customerEmail, subject, html }).catch(() => null)
+      }
 
-    // WhatsApp / Firebase
-    if (userId) {
-      notifyUser(
-        userId,
-        `Your ${itemLabel || 'Puja'} Video Is Ready`,
-        `The video of your ${itemLabel || 'offering'} (#${order.id.slice(-8)}) has been uploaded and is ready to view.`,
-        ['firebase', 'whatsapp']
-      ).catch(() => null)
+      // DLT SMS
+      if (customerPhone) {
+        const smsRes = await sendVideoUploadedSms({
+          mobile: customerPhone,
+          orderId: order.id
+        }).catch(err => {
+          console.error('[Contabo Upload] SMS failed:', err)
+          return { success: false }
+        })
+        smsDispatched = !!smsRes?.success
+      }
+
+      // WhatsApp / Firebase
+      if (userId) {
+        notifyUser(
+          userId,
+          `Your ${itemLabel || 'Puja'} Video Is Ready`,
+          `The video of your ${itemLabel || 'offering'} (#${order.id.slice(-8)}) has been uploaded and is ready to view.`,
+          ['firebase', 'whatsapp']
+        ).catch(() => null)
+      }
     }
 
     return NextResponse.json({
@@ -293,8 +300,11 @@ export async function POST(req: Request) {
       customerName,
       customerPhone,
       videoUrl: contaboVideoUrl,
+      isUpdate: isVideoUpdate,
       smsDispatched,
-      message: `Video uploaded to Contabo and mapped to order ${order.id} successfully!`
+      message: isVideoUpdate
+        ? `Video updated successfully for ${order.id}! (Existing video replaced, SMS skipped)`
+        : `Video uploaded and SMS dispatched to devotee successfully!`
     })
   } catch (err) {
     return handleApiError(err)

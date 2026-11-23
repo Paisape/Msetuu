@@ -51,6 +51,7 @@ type ContaboUploadItem = {
   file: File
   orderId: string
   status: 'PENDING' | 'UPLOADING' | 'SUCCESS' | 'FAILED'
+  isUpdate?: boolean
   error?: string
   devoteeName?: string
   smsDispatched?: boolean
@@ -198,7 +199,8 @@ return
     setErrorMsg(null)
     setContaboSuccessMsg(null)
 
-    let successCount = 0
+    let newUploadsCount = 0
+    let updatedUploadsCount = 0
     let failedCount = 0
 
     for (let i = 0; i < contaboFiles.length; i++) {
@@ -223,15 +225,21 @@ return
           throw new Error(data?.error || 'Upload failed')
         }
 
-        successCount++
+        if (data.isUpdate) {
+          updatedUploadsCount++
+        } else {
+          newUploadsCount++
+        }
+
         setContaboFiles(prev =>
           prev.map((it, idx) =>
             idx === i
               ? {
                   ...it,
                   status: 'SUCCESS',
+                  isUpdate: !!data.isUpdate,
                   devoteeName: data.customerName,
-                  smsDispatched: data.smsDispatched
+                  smsDispatched: !!data.smsDispatched
                 }
               : it
           )
@@ -253,7 +261,12 @@ return
     }
 
     setContaboUploading(false)
-    setContaboSuccessMsg(`Batch completed: ${successCount} uploaded & SMS sent, ${failedCount} failed.`)
+    const summaryParts: string[] = []
+    if (newUploadsCount > 0) summaryParts.push(`${newUploadsCount} new uploads (SMS sent 📱)`)
+    if (updatedUploadsCount > 0) summaryParts.push(`${updatedUploadsCount} videos replaced (SMS skipped 🛡️)`)
+    if (failedCount > 0) summaryParts.push(`${failedCount} failed`)
+
+    setContaboSuccessMsg(`Batch completed: ${summaryParts.join(' · ') || 'Done'}.`)
     loadHistory()
   }
 
@@ -451,10 +464,21 @@ return
                             )}
                             {item.status === 'SUCCESS' && (
                               <div className='flex flex-col gap-0.5'>
-                                <Chip size='small' label='Success' color='success' />
-                                <span className='text-[11px] text-green-700 font-medium'>
-                                  {item.devoteeName || 'Devotee'} {item.smsDispatched ? '• SMS Sent ✅' : ''}
-                                </span>
+                                {item.isUpdate ? (
+                                  <>
+                                    <Chip size='small' label='Updated 🔄' color='info' variant='outlined' />
+                                    <span className='text-[11px] text-blue-700 font-medium'>
+                                      {item.devoteeName || 'Devotee'} • Replaced (SMS Skipped 🛡️)
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Chip size='small' label='New Upload ✅' color='success' />
+                                    <span className='text-[11px] text-green-700 font-medium'>
+                                      {item.devoteeName || 'Devotee'} {item.smsDispatched ? '• SMS Sent 📱' : ''}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             )}
                             {item.status === 'FAILED' && (
