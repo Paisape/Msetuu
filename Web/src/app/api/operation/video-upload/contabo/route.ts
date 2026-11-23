@@ -215,7 +215,7 @@ export async function POST(req: Request) {
     // 3. Update Order in Database
     if (orderType === 'CAMPAIGN') {
       try {
-        await prisma.offerLinkOrder.update({
+        await (prisma.offerLinkOrder as any).update({
           where: { id: order.id },
           data: { videoUrl: contaboVideoUrl, videoUploadedAt: uploadedAt, videoExpired: false }
         })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -74,6 +74,10 @@ const VideoUploadClient = () => {
   const [contaboFiles, setContaboFiles] = useState<ContaboUploadItem[]>([])
   const [contaboUploading, setContaboUploading] = useState(false)
   const [contaboSuccessMsg, setContaboSuccessMsg] = useState<string | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const folderInputRef = useRef<HTMLInputElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -162,10 +166,18 @@ return
     }
   }
 
-  const handleSelectContaboFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const selected = Array.from(e.target.files)
-    const newItems: ContaboUploadItem[] = selected.map(file => {
+  const ALLOWED_VIDEO_EXTS = ['.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v']
+
+  const isVideoFile = (filename: string) => {
+    const lower = filename.toLowerCase()
+    return ALLOWED_VIDEO_EXTS.some(ext => lower.endsWith(ext))
+  }
+
+  const processRawFiles = (files: File[]) => {
+    const videoFiles = files.filter(f => isVideoFile(f.name))
+    if (videoFiles.length === 0) return
+
+    const newItems: ContaboUploadItem[] = videoFiles.map(file => {
       let base = file.name.replace(/\.[^./\\]+$/, '').trim()
       base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
       return {
@@ -175,8 +187,94 @@ return
         status: 'PENDING'
       }
     })
+
     setContaboFiles(prev => [...prev, ...newItems])
+  }
+
+  const handleSelectContaboFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const selected = Array.from(e.target.files)
+    processRawFiles(selected)
     e.target.value = ''
+  }
+
+  const handleSelectContaboFolder = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const selected = Array.from(e.target.files)
+    processRawFiles(selected)
+    e.target.value = ''
+  }
+
+  // Recursive scan for directory entries dropped via Drag & Drop
+  const scanDirectoryEntry = async (entry: any): Promise<File[]> => {
+    return new Promise(resolve => {
+      if (entry.isFile) {
+        entry.file(
+          (file: File) => resolve(isVideoFile(file.name) ? [file] : []),
+          () => resolve([])
+        )
+      } else if (entry.isDirectory) {
+        const dirReader = entry.createReader()
+        const entriesList: any[] = []
+
+        const readEntriesRecursively = () => {
+          dirReader.readEntries(
+            async (entries: any[]) => {
+              if (entries.length === 0) {
+                const subFilesPromises = entriesList.map(ent => scanDirectoryEntry(ent))
+                const subFiles = await Promise.all(subFilesPromises)
+                resolve(subFiles.flat())
+              } else {
+                entriesList.push(...entries)
+                readEntriesRecursively()
+              }
+            },
+            () => resolve([])
+          )
+        }
+        readEntriesRecursively()
+      } else {
+        resolve([])
+      }
+    })
+  }
+
+  const handleDropFiles = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    if (contaboUploading) return
+
+    const items = e.dataTransfer.items
+    if (items && items.length > 0) {
+      const allFiles: File[] = []
+      const promises: Promise<File[]>[] = []
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        const entry = (item as any).webkitGetAsEntry ? (item as any).webkitGetAsEntry() : null
+        if (entry) {
+          promises.push(scanDirectoryEntry(entry))
+        } else {
+          const file = item.getAsFile()
+          if (file && isVideoFile(file.name)) {
+            allFiles.push(file)
+          }
+        }
+      }
+
+      if (promises.length > 0) {
+        const scanned = await Promise.all(promises)
+        allFiles.push(...scanned.flat())
+      }
+
+      if (allFiles.length > 0) {
+        processRawFiles(allFiles)
+      }
+    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const dropped = Array.from(e.dataTransfer.files)
+      processRawFiles(dropped)
+    }
   }
 
   const handleUpdateContaboOrderId = (idx: number, newOrderId: string) => {
@@ -371,7 +469,8 @@ return
           ) : (
             <div className='flex flex-col gap-4'>
               <Typography variant='body2' className='text-textSecondary'>
-                Select multiple video files directly from your computer (e.g. <code>70BA0027.mp4</code>, <code>7EB64E6A.mp4</code>). The system will automatically map each video to its order, upload it to your Contabo S3 bucket (<code>paisape</code>), and send the devotee SMS & Email.
+                Upload videos directly from your laptop or computer. You can <strong>select multiple video files</strong> or <strong>upload an entire folder</strong>.
+                Filenames matching Order IDs (e.g. <code>70BA0027.mp4</code> or <code>MS-70BA0027.mov</code>) are automatically mapped.
               </Typography>
 
               {contaboSuccessMsg && (
@@ -380,34 +479,97 @@ return
                 </Alert>
               )}
 
-              <div className='flex gap-3 items-center flex-wrap'>
-                <Select
-                  size='small'
-                  value={contaboOrderType}
-                  onChange={e => setContaboOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
-                  disabled={contaboUploading}
-                  sx={{ minWidth: 180 }}
-                >
-                  <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
-                  <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
-                  <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
-                </Select>
+              {/* Drag and drop upload zone */}
+              <div
+                onDragOver={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!contaboUploading) setIsDragOver(true)
+                }}
+                onDragLeave={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setIsDragOver(false)
+                }}
+                onDrop={handleDropFiles}
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5 shadow-md scale-[1.005]'
+                    : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 hover:border-primary/60'
+                }`}
+              >
+                <div className='flex flex-col items-center justify-center gap-2'>
+                  <div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl mb-1'>
+                    <i className={isDragOver ? 'tabler-file-download' : 'tabler-folder-up'} />
+                  </div>
+                  <Typography variant='subtitle1' className='font-semibold'>
+                    {isDragOver ? 'Release to drop videos or folder here' : 'Drag & drop folder or multiple videos here'}
+                  </Typography>
+                  <Typography variant='caption' className='text-textSecondary max-w-md'>
+                    Supports MP4, MOV, WEBM, MKV, AVI (Max 500MB per file). Subfolders and files will be automatically scanned and mapped to Order IDs.
+                  </Typography>
 
-                <Button
-                  variant='outlined'
-                  component='label'
-                  disabled={contaboUploading}
-                  startIcon={<i className='tabler-upload' />}
-                >
-                  Choose Videos (Select Multiple)
-                  <input
-                    type='file'
-                    hidden
-                    multiple
-                    accept='video/*,.mp4,.mov,.webm'
-                    onChange={handleSelectContaboFiles}
-                  />
-                </Button>
+                  <div className='flex gap-3 items-center flex-wrap mt-3'>
+                    {/* Hidden folder input */}
+                    <input
+                      ref={folderInputRef}
+                      type='file'
+                      hidden
+                      {...({ webkitdirectory: '', directory: '' } as any)}
+                      multiple
+                      onChange={handleSelectContaboFolder}
+                    />
+
+                    {/* Hidden multiple files input */}
+                    <input
+                      ref={fileInputRef}
+                      type='file'
+                      hidden
+                      multiple
+                      accept='video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v'
+                      onChange={handleSelectContaboFiles}
+                    />
+
+                    <Button
+                      variant='contained'
+                      color='primary'
+                      disabled={contaboUploading}
+                      startIcon={<i className='tabler-folder' />}
+                      onClick={() => folderInputRef.current?.click()}
+                    >
+                      Choose Entire Folder
+                    </Button>
+
+                    <Button
+                      variant='outlined'
+                      color='primary'
+                      disabled={contaboUploading}
+                      startIcon={<i className='tabler-movie' />}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Choose Multiple Videos
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex gap-3 items-center flex-wrap'>
+                <div className='flex items-center gap-2'>
+                  <Typography variant='caption' className='font-semibold text-textSecondary uppercase'>
+                    Category:
+                  </Typography>
+                  <Select
+                    size='small'
+                    value={contaboOrderType}
+                    onChange={e => setContaboOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
+                    disabled={contaboUploading}
+                    sx={{ minWidth: 180 }}
+                  >
+                    <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
+                    <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
+                    <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
+                  </Select>
+                </div>
 
                 {contaboFiles.length > 0 && (
                   <Button
