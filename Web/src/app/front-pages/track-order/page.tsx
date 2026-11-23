@@ -210,12 +210,21 @@ function TrackOrderContent() {
                     <i className='tabler-video text-orange-500' /> Video Proof of Offering
                   </Typography>
                   <Paper className='overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center relative shadow-inner'>
-                    <iframe
-                      src={getEmbedVideoUrl(order.videoUrl)}
-                      className='w-full h-full border-0 absolute inset-0'
-                      allow='autoplay; encrypted-media'
-                      allowFullScreen
-                    />
+                    {order.videoUrl.includes('drive.google.com') ? (
+                      <iframe
+                        src={getEmbedVideoUrl(order.videoUrl)}
+                        className='w-full h-full border-0 absolute inset-0'
+                        allow='autoplay; encrypted-media'
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={order.videoUrl}
+                        controls
+                        playsInline
+                        className='w-full h-full absolute inset-0 object-contain'
+                      />
+                    )}
                   </Paper>
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1'>
                     <Button
@@ -237,7 +246,7 @@ function TrackOrderContent() {
                       className='w-full py-2.5 border-[#FF671F] text-[#FF671F] font-bold hover:bg-orange-50 rounded-xl flex items-center justify-center gap-1.5'
                       style={{ borderColor: '#FF671F', color: '#FF671F' }}
                     >
-                      Watch on Google Drive ↗
+                      {order.videoUrl.includes('drive.google.com') ? 'Watch on Google Drive ↗' : 'Open Video Link ↗'}
                     </Button>
                   </div>
                   <Typography variant='caption' className='text-slate-500 text-center'>

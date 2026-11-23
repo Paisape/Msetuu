@@ -91,7 +91,7 @@ const ORDER_ID_PATTERN = /^c[a-z0-9]{20,30}$/i
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SHORT_ID_PATTERN = /^[0-9a-f]{8,12}$/i
 
-function orderIdFromFilename(filename: string): string | null {
+export function orderIdFromFilename(filename: string): string | null {
   if (!filename) return null
   let base = filename.replace(/\.[^./\\]+$/, '').trim() // strip extension
   base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()

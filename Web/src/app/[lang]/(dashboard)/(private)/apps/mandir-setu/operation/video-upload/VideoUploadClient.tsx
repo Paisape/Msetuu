@@ -19,6 +19,7 @@ import TableRow from '@mui/material/TableRow'
 import TableCell from '@mui/material/TableCell'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
+import LinearProgress from '@mui/material/LinearProgress'
 import Divider from '@mui/material/Divider'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
@@ -45,10 +46,20 @@ type Batch = {
   items: BatchItem[]
 }
 
+type ContaboUploadItem = {
+  id: string
+  file: File
+  orderId: string
+  status: 'PENDING' | 'UPLOADING' | 'SUCCESS' | 'FAILED'
+  error?: string
+  devoteeName?: string
+  smsDispatched?: boolean
+}
+
 const emptyRow = (): Row => ({ orderType: 'CHADHAVA', orderId: '', driveLink: '' })
 
 const VideoUploadClient = () => {
-  const [activeTab, setActiveTab] = useState<'folder' | 'manual'>('folder')
+  const [activeTab, setActiveTab] = useState<'folder' | 'manual' | 'contabo'>('folder')
   
   // Folder Mode States
   const [folderOrderType, setFolderOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
@@ -56,6 +67,12 @@ const VideoUploadClient = () => {
 
   // Manual Mode States
   const [rows, setRows] = useState<Row[]>([emptyRow()])
+
+  // Contabo Bulk Upload States
+  const [contaboOrderType, setContaboOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
+  const [contaboFiles, setContaboFiles] = useState<ContaboUploadItem[]>([])
+  const [contaboUploading, setContaboUploading] = useState(false)
+  const [contaboSuccessMsg, setContaboSuccessMsg] = useState<string | null>(null)
   
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -144,6 +161,102 @@ return
     }
   }
 
+  const handleSelectContaboFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const selected = Array.from(e.target.files)
+    const newItems: ContaboUploadItem[] = selected.map(file => {
+      let base = file.name.replace(/\.[^./\\]+$/, '').trim()
+      base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
+      return {
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+        file,
+        orderId: base,
+        status: 'PENDING'
+      }
+    })
+    setContaboFiles(prev => [...prev, ...newItems])
+    e.target.value = ''
+  }
+
+  const handleUpdateContaboOrderId = (idx: number, newOrderId: string) => {
+    setContaboFiles(prev => prev.map((item, i) => (i === idx ? { ...item, orderId: newOrderId } : item)))
+  }
+
+  const handleRemoveContaboFile = (idx: number) => {
+    setContaboFiles(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleClearContaboFiles = () => {
+    if (contaboUploading) return
+    setContaboFiles([])
+    setContaboSuccessMsg(null)
+  }
+
+  const handleStartContaboUpload = async () => {
+    if (contaboFiles.length === 0 || contaboUploading) return
+    setContaboUploading(true)
+    setErrorMsg(null)
+    setContaboSuccessMsg(null)
+
+    let successCount = 0
+    let failedCount = 0
+
+    for (let i = 0; i < contaboFiles.length; i++) {
+      const item = contaboFiles[i]
+      if (item.status === 'SUCCESS') continue
+
+      setContaboFiles(prev => prev.map((it, idx) => (idx === i ? { ...it, status: 'UPLOADING' } : it)))
+
+      try {
+        const formData = new FormData()
+        formData.append('file', item.file)
+        formData.append('orderType', contaboOrderType)
+        formData.append('orderId', item.orderId)
+
+        const res = await fetch('/api/operation/video-upload/contabo', {
+          method: 'POST',
+          body: formData
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data?.error || 'Upload failed')
+        }
+
+        successCount++
+        setContaboFiles(prev =>
+          prev.map((it, idx) =>
+            idx === i
+              ? {
+                  ...it,
+                  status: 'SUCCESS',
+                  devoteeName: data.customerName,
+                  smsDispatched: data.smsDispatched
+                }
+              : it
+          )
+        )
+      } catch (err: any) {
+        failedCount++
+        setContaboFiles(prev =>
+          prev.map((it, idx) =>
+            idx === i
+              ? {
+                  ...it,
+                  status: 'FAILED',
+                  error: err.message || 'Upload failed'
+                }
+              : it
+          )
+        )
+      }
+    }
+
+    setContaboUploading(false)
+    setContaboSuccessMsg(`Batch completed: ${successCount} uploaded & SMS sent, ${failedCount} failed.`)
+    loadHistory()
+  }
+
   return (
     <div className='p-6'>
       <Typography variant='h4' className='font-bold mb-1'>
@@ -171,6 +284,7 @@ return
             >
               <Tab label='Google Drive Folder link' value='folder' />
               <Tab label='Manual Row Entry' value='manual' />
+              <Tab label='Bulk Upload (Contabo S3)' value='contabo' />
             </Tabs>
           }
         />
@@ -200,7 +314,7 @@ return
                 />
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'manual' ? (
             <div className='flex flex-col gap-3'>
               {rows.map((row, idx) => (
                 <div key={idx} className='flex gap-2 items-center flex-wrap'>
@@ -241,13 +355,156 @@ return
                 </Button>
               </div>
             </div>
+          ) : (
+            <div className='flex flex-col gap-4'>
+              <Typography variant='body2' className='text-textSecondary'>
+                Select multiple video files directly from your computer (e.g. <code>70BA0027.mp4</code>, <code>7EB64E6A.mp4</code>). The system will automatically map each video to its order, upload it to your Contabo S3 bucket (<code>paisape</code>), and send the devotee SMS & Email.
+              </Typography>
+
+              {contaboSuccessMsg && (
+                <Alert severity='success' onClose={() => setContaboSuccessMsg(null)}>
+                  {contaboSuccessMsg}
+                </Alert>
+              )}
+
+              <div className='flex gap-3 items-center flex-wrap'>
+                <Select
+                  size='small'
+                  value={contaboOrderType}
+                  onChange={e => setContaboOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
+                  disabled={contaboUploading}
+                  sx={{ minWidth: 180 }}
+                >
+                  <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
+                  <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
+                  <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
+                </Select>
+
+                <Button
+                  variant='outlined'
+                  component='label'
+                  disabled={contaboUploading}
+                  startIcon={<i className='tabler-upload' />}
+                >
+                  Choose Videos (Select Multiple)
+                  <input
+                    type='file'
+                    hidden
+                    multiple
+                    accept='video/*,.mp4,.mov,.webm'
+                    onChange={handleSelectContaboFiles}
+                  />
+                </Button>
+
+                {contaboFiles.length > 0 && (
+                  <Button
+                    size='small'
+                    color='secondary'
+                    onClick={handleClearContaboFiles}
+                    disabled={contaboUploading}
+                  >
+                    Clear All ({contaboFiles.length})
+                  </Button>
+                )}
+              </div>
+
+              {contaboFiles.length > 0 && (
+                <div className='border rounded-xl overflow-hidden mt-2'>
+                  <Table size='small'>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>File Name</TableCell>
+                        <TableCell>File Size</TableCell>
+                        <TableCell>Parsed Order ID</TableCell>
+                        <TableCell>Devotee / Status</TableCell>
+                        <TableCell align='right'>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {contaboFiles.map((item, idx) => (
+                        <TableRow key={item.id} hover>
+                          <TableCell className='font-mono text-xs max-w-xs truncate'>
+                            {item.file.name}
+                          </TableCell>
+                          <TableCell className='text-xs'>
+                            {(item.file.size / (1024 * 1024)).toFixed(2)} MB
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              size='small'
+                              value={item.orderId}
+                              disabled={contaboUploading || item.status === 'SUCCESS'}
+                              onChange={e => handleUpdateContaboOrderId(idx, e.target.value)}
+                              placeholder='Order ID'
+                              sx={{ width: 140 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {item.status === 'PENDING' && (
+                              <Chip size='small' label='Ready' color='default' variant='outlined' />
+                            )}
+                            {item.status === 'UPLOADING' && (
+                              <div className='flex items-center gap-1.5'>
+                                <CircularProgress size={14} />
+                                <span className='text-xs text-primary font-semibold'>Uploading & Sending SMS...</span>
+                              </div>
+                            )}
+                            {item.status === 'SUCCESS' && (
+                              <div className='flex flex-col gap-0.5'>
+                                <Chip size='small' label='Success' color='success' />
+                                <span className='text-[11px] text-green-700 font-medium'>
+                                  {item.devoteeName || 'Devotee'} {item.smsDispatched ? '• SMS Sent ✅' : ''}
+                                </span>
+                              </div>
+                            )}
+                            {item.status === 'FAILED' && (
+                              <div className='flex flex-col gap-0.5'>
+                                <Chip size='small' label='Failed' color='error' />
+                                <span className='text-[11px] text-red-600'>{item.error || 'Failed'}</span>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell align='right'>
+                            <IconButton
+                              size='small'
+                              disabled={contaboUploading || item.status === 'SUCCESS'}
+                              onClick={() => handleRemoveContaboFile(idx)}
+                            >
+                              <i className='tabler-x text-error' />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {contaboFiles.length > 0 && (
+                <Box className='flex items-center gap-3 mt-4'>
+                  <Button
+                    variant='contained'
+                    onClick={handleStartContaboUpload}
+                    disabled={contaboUploading}
+                    className='galaxy-glow-btn'
+                    startIcon={contaboUploading ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-rocket' />}
+                  >
+                    {contaboUploading
+                      ? 'Uploading & Sending SMS...'
+                      : `Upload All to Contabo & Send SMS (${contaboFiles.filter(f => f.status !== 'SUCCESS').length})`}
+                  </Button>
+                </Box>
+              )}
+            </div>
           )}
 
-          <Box className='flex items-center gap-3 mt-6'>
-            <Button variant='contained' onClick={handleSubmit} disabled={submitting} className='galaxy-glow-btn'>
-              {submitting ? <CircularProgress size={18} color='inherit' /> : activeTab === 'folder' ? 'Scan & Map Folder' : 'Process Batch'}
-            </Button>
-          </Box>
+          {activeTab !== 'contabo' && (
+            <Box className='flex items-center gap-3 mt-6'>
+              <Button variant='contained' onClick={handleSubmit} disabled={submitting} className='galaxy-glow-btn'>
+                {submitting ? <CircularProgress size={18} color='inherit' /> : activeTab === 'folder' ? 'Scan & Map Folder' : 'Process Batch'}
+              </Button>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
