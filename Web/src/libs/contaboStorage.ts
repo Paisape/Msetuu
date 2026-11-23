@@ -55,6 +55,80 @@ function getSignatureKey(key: string, dateStamp: string, regionName: string, ser
   return kSigning
 }
 
+function executeS3Put(
+  config: ContaboConfig,
+  fileBuffer: Buffer,
+  cleanDestPath: string,
+  contentType: string,
+  includeAcl: boolean
+) {
+  const endpointUrl = new URL(config.endpoint)
+  const host = endpointUrl.host
+  const canonicalUri = `/${config.bucket}/${cleanDestPath}`
+  const payloadHash = hash(fileBuffer)
+
+  const now = new Date()
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '')
+  const dateStamp = amzDate.slice(0, 8)
+
+  const service = 's3'
+  const algorithm = 'AWS4-HMAC-SHA256'
+  const credentialScope = `${dateStamp}/${config.region}/${service}/aws4_request`
+
+  let canonicalHeaders =
+    `content-type:${contentType}\n` +
+    `host:${host}\n`
+  let signedHeaders = 'content-type;host;'
+
+  if (includeAcl) {
+    canonicalHeaders += `x-amz-acl:public-read\n`
+    signedHeaders += 'x-amz-acl;'
+  }
+
+  canonicalHeaders +=
+    `x-amz-content-sha256:${payloadHash}\n` +
+    `x-amz-date:${amzDate}\n`
+  signedHeaders += 'x-amz-content-sha256;x-amz-date'
+
+  const canonicalRequest =
+    `PUT\n` +
+    `${canonicalUri}\n` +
+    `\n` +
+    `${canonicalHeaders}\n` +
+    `${signedHeaders}\n` +
+    `${payloadHash}`
+
+  const stringToSign =
+    `${algorithm}\n` +
+    `${amzDate}\n` +
+    `${credentialScope}\n` +
+    `${hash(canonicalRequest)}`
+
+  const signingKey = getSignatureKey(config.secretKey, dateStamp, config.region, service)
+  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex')
+
+  const authorizationHeader =
+    `${algorithm} ` +
+    `Credential=${config.accessKey}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, ` +
+    `Signature=${signature}`
+
+  const targetUrl = `${config.endpoint}${canonicalUri}`
+
+  const headers: Record<string, string> = {
+    Host: host,
+    'Content-Type': contentType,
+    'x-amz-date': amzDate,
+    'x-amz-content-sha256': payloadHash,
+    Authorization: authorizationHeader
+  }
+  if (includeAcl) {
+    headers['x-amz-acl'] = 'public-read'
+  }
+
+  return { targetUrl, headers }
+}
+
 /**
  * Upload a file buffer directly to Contabo Object Storage (S3-compatible API)
  */
@@ -74,65 +148,28 @@ export async function uploadToContabo(
     }
 
     const cleanDestPath = destinationPath.replace(/^\/+/, '')
-    const endpointUrl = new URL(config.endpoint)
-    const host = endpointUrl.host
 
-    // Path-style S3 URL: https://usc1.contabostorage.com/paisape/videos/...
-    const canonicalUri = `/${config.bucket}/${cleanDestPath}`
-    const payloadHash = hash(fileBuffer)
-
-    const now = new Date()
-    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '') // e.g. 20261123T103000Z
-    const dateStamp = amzDate.slice(0, 8) // e.g. 20261123
-
-    const service = 's3'
-    const algorithm = 'AWS4-HMAC-SHA256'
-    const credentialScope = `${dateStamp}/${config.region}/${service}/aws4_request`
-
-    // Canonical Headers (must be lowercase and sorted alphabetically)
-    const canonicalHeaders =
-      `content-type:${contentType}\n` +
-      `host:${host}\n` +
-      `x-amz-content-sha256:${payloadHash}\n` +
-      `x-amz-date:${amzDate}\n`
-    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date'
-
-    const canonicalRequest =
-      `PUT\n` +
-      `${canonicalUri}\n` +
-      `\n` +
-      `${canonicalHeaders}\n` +
-      `${signedHeaders}\n` +
-      `${payloadHash}`
-
-    const stringToSign =
-      `${algorithm}\n` +
-      `${amzDate}\n` +
-      `${credentialScope}\n` +
-      `${hash(canonicalRequest)}`
-
-    const signingKey = getSignatureKey(config.secretKey, dateStamp, config.region, service)
-    const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex')
-
-    const authorizationHeader =
-      `${algorithm} ` +
-      `Credential=${config.accessKey}/${credentialScope}, ` +
-      `SignedHeaders=${signedHeaders}, ` +
-      `Signature=${signature}`
-
-    const targetUrl = `${config.endpoint}${canonicalUri}`
-
-    const res = await fetch(targetUrl, {
+    // 1. Try upload with x-amz-acl: public-read (makes video streamable for devotees)
+    let { targetUrl, headers } = executeS3Put(config, fileBuffer, cleanDestPath, contentType, true)
+    let res = await fetch(targetUrl, {
       method: 'PUT',
-      headers: {
-        Host: host,
-        'Content-Type': contentType,
-        'x-amz-date': amzDate,
-        'x-amz-content-sha256': payloadHash,
-        Authorization: authorizationHeader
-      },
+      headers,
       body: new Uint8Array(fileBuffer)
     })
+
+    // 2. If bucket policy rejects ACL header (AccessControlListNotSupported), fallback without ACL
+    if (!res.ok && (res.status === 400 || res.status === 403)) {
+      const errPeek = await res.clone().text().catch(() => '')
+      if (errPeek.includes('AccessControlList') || errPeek.includes('InvalidArgument') || errPeek.includes('ACL')) {
+        const fallback = executeS3Put(config, fileBuffer, cleanDestPath, contentType, false)
+        targetUrl = fallback.targetUrl
+        res = await fetch(targetUrl, {
+          method: 'PUT',
+          headers: fallback.headers,
+          body: new Uint8Array(fileBuffer)
+        })
+      }
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '')

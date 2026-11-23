@@ -35,13 +35,49 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'No video file provided.' }, { status: 400 })
     }
 
-    // Determine target Order ID (from override or from filename like 70BA0027.mp4)
-    let parsedId = orderIdOverride
-    if (!parsedId) {
-      parsedId = orderIdFromFilename(file.name) || ''
+    // 1. Strict File Type & Extension Whitelisting (Prevent malicious uploads)
+    const ALLOWED_EXTS = new Set(['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v'])
+    const fileExt = (file.name.split('.').pop() || '').toLowerCase().trim()
+    if (!ALLOWED_EXTS.has(fileExt)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Invalid file extension ".${fileExt}". Only MP4, MOV, WEBM, MKV, AVI video files are allowed.`
+        },
+        { status: 400 }
+      )
     }
 
-    if (!parsedId) {
+    const fileMime = (file.type || '').toLowerCase()
+    if (fileMime && !fileMime.startsWith('video/') && fileMime !== 'application/octet-stream') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Invalid MIME type "${file.type}". The uploaded file must be a valid video.`
+        },
+        { status: 400 }
+      )
+    }
+
+    // 2. Strict File Size Limit (Max 500MB to avoid memory exhaustion)
+    const MAX_SIZE_BYTES = 500 * 1024 * 1024 // 500MB
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Video exceeds the 500MB limit (File size: ${(file.size / (1024 * 1024)).toFixed(1)}MB).`
+        },
+        { status: 400 }
+      )
+    }
+
+    // 3. Determine and sanitize target Order ID
+    let rawOrderId = orderIdOverride
+    if (!rawOrderId) {
+      rawOrderId = orderIdFromFilename(file.name) || ''
+    }
+
+    if (!rawOrderId) {
       return NextResponse.json(
         {
           success: false,
@@ -51,7 +87,10 @@ export async function POST(req: Request) {
       )
     }
 
-    const cleanId = parsedId.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
+    // Sanitize to prevent path traversal or special characters
+    const sanitizedId = rawOrderId.replace(/[^a-zA-Z0-9-]/g, '').trim()
+    const cleanId = sanitizedId.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
+    const parsedId = sanitizedId
 
     // 1. Resolve target order from DB
     let order: any = null
@@ -152,8 +191,7 @@ export async function POST(req: Request) {
     // 2. Upload file directly to Contabo Bucket
     const fileBytes = await file.arrayBuffer()
     const fileBuffer = Buffer.from(fileBytes)
-    const fileExt = file.name.split('.').pop() || 'mp4'
-    const shortHex = (cleanId.length > 8 ? cleanId.slice(0, 8) : cleanId).toUpperCase()
+    const shortHex = (cleanId.length > 8 ? cleanId.slice(0, 8) : cleanId).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'ORDER'
     const destinationPath = `videos/${new Date().getFullYear()}/${shortHex}.${fileExt}`
 
     const uploadRes = await uploadToContabo(fileBuffer, destinationPath, file.type || 'video/mp4')
