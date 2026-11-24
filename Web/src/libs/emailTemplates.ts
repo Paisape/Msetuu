@@ -133,7 +133,7 @@ export function videoReadyEmail(opts: { customerName: string; itemLabel: string;
     <p>Namaste ${opts.customerName},</p>
     <p>The video of your <strong>${opts.itemLabel}</strong> (Order ID: ${opts.orderId}) has been uploaded.</p>
     ${ctaButton('Watch / Download Video', opts.videoUrl)}
-    <p style="color:#ef4444;font-size:13px;">This link will be available for 48 hours only — please save a copy now.</p>
+    <p style="color:#ef4444;font-size:13px;">Please download and save a copy of this video now. Videos may be deleted from our server later and cannot be recovered.</p>
   `
 
   return { subject, html: renderEmailLayout(body, `Your ${opts.itemLabel} video is ready.`) }

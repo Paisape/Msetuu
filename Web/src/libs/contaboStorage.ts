@@ -55,142 +55,161 @@ function getSignatureKey(key: string, dateStamp: string, regionName: string, ser
   return kSigning
 }
 
-function executeS3Put(
-  config: ContaboConfig,
-  fileBuffer: Buffer,
-  cleanDestPath: string,
-  contentType: string,
-  includeAcl: boolean
-) {
-  const endpointUrl = new URL(config.endpoint)
-  const host = endpointUrl.host
-  const canonicalUri = `/${config.bucket}/${cleanDestPath}`
-  const payloadHash = hash(fileBuffer)
+const encodeKey = (key: string) => key.split('/').map(encodeURIComponent).join('/')
 
-  const now = new Date()
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '')
-  const dateStamp = amzDate.slice(0, 8)
+function amzNow() {
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '')
+  return { amzDate, dateStamp: amzDate.slice(0, 8) }
+}
 
-  const service = 's3'
-  const algorithm = 'AWS4-HMAC-SHA256'
-  const credentialScope = `${dateStamp}/${config.region}/${service}/aws4_request`
+export function objectUrl(config: ContaboConfig, key: string): string {
+  return `${config.endpoint}/${config.bucket}/${encodeKey(key)}`
+}
 
-  let canonicalHeaders =
-    `content-type:${contentType}\n` +
-    `host:${host}\n`
-  let signedHeaders = 'content-type;host;'
-
-  if (includeAcl) {
-    canonicalHeaders += `x-amz-acl:public-read\n`
-    signedHeaders += 'x-amz-acl;'
+/** Returns the object key if the URL points at our own bucket, otherwise null (e.g. Google Drive links). */
+export function keyFromObjectUrl(config: ContaboConfig, url: string | null | undefined): string | null {
+  const prefix = `${config.endpoint}/${config.bucket}/`
+  if (!url || !url.startsWith(prefix)) return null
+  try {
+    return decodeURIComponent(url.slice(prefix.length).split('?')[0])
+  } catch {
+    return null
   }
+}
 
-  canonicalHeaders +=
-    `x-amz-content-sha256:${payloadHash}\n` +
-    `x-amz-date:${amzDate}\n`
-  signedHeaders += 'x-amz-content-sha256;x-amz-date'
+/** Presigned GET URL (query-string SigV4) so customers can stream a private object directly from storage. */
+export function presignGet(config: ContaboConfig, key: string, expiresSec: number, downloadName?: string) {
+  const host = new URL(config.endpoint).host
+  const canonicalUri = `/${config.bucket}/${encodeKey(key)}`
+  const { amzDate, dateStamp } = amzNow()
+  const scope = `${dateStamp}/${config.region}/s3/aws4_request`
+  const signedHeaders = 'host'
 
-  const canonicalRequest =
-    `PUT\n` +
-    `${canonicalUri}\n` +
-    `\n` +
-    `${canonicalHeaders}\n` +
-    `${signedHeaders}\n` +
-    `${payloadHash}`
-
-  const stringToSign =
-    `${algorithm}\n` +
-    `${amzDate}\n` +
-    `${credentialScope}\n` +
-    `${hash(canonicalRequest)}`
-
-  const signingKey = getSignatureKey(config.secretKey, dateStamp, config.region, service)
-  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex')
-
-  const authorizationHeader =
-    `${algorithm} ` +
-    `Credential=${config.accessKey}/${credentialScope}, ` +
-    `SignedHeaders=${signedHeaders}, ` +
-    `Signature=${signature}`
-
-  const targetUrl = `${config.endpoint}${canonicalUri}`
-
-  const headers: Record<string, string> = {
-    Host: host,
-    'Content-Type': contentType,
-    'x-amz-date': amzDate,
-    'x-amz-content-sha256': payloadHash,
-    Authorization: authorizationHeader
+  const query: Record<string, string> = {
+    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+    'X-Amz-Credential': `${config.accessKey}/${scope}`,
+    'X-Amz-Date': amzDate,
+    'X-Amz-Expires': String(expiresSec),
+    'X-Amz-SignedHeaders': signedHeaders
   }
-  if (includeAcl) {
-    headers['x-amz-acl'] = 'public-read'
-  }
+  if (downloadName) query['response-content-disposition'] = `attachment; filename="${downloadName}"`
 
-  return { targetUrl, headers }
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
+    .join('&')
+
+  const canonicalHeaders = `host:${host}\n`
+  const canonicalRequest = `GET\n${canonicalUri}\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${hash(canonicalRequest)}`
+  const signature = crypto
+    .createHmac('sha256', getSignatureKey(config.secretKey, dateStamp, config.region, 's3'))
+    .update(stringToSign)
+    .digest('hex')
+
+  return `${config.endpoint}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`
 }
 
 /**
- * Upload a file buffer directly to Contabo Object Storage (S3-compatible API)
+ * Turns a stored videoUrl into a time-limited viewing link. Non-Contabo URLs (old Google Drive
+ * links) and old public Contabo objects are returned/handled safely: Drive links pass through
+ * untouched, and a signed URL also works for objects that were uploaded public-read.
  */
-export async function uploadToContabo(
-  fileBuffer: Buffer,
-  destinationPath: string,
-  contentType: string = 'video/mp4'
-): Promise<{ success: boolean; url: string; error?: string }> {
-  try {
-    const config = await getContaboConfig()
-    if (!config) {
-      return {
-        success: false,
-        url: '',
-        error: 'Contabo S3 credentials (CONTABO_S3_ACCESS_KEY & CONTABO_S3_SECRET_KEY) are not configured.'
-      }
-    }
+export async function signVideoUrl(url: string | null | undefined): Promise<string | null | undefined> {
+  if (!url) return url
+  const config = await getContaboConfig()
+  const key = config && keyFromObjectUrl(config, url)
+  if (!config || !key) return url
+  return presignGet(config, key, 6 * 60 * 60)
+}
 
-    const cleanDestPath = destinationPath.replace(/^\/+/, '')
+async function signedRequest(
+  config: ContaboConfig,
+  method: 'HEAD' | 'GET' | 'DELETE',
+  key: string,
+  extraHeaders: Record<string, string> = {},
+  query: Record<string, string> = {}
+) {
+  const host = new URL(config.endpoint).host
+  const canonicalUri = `/${config.bucket}/${encodeKey(key)}`
+  const { amzDate, dateStamp } = amzNow()
+  const scope = `${dateStamp}/${config.region}/s3/aws4_request`
+  const payloadHash = hash('')
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
+    .join('&')
 
-    // 1. Try upload with x-amz-acl: public-read (makes video streamable for devotees)
-    let { targetUrl, headers } = executeS3Put(config, fileBuffer, cleanDestPath, contentType, true)
-    let res = await fetch(targetUrl, {
-      method: 'PUT',
-      headers,
-      body: new Uint8Array(fileBuffer)
-    })
+  const signed: Record<string, string> = { host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate }
+  const names = Object.keys(signed).sort()
+  const canonicalHeaders = names.map(n => `${n}:${signed[n]}\n`).join('')
+  const signedHeaders = names.join(';')
 
-    // 2. If bucket policy rejects ACL header (AccessControlListNotSupported), fallback without ACL
-    if (!res.ok && (res.status === 400 || res.status === 403)) {
-      const errPeek = await res.clone().text().catch(() => '')
-      if (errPeek.includes('AccessControlList') || errPeek.includes('InvalidArgument') || errPeek.includes('ACL')) {
-        const fallback = executeS3Put(config, fileBuffer, cleanDestPath, contentType, false)
-        targetUrl = fallback.targetUrl
-        res = await fetch(targetUrl, {
-          method: 'PUT',
-          headers: fallback.headers,
-          body: new Uint8Array(fileBuffer)
-        })
-      }
-    }
+  const canonicalRequest = `${method}\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${hash(canonicalRequest)}`
+  const signature = crypto
+    .createHmac('sha256', getSignatureKey(config.secretKey, dateStamp, config.region, 's3'))
+    .update(stringToSign)
+    .digest('hex')
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '')
-      console.error(`[Contabo S3] Upload failed HTTP ${res.status}:`, errText)
-      return {
-        success: false,
-        url: targetUrl,
-        error: `Contabo S3 error HTTP ${res.status}: ${errText.slice(0, 200) || res.statusText}`
-      }
+  return fetch(`${config.endpoint}${canonicalUri}${canonicalQuery ? `?${canonicalQuery}` : ''}`, {
+    method,
+    headers: {
+      ...extraHeaders,
+      'x-amz-date': amzDate,
+      'x-amz-content-sha256': payloadHash,
+      Authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKey}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
     }
+  })
+}
 
-    return {
-      success: true,
-      url: targetUrl
-    }
-  } catch (err: any) {
-    console.error('[Contabo S3] Exception during upload:', err)
-    return {
-      success: false,
-      url: '',
-      error: err.message || 'Failed to upload to Contabo.'
-    }
+/** Size of the object in bytes, or null if it does not exist. */
+export async function headObjectSize(config: ContaboConfig, key: string): Promise<number | null> {
+  const res = await signedRequest(config, 'HEAD', key)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`Contabo HEAD failed with HTTP ${res.status}`)
+  return Number(res.headers.get('content-length') || 0)
+}
+
+export async function readObjectStart(config: ContaboConfig, key: string, bytes: number): Promise<Buffer> {
+  const res = await signedRequest(config, 'GET', key, { Range: `bytes=0-${bytes - 1}` })
+  if (!res.ok) throw new Error(`Contabo GET failed with HTTP ${res.status}`)
+  return Buffer.from(await res.arrayBuffer())
+}
+
+export async function deleteObject(config: ContaboConfig, key: string): Promise<void> {
+  const res = await signedRequest(config, 'DELETE', key)
+  if (!res.ok && res.status !== 404) {
+    console.error(`[Contabo S3] Delete failed for ${key}: HTTP ${res.status}`)
   }
+}
+
+export type ListedObject = { key: string; size: number; lastModified: string }
+
+/** Lists every object under a prefix (all pages). */
+export async function listObjects(config: ContaboConfig, prefix: string): Promise<ListedObject[]> {
+  const results: ListedObject[] = []
+  let token = ''
+
+  do {
+    const query: Record<string, string> = { 'list-type': '2', prefix, 'max-keys': '1000' }
+    if (token) query['continuation-token'] = token
+
+    // Bucket-level request: empty key gives /bucket/ as the path
+    const res = await signedRequest(config, 'GET', '', {}, query)
+    if (!res.ok) throw new Error(`Contabo list failed with HTTP ${res.status}`)
+
+    const xml = await res.text()
+    for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+      const key = m[1].match(/<Key>([\s\S]*?)<\/Key>/)?.[1]
+      const size = Number(m[1].match(/<Size>(\d+)<\/Size>/)?.[1] || 0)
+      const lastModified = m[1].match(/<LastModified>([^<]*)<\/LastModified>/)?.[1] || ''
+      if (key) results.push({ key: key.replace(/&amp;/g, '&'), size, lastModified })
+    }
+    token = xml.includes('<IsTruncated>true</IsTruncated>')
+      ? xml.match(/<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/)?.[1] || ''
+      : ''
+  } while (token)
+
+  return results
 }

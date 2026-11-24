@@ -206,7 +206,7 @@ export async function POST(req: Request) {
 
         if (orderType === 'CAMPAIGN') {
           try {
-            await prisma.offerLinkOrder.update({
+            await (prisma.offerLinkOrder as any).update({
               where: { id: order.id },
               data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
             })
@@ -231,7 +231,12 @@ export async function POST(req: Request) {
           const model = orderType === 'CHADHAVA' ? prisma.chadhavaOrder : prisma.pujaOrder
           await (model as any).update({
             where: { id: order.id },
-            data: { videoUrl: driveLink, videoUploadedAt: uploadedAt, videoExpired: false }
+            data: {
+              videoUrl: driveLink,
+              videoUploadedAt: uploadedAt,
+              videoExpired: false,
+              ...(order.status === 'CANCELLED' ? {} : { status: 'COMPLETED' })
+            }
           })
         }
 
@@ -239,7 +244,7 @@ export async function POST(req: Request) {
           orderType: orderType === 'CAMPAIGN' ? 'OFFER' : orderType,
           orderId: order.id,
           status: orderStatus,
-          note: 'Video uploaded (Google Drive link attached) — visible to customer for 48 hours',
+          note: 'Video uploaded (Google Drive link attached) — visible to customer until deleted',
           actorId: admin.id,
           actorRole: 'ADMIN',
           req
@@ -250,7 +255,7 @@ export async function POST(req: Request) {
             customerName,
             itemLabel,
             orderId: order.id,
-            videoUrl: driveLink
+            videoUrl: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://www.mandirsetuu.com').trim().replace(/\/+$/, '')}/front-pages/track-order?id=${order.id}`
           })
 
           await sendEmail({ to: customerEmail, subject, html }).catch(() => null)

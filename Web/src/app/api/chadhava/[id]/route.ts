@@ -4,7 +4,6 @@ import prisma from '@/libs/prisma'
 import { requireUser, requireAdmin, handleApiError } from '@/libs/api-auth'
 import { logOrderTrail } from '@/libs/orderTrail'
 import { cancelInvoiceAndRefund } from '@/libs/invoice'
-import { expireStaleVideos } from '@/libs/videoUpload'
 import { notifyOrderAccepted, notifyVideoUploaded } from '@/libs/notifyEvent'
 
 type Params = { params: Promise<{ id: string }> }
@@ -17,8 +16,6 @@ export async function GET(_req: Request, { params }: Params) {
   try {
     const user = await requireUser()
     const { id } = await params
-
-    await expireStaleVideos()
 
     const order = await prisma.chadhavaOrder.findUnique({ where: { id }, include: { chadhavaListing: true } })
 

@@ -358,15 +358,15 @@ const OrderDetailClient = ({ module, id }: { module: string; id: string }) => {
               {order.videoUrl && !order.videoExpired && (
                 <Alert severity='success' className='mt-6'>
                   Video uploaded —{' '}
-                  <a href={order.videoUrl} target='_blank' rel='noreferrer' className='font-semibold'>
-                    view on Google Drive
+                  <a href={`/front-pages/track-order?id=${order.id}`} target='_blank' rel='noreferrer' className='font-semibold'>
+                    view video
                   </a>
-                  {order.videoUploadedAt && ` (uploaded ${new Date(order.videoUploadedAt).toLocaleString('en-IN')}, removed after 48 hours)`}
+                  {order.videoUploadedAt && ` (uploaded ${new Date(order.videoUploadedAt).toLocaleString('en-IN')})`}
                 </Alert>
               )}
               {order.videoExpired && (
                 <Alert severity='info' className='mt-6'>
-                  Video was available for 48 hours after upload and has since been removed from the server. It was emailed to the customer at upload time.
+                  This video has been deleted from the server.
                 </Alert>
               )}
 

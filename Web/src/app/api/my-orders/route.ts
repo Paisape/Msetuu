@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 
 import prisma from '@/libs/prisma'
 import { requireUser, handleApiError } from '@/libs/api-auth'
-import { expireStaleVideos } from '@/libs/videoUpload'
 
 // GET /api/my-orders — the logged-in customer's own orders across every module, for their
 // "My Orders" page. No telemetry (ip/userAgent) is included here — that's admin-only, see
@@ -11,8 +10,6 @@ export async function GET() {
   try {
     const user = await requireUser()
     const id = user.id
-
-    await expireStaleVideos()
 
     const [chadhava, epuja, jyotish, kundli, ecommerce, yatra] = await Promise.all([
       prisma.chadhavaOrder.findMany({ where: { userId: id }, include: { chadhavaListing: true }, orderBy: { createdAt: 'desc' } }),
@@ -24,8 +21,8 @@ export async function GET() {
     ])
 
     const orders = [
-      ...chadhava.map((o: any) => ({ type: 'CHADHAVA', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.chadhavaListingId as string | null })),
-      ...epuja.map((o: any) => ({ type: 'EPUJA', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, videoUrl: o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.pujaListingId as string | null })),
+      ...chadhava.map((o: any) => ({ type: 'CHADHAVA', id: o.id, label: o.chadhavaListing.title, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, hasVideo: !!o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.chadhavaListingId as string | null })),
+      ...epuja.map((o: any) => ({ type: 'EPUJA', id: o.id, label: `${o.pujaListing.title} (${o.pujaPackage.type})`, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, hasVideo: !!o.videoUrl, videoUploadedAt: o.videoUploadedAt, videoExpired: o.videoExpired, targetId: o.pujaListingId as string | null })),
       ...jyotish.map((o: any) => ({ type: 'JYOTISH', id: o.id, label: `${o.category} consultation`, amount: null, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.astrologerId as string | null })),
       ...kundli.map((o: any) => ({ type: 'KUNDLI', id: o.id, label: o.kundliType, amount: o.amountPaid, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.kundliListingId as string | null })),
       ...ecommerce.map((o: any) => ({ type: 'ECOMMERCE', id: o.id, label: o.product.name, amount: o.totalAmount, status: o.status, paymentStatus: o.paymentStatus, createdAt: o.createdAt, targetId: o.productId as string | null })),

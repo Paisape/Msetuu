@@ -31,7 +31,7 @@ type MyOrder = {
   status: string
   paymentStatus: string | null
   createdAt: string
-  videoUrl?: string | null
+  hasVideo?: boolean
   videoUploadedAt?: string | null
   videoExpired?: boolean
   targetId?: string | null
@@ -315,18 +315,18 @@ const OrdersTab = ({ orders, loading, errorMsg, expandedId, trail, trailLoading,
                 </div>
               )}
 
-              {order.videoUrl && !order.videoExpired && (
+              {order.hasVideo && !order.videoExpired && (
                 <Alert severity='success' className='mt-3'>
                   Your offering video is ready —{' '}
-                  <a href={order.videoUrl} target='_blank' rel='noreferrer' className='font-semibold'>
-                    watch / download it here
+                  <a href={`/front-pages/track-order?id=${order.id}`} className='font-semibold'>
+                    download it here
                   </a>
-                  . It will be removed from this page 48 hours after upload, so please save it now.
+                  . Please download it and save a copy — videos may be deleted from our server later.
                 </Alert>
               )}
               {order.videoExpired && (
                 <Alert severity='info' className='mt-3'>
-                  Your offering video was available for 48 hours after upload and has since been removed. It was emailed to you at upload time.
+                  This video has been deleted.
                 </Alert>
               )}
 

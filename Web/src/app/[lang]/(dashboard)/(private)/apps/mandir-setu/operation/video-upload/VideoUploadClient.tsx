@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -46,21 +46,26 @@ type Batch = {
   items: BatchItem[]
 }
 
-type ContaboUploadItem = {
-  id: string
-  file: File
+type StoredGroup = { source: 'contabo' | 'drive'; folder: string; date: string; count: number; totalBytes: number; ageDays: number }
+
+type ReportRow = {
   orderId: string
-  status: 'PENDING' | 'UPLOADING' | 'SUCCESS' | 'FAILED'
-  isUpdate?: boolean
-  error?: string
-  devoteeName?: string
-  smsDispatched?: boolean
+  shortId: string
+  category: string
+  name: string
+  uploadedAt: string
+  deleted: boolean
+  downloaded: boolean
+  downloadCount: number
+  lastDownloadAt: string | null
 }
+
+type ScanItem = { file: string; ok: boolean; orderId?: string; customerName?: string; message: string }
 
 const emptyRow = (): Row => ({ orderType: 'CHADHAVA', orderId: '', driveLink: '' })
 
 const VideoUploadClient = () => {
-  const [activeTab, setActiveTab] = useState<'folder' | 'manual' | 'contabo'>('folder')
+  const [activeTab, setActiveTab] = useState<'folder' | 'manual' | 'contabo' | 'stored' | 'report'>('folder')
   
   // Folder Mode States
   const [folderOrderType, setFolderOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
@@ -71,14 +76,17 @@ const VideoUploadClient = () => {
 
   // Contabo Bulk Upload States
   const [contaboOrderType, setContaboOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
-  const [contaboFiles, setContaboFiles] = useState<ContaboUploadItem[]>([])
-  const [contaboUploading, setContaboUploading] = useState(false)
-  const [contaboSuccessMsg, setContaboSuccessMsg] = useState<string | null>(null)
-  const [isDragOver, setIsDragOver] = useState(false)
+  const [scanFolder, setScanFolder] = useState('videos/campaign/inbox/')
+  const [scanning, setScanning] = useState(false)
+  const [scanResults, setScanResults] = useState<ScanItem[] | null>(null)
+  const [stored, setStored] = useState<StoredGroup[]>([])
+  const [storedLoading, setStoredLoading] = useState(false)
+  const [report, setReport] = useState<ReportRow[]>([])
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportFilter, setReportFilter] = useState<'ALL' | 'NOT' | 'DONE'>('NOT')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const folderInputRef = useRef<HTMLInputElement | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  
+
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [lastBatch, setLastBatch] = useState<Batch | null>(null)
@@ -166,206 +174,100 @@ return
     }
   }
 
-  const ALLOWED_VIDEO_EXTS = ['.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v']
-
-  const isVideoFile = (filename: string) => {
-    const lower = filename.toLowerCase()
-    return ALLOWED_VIDEO_EXTS.some(ext => lower.endsWith(ext))
-  }
-
-  const processRawFiles = (files: File[]) => {
-    const videoFiles = files.filter(f => isVideoFile(f.name))
-    if (videoFiles.length === 0) return
-
-    const newItems: ContaboUploadItem[] = videoFiles.map(file => {
-      let base = file.name.replace(/\.[^./\\]+$/, '').trim()
-      base = base.replace(/^[#\s]*(MS[-_]?|ORD[-_]?)/i, '').trim()
-      return {
-        id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
-        file,
-        orderId: base,
-        status: 'PENDING'
-      }
-    })
-
-    setContaboFiles(prev => [...prev, ...newItems])
-  }
-
-  const handleSelectContaboFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const selected = Array.from(e.target.files)
-    processRawFiles(selected)
-    e.target.value = ''
-  }
-
-  const handleSelectContaboFolder = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const selected = Array.from(e.target.files)
-    processRawFiles(selected)
-    e.target.value = ''
-  }
-
-  // Recursive scan for directory entries dropped via Drag & Drop
-  const scanDirectoryEntry = async (entry: any): Promise<File[]> => {
-    return new Promise(resolve => {
-      if (entry.isFile) {
-        entry.file(
-          (file: File) => resolve(isVideoFile(file.name) ? [file] : []),
-          () => resolve([])
-        )
-      } else if (entry.isDirectory) {
-        const dirReader = entry.createReader()
-        const entriesList: any[] = []
-
-        const readEntriesRecursively = () => {
-          dirReader.readEntries(
-            async (entries: any[]) => {
-              if (entries.length === 0) {
-                const subFilesPromises = entriesList.map(ent => scanDirectoryEntry(ent))
-                const subFiles = await Promise.all(subFilesPromises)
-                resolve(subFiles.flat())
-              } else {
-                entriesList.push(...entries)
-                readEntriesRecursively()
-              }
-            },
-            () => resolve([])
-          )
-        }
-        readEntriesRecursively()
-      } else {
-        resolve([])
-      }
-    })
-  }
-
-  const handleDropFiles = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
-    if (contaboUploading) return
-
-    const items = e.dataTransfer.items
-    if (items && items.length > 0) {
-      const allFiles: File[] = []
-      const promises: Promise<File[]>[] = []
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]
-        const entry = (item as any).webkitGetAsEntry ? (item as any).webkitGetAsEntry() : null
-        if (entry) {
-          promises.push(scanDirectoryEntry(entry))
-        } else {
-          const file = item.getAsFile()
-          if (file && isVideoFile(file.name)) {
-            allFiles.push(file)
-          }
-        }
-      }
-
-      if (promises.length > 0) {
-        const scanned = await Promise.all(promises)
-        allFiles.push(...scanned.flat())
-      }
-
-      if (allFiles.length > 0) {
-        processRawFiles(allFiles)
-      }
-    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const dropped = Array.from(e.dataTransfer.files)
-      processRawFiles(dropped)
-    }
-  }
-
-  const handleUpdateContaboOrderId = (idx: number, newOrderId: string) => {
-    setContaboFiles(prev => prev.map((item, i) => (i === idx ? { ...item, orderId: newOrderId } : item)))
-  }
-
-  const handleRemoveContaboFile = (idx: number) => {
-    setContaboFiles(prev => prev.filter((_, i) => i !== idx))
-  }
-
-  const handleClearContaboFiles = () => {
-    if (contaboUploading) return
-    setContaboFiles([])
-    setContaboSuccessMsg(null)
-  }
-
-  const handleStartContaboUpload = async () => {
-    if (contaboFiles.length === 0 || contaboUploading) return
-    setContaboUploading(true)
+  const handleScanFolder = async () => {
+    if (scanning) return
+    setScanning(true)
+    setScanResults(null)
     setErrorMsg(null)
-    setContaboSuccessMsg(null)
 
-    let newUploadsCount = 0
-    let updatedUploadsCount = 0
-    let failedCount = 0
+    try {
+      const res = await fetch('/api/operation/video-upload/contabo/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderType: contaboOrderType, folder: scanFolder })
+      })
+      const data = await res.json()
 
-    for (let i = 0; i < contaboFiles.length; i++) {
-      const item = contaboFiles[i]
-      if (item.status === 'SUCCESS') continue
+      if (!res.ok || !data.success) throw new Error(data?.error || 'Scan failed')
 
-      setContaboFiles(prev => prev.map((it, idx) => (idx === i ? { ...it, status: 'UPLOADING' } : it)))
-
-      try {
-        const formData = new FormData()
-        formData.append('file', item.file)
-        formData.append('orderType', contaboOrderType)
-        formData.append('orderId', item.orderId)
-
-        const res = await fetch('/api/operation/video-upload/contabo', {
-          method: 'POST',
-          body: formData
-        })
-        const data = await res.json()
-
-        if (!res.ok || !data.success) {
-          throw new Error(data?.error || 'Upload failed')
-        }
-
-        if (data.isUpdate) {
-          updatedUploadsCount++
-        } else {
-          newUploadsCount++
-        }
-
-        setContaboFiles(prev =>
-          prev.map((it, idx) =>
-            idx === i
-              ? {
-                  ...it,
-                  status: 'SUCCESS',
-                  isUpdate: !!data.isUpdate,
-                  devoteeName: data.customerName,
-                  smsDispatched: !!data.smsDispatched
-                }
-              : it
-          )
-        )
-      } catch (err: any) {
-        failedCount++
-        setContaboFiles(prev =>
-          prev.map((it, idx) =>
-            idx === i
-              ? {
-                  ...it,
-                  status: 'FAILED',
-                  error: err.message || 'Upload failed'
-                }
-              : it
-          )
-        )
-      }
+      setScanResults(data.items)
+      loadHistory()
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Scan failed')
+    } finally {
+      setScanning(false)
     }
+  }
 
-    setContaboUploading(false)
-    const summaryParts: string[] = []
-    if (newUploadsCount > 0) summaryParts.push(`${newUploadsCount} new uploads (SMS sent 📱)`)
-    if (updatedUploadsCount > 0) summaryParts.push(`${updatedUploadsCount} videos replaced (SMS skipped 🛡️)`)
-    if (failedCount > 0) summaryParts.push(`${failedCount} failed`)
+  const loadStored = useCallback(async () => {
+    setStoredLoading(true)
 
-    setContaboSuccessMsg(`Batch completed: ${summaryParts.join(' · ') || 'Done'}.`)
-    loadHistory()
+    try {
+      const res = await fetch('/api/operation/video-upload/contabo/batches')
+      const data = await res.json()
+
+      if (!res.ok || !data.success) throw new Error(data?.error || 'Could not load stored videos')
+
+      setStored(data.groups)
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not load stored videos')
+    } finally {
+      setStoredLoading(false)
+    }
+  }, [])
+
+  const loadReport = useCallback(async () => {
+    setReportLoading(true)
+
+    try {
+      const res = await fetch('/api/operation/video-upload/downloads')
+      const data = await res.json()
+
+      if (!res.ok || !data.success) throw new Error(data?.error || 'Could not load the download report')
+
+      setReport(data.items)
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not load the download report')
+    } finally {
+      setReportLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'stored') loadStored()
+    if (activeTab === 'report') loadReport()
+  }, [activeTab, loadStored, loadReport])
+
+  const handleDeleteBatch = async (group: StoredGroup) => {
+    const ok = window.confirm(
+      group.source === 'drive'
+        ? `Remove ${group.count} Google Drive video links uploaded on ${group.date} from their orders? The files on Drive are not deleted.`
+        : `Permanently delete ${group.count} videos from ${group.folder}/ uploaded on ${group.date}? This removes them from storage and cannot be undone.`
+    )
+
+    if (!ok) return
+
+    const id = `${group.source}|${group.folder}|${group.date}`
+
+    setDeletingId(id)
+    setErrorMsg(null)
+
+    try {
+      const res = await fetch('/api/operation/video-upload/contabo/batches', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: group.source, folder: group.folder, date: group.date })
+      })
+      const data = await res.json()
+
+      if (!res.ok || !data.success) throw new Error(data?.error || 'Delete failed')
+
+      await loadStored()
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Delete failed')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -375,7 +277,7 @@ return
       </Typography>
       <Typography variant='body2' className='text-textSecondary mb-6'>
         Attach Google Drive video files to Chadhava or E-Puja orders. The customer is emailed automatically and
-        the video link is shown on their order for 48 hours before it's removed.
+        the video stays on their order until it is deleted.
       </Typography>
 
       {errorMsg && (
@@ -395,7 +297,9 @@ return
             >
               <Tab label='Google Drive Folder link' value='folder' />
               <Tab label='Manual Row Entry' value='manual' />
-              <Tab label='Bulk Upload (Contabo S3)' value='contabo' />
+              <Tab label='Attach from Contabo Folder' value='contabo' />
+              <Tab label='Stored Videos (Delete)' value='stored' />
+              <Tab label='Download Report' value='report' />
             </Tabs>
           }
         />
@@ -466,225 +370,177 @@ return
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'contabo' ? (
             <div className='flex flex-col gap-4'>
               <Typography variant='body2' className='text-textSecondary'>
-                Upload videos directly from your laptop or computer. You can <strong>select multiple video files</strong> or <strong>upload an entire folder</strong>.
-                Filenames matching Order IDs (e.g. <code>70BA0027.mp4</code> or <code>MS-70BA0027.mov</code>) are automatically mapped.
+                Upload the videos to a Contabo bucket folder with any S3 tool (e.g. Cyberduck), naming each file by its Order ID
+                (e.g. <code>70BA0027.mp4</code> or <code>MS-70BA0027.mov</code>). Then enter the folder here to attach every video to its order.
               </Typography>
 
-              {contaboSuccessMsg && (
-                <Alert severity='success' onClose={() => setContaboSuccessMsg(null)}>
-                  {contaboSuccessMsg}
-                </Alert>
+              <div className='flex items-center gap-2'>
+                <Typography variant='caption' className='font-semibold text-textSecondary uppercase'>
+                  Category:
+                </Typography>
+                <Select
+                  size='small'
+                  value={contaboOrderType}
+                  onChange={e => setContaboOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
+                  disabled={scanning}
+                  sx={{ minWidth: 180 }}
+                >
+                  <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
+                  <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
+                  <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
+                </Select>
+              </div>
+
+              <div className='flex gap-2 items-center flex-wrap'>
+                <TextField
+                  size='small'
+                  value={scanFolder}
+                  onChange={e => setScanFolder(e.target.value)}
+                  disabled={scanning}
+                  placeholder='videos/campaign/inbox/'
+                  sx={{ minWidth: 320 }}
+                />
+                <Button variant='contained' disabled={scanning || !scanFolder.trim()} onClick={handleScanFolder}>
+                  {scanning ? 'Attaching...' : 'Scan & Attach'}
+                </Button>
+              </div>
+
+              {scanResults && (
+                <div className='flex flex-col gap-0.5 text-xs'>
+                  <strong>
+                    {scanResults.filter(r => r.ok).length} of {scanResults.length} attached
+                  </strong>
+                  {scanResults.map(r => (
+                    <span key={r.file} className={r.ok ? 'text-green-700' : 'text-red-600'}>
+                      {r.file} — {r.customerName ? `${r.customerName}: ` : ''}
+                      {r.message}
+                    </span>
+                  ))}
+                </div>
               )}
+            </div>
+          ) : activeTab === 'report' ? (
+            <div className='flex flex-col gap-4'>
+              <Typography variant='body2' className='text-textSecondary'>
+                Shows whether each customer has downloaded their video. Follow up on "Not downloaded" rows before you delete
+                those videos.
+              </Typography>
 
-              {/* Drag and drop upload zone */}
-              <div
-                onDragOver={e => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  if (!contaboUploading) setIsDragOver(true)
-                }}
-                onDragLeave={e => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setIsDragOver(false)
-                }}
-                onDrop={handleDropFiles}
-                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                  isDragOver
-                    ? 'border-primary bg-primary/5 shadow-md scale-[1.005]'
-                    : 'border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 hover:border-primary/60'
-                }`}
-              >
-                <div className='flex flex-col items-center justify-center gap-2'>
-                  <div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl mb-1'>
-                    <i className={isDragOver ? 'tabler-file-download' : 'tabler-folder-up'} />
-                  </div>
-                  <Typography variant='subtitle1' className='font-semibold'>
-                    {isDragOver ? 'Release to drop videos or folder here' : 'Drag & drop folder or multiple videos here'}
-                  </Typography>
-                  <Typography variant='caption' className='text-textSecondary max-w-md'>
-                    Supports MP4, MOV, WEBM, MKV, AVI (Max 500MB per file). Subfolders and files will be automatically scanned and mapped to Order IDs.
-                  </Typography>
-
-                  <div className='flex gap-3 items-center flex-wrap mt-3'>
-                    {/* Hidden folder input */}
-                    <input
-                      ref={folderInputRef}
-                      type='file'
-                      hidden
-                      {...({ webkitdirectory: '', directory: '' } as any)}
-                      multiple
-                      onChange={handleSelectContaboFolder}
-                    />
-
-                    {/* Hidden multiple files input */}
-                    <input
-                      ref={fileInputRef}
-                      type='file'
-                      hidden
-                      multiple
-                      accept='video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v'
-                      onChange={handleSelectContaboFiles}
-                    />
-
-                    <Button
-                      variant='contained'
-                      color='primary'
-                      disabled={contaboUploading}
-                      startIcon={<i className='tabler-folder' />}
-                      onClick={() => folderInputRef.current?.click()}
-                    >
-                      Choose Entire Folder
-                    </Button>
-
-                    <Button
-                      variant='outlined'
-                      color='primary'
-                      disabled={contaboUploading}
-                      startIcon={<i className='tabler-movie' />}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Choose Multiple Videos
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className='flex gap-3 items-center flex-wrap'>
-                <div className='flex items-center gap-2'>
-                  <Typography variant='caption' className='font-semibold text-textSecondary uppercase'>
-                    Category:
-                  </Typography>
-                  <Select
-                    size='small'
-                    value={contaboOrderType}
-                    onChange={e => setContaboOrderType(e.target.value as 'CHADHAVA' | 'EPUJA' | 'CAMPAIGN')}
-                    disabled={contaboUploading}
-                    sx={{ minWidth: 180 }}
-                  >
-                    <MenuItem value='CAMPAIGN'>Campaign Category</MenuItem>
-                    <MenuItem value='CHADHAVA'>Chadhava Category</MenuItem>
-                    <MenuItem value='EPUJA'>E-Puja Category</MenuItem>
-                  </Select>
-                </div>
-
-                {contaboFiles.length > 0 && (
-                  <Button
-                    size='small'
-                    color='secondary'
-                    onClick={handleClearContaboFiles}
-                    disabled={contaboUploading}
-                  >
-                    Clear All ({contaboFiles.length})
+              <div className='flex items-center gap-2 flex-wrap'>
+                {(['ALL', 'NOT', 'DONE'] as const).map(f => (
+                  <Button key={f} size='small' variant={reportFilter === f ? 'contained' : 'outlined'} onClick={() => setReportFilter(f)}>
+                    {f === 'ALL'
+                      ? `All (${report.length})`
+                      : f === 'NOT'
+                        ? `Not downloaded (${report.filter(r => !r.downloaded).length})`
+                        : `Downloaded (${report.filter(r => r.downloaded).length})`}
                   </Button>
-                )}
+                ))}
+                <Button size='small' onClick={loadReport} disabled={reportLoading}>
+                  Refresh
+                </Button>
               </div>
 
-              {contaboFiles.length > 0 && (
-                <div className='border rounded-xl overflow-hidden mt-2'>
+              {reportLoading ? (
+                <CircularProgress size={24} />
+              ) : (
+                <div className='border rounded-xl overflow-hidden'>
                   <Table size='small'>
                     <TableHead>
                       <TableRow>
-                        <TableCell>File Name</TableCell>
-                        <TableCell>File Size</TableCell>
-                        <TableCell>Parsed Order ID</TableCell>
-                        <TableCell>Devotee / Status</TableCell>
-                        <TableCell align='right'>Action</TableCell>
+                        <TableCell>Order</TableCell>
+                        <TableCell>Category</TableCell>
+                        <TableCell>Devotee</TableCell>
+                        <TableCell>Uploaded</TableCell>
+                        <TableCell>Video</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Last Download</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {contaboFiles.map((item, idx) => (
-                        <TableRow key={item.id} hover>
-                          <TableCell className='font-mono text-xs max-w-xs truncate'>
-                            {item.file.name}
-                          </TableCell>
-                          <TableCell className='text-xs'>
-                            {(item.file.size / (1024 * 1024)).toFixed(2)} MB
-                          </TableCell>
-                          <TableCell>
-                            <TextField
-                              size='small'
-                              value={item.orderId}
-                              disabled={contaboUploading || item.status === 'SUCCESS'}
-                              onChange={e => handleUpdateContaboOrderId(idx, e.target.value)}
-                              placeholder='Order ID'
-                              sx={{ width: 140 }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {item.status === 'PENDING' && (
-                              <Chip size='small' label='Ready' color='default' variant='outlined' />
-                            )}
-                            {item.status === 'UPLOADING' && (
-                              <div className='flex items-center gap-1.5'>
-                                <CircularProgress size={14} />
-                                <span className='text-xs text-primary font-semibold'>Uploading & Sending SMS...</span>
-                              </div>
-                            )}
-                            {item.status === 'SUCCESS' && (
-                              <div className='flex flex-col gap-0.5'>
-                                {item.isUpdate ? (
-                                  <>
-                                    <Chip size='small' label='Updated 🔄' color='info' variant='outlined' />
-                                    <span className='text-[11px] text-blue-700 font-medium'>
-                                      {item.devoteeName || 'Devotee'} • Replaced (SMS Skipped 🛡️)
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Chip size='small' label='New Upload ✅' color='success' />
-                                    <span className='text-[11px] text-green-700 font-medium'>
-                                      {item.devoteeName || 'Devotee'} {item.smsDispatched ? '• SMS Sent 📱' : ''}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                            {item.status === 'FAILED' && (
-                              <div className='flex flex-col gap-0.5'>
-                                <Chip size='small' label='Failed' color='error' />
-                                <span className='text-[11px] text-red-600'>{item.error || 'Failed'}</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell align='right'>
-                            <IconButton
-                              size='small'
-                              disabled={contaboUploading || item.status === 'SUCCESS'}
-                              onClick={() => handleRemoveContaboFile(idx)}
-                            >
-                              <i className='tabler-x text-error' />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {report
+                        .filter(r => reportFilter === 'ALL' || (reportFilter === 'DONE' ? r.downloaded : !r.downloaded))
+                        .map(r => (
+                          <TableRow key={r.orderId} hover>
+                            <TableCell className='font-mono text-xs'>#MS-{r.shortId}</TableCell>
+                            <TableCell>{r.category}</TableCell>
+                            <TableCell>{r.name}</TableCell>
+                            <TableCell>{new Date(r.uploadedAt).toLocaleDateString('en-IN')}</TableCell>
+                            <TableCell>{r.deleted ? 'Deleted' : 'Available'}</TableCell>
+                            <TableCell>
+                              {r.downloaded ? (
+                                <span className='text-green-700 font-semibold'>Downloaded ({r.downloadCount})</span>
+                              ) : (
+                                <span className={r.deleted ? 'text-red-600 font-semibold' : 'text-orange-600 font-semibold'}>Not downloaded</span>
+                              )}
+                            </TableCell>
+                            <TableCell>{r.lastDownloadAt ? new Date(r.lastDownloadAt).toLocaleString('en-IN') : '—'}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className='flex flex-col gap-4'>
+              <Typography variant='body2' className='text-textSecondary'>
+                Every video, grouped by location and upload date. Nothing is deleted automatically — use Delete to remove a whole batch. Google Drive rows only remove the link from the orders.
+              </Typography>
 
-              {contaboFiles.length > 0 && (
-                <Box className='flex items-center gap-3 mt-4'>
-                  <Button
-                    variant='contained'
-                    onClick={handleStartContaboUpload}
-                    disabled={contaboUploading}
-                    className='galaxy-glow-btn'
-                    startIcon={contaboUploading ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-rocket' />}
-                  >
-                    {contaboUploading
-                      ? 'Uploading & Sending SMS...'
-                      : `Upload All to Contabo & Send SMS (${contaboFiles.filter(f => f.status !== 'SUCCESS').length})`}
-                  </Button>
-                </Box>
+              {storedLoading ? (
+                <CircularProgress size={24} />
+              ) : stored.length === 0 ? (
+                <Typography variant='body2'>No videos in storage.</Typography>
+              ) : (
+                <div className='border rounded-xl overflow-hidden'>
+                  <Table size='small'>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Upload Date</TableCell>
+                        <TableCell>Location</TableCell>
+                        <TableCell align='right'>Total Videos</TableCell>
+                        <TableCell align='right'>Size</TableCell>
+                        <TableCell align='right'>Total Days</TableCell>
+                        <TableCell align='right'>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {stored.map(g => {
+                        const id = `${g.source}|${g.folder}|${g.date}`
+
+                        return (
+                          <TableRow key={id} hover>
+                            <TableCell>{g.date}</TableCell>
+                            <TableCell className='font-mono text-xs'>{g.source === 'drive' ? 'Google Drive' : `Contabo · ${g.folder}/`}</TableCell>
+                            <TableCell align='right'>{g.count}</TableCell>
+                            <TableCell align='right'>{g.source === 'drive' ? '—' : `${(g.totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`}</TableCell>
+                            <TableCell align='right'>{g.ageDays}</TableCell>
+                            <TableCell align='right'>
+                              <Button
+                                size='small'
+                                color='error'
+                                variant='outlined'
+                                disabled={deletingId !== null}
+                                onClick={() => handleDeleteBatch(g)}
+                              >
+                                {deletingId === id ? 'Deleting...' : g.source === 'drive' ? 'Remove link' : 'Delete'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
           )}
 
-          {activeTab !== 'contabo' && (
+          {activeTab !== 'contabo' && activeTab !== 'stored' && activeTab !== 'report' && (
             <Box className='flex items-center gap-3 mt-6'>
               <Button variant='contained' onClick={handleSubmit} disabled={submitting} className='galaxy-glow-btn'>
                 {submitting ? <CircularProgress size={18} color='inherit' /> : activeTab === 'folder' ? 'Scan & Map Folder' : 'Process Batch'}

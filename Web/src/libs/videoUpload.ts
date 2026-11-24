@@ -1,29 +1,7 @@
 import prisma from '@/libs/prisma'
 
-const VIDEO_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
-
-// Lazily "deletes" any video whose 48-hour window has elapsed — no cron/worker is wired up,
-// so this runs inline whenever Chadhava/E-Puja orders are read (list or detail). It clears
-// videoUrl and flags videoExpired so order screens can show a clear "removed after 48 hours"
-// message instead of a dead link.
-export async function expireStaleVideos(): Promise<void> {
-  const cutoff = new Date(Date.now() - VIDEO_TTL_MS)
-
-  await Promise.all([
-    prisma.chadhavaOrder.updateMany({
-      where: { videoUploadedAt: { lt: cutoff }, videoExpired: false, videoUrl: { not: null } },
-      data: { videoUrl: null, videoExpired: true }
-    }),
-    prisma.pujaOrder.updateMany({
-      where: { videoUploadedAt: { lt: cutoff }, videoExpired: false, videoUrl: { not: null } },
-      data: { videoUrl: null, videoExpired: true }
-    }),
-    prisma.offerLinkOrder.updateMany({
-      where: { videoUploadedAt: { lt: cutoff }, videoExpired: false, videoUrl: { not: null } },
-      data: { videoUrl: null, videoExpired: true }
-    }).catch(() => null)
-  ])
-}
+// Order trail note written each time a customer starts a video download (read by the download report).
+export const VIDEO_DOWNLOAD_NOTE = 'Video downloaded by customer'
 
 let offerLinkColsChecked = false
 export async function ensureOfferLinkOrderVideoColumns() {

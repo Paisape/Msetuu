@@ -6,7 +6,6 @@ import { enforceRateLimit } from '@/libs/rateLimit'
 import { effectivePrice } from '@/libs/pricing'
 import { getRequestInfo } from '@/libs/request-info'
 import { logOrderTrail } from '@/libs/orderTrail'
-import { expireStaleVideos } from '@/libs/videoUpload'
 import { createRazorpayOrder, isRazorpayConfigured, getRazorpayKeyId } from '@/libs/razorpay'
 
 // GET /api/chadhava — logged-in user's own orders, or ?all=1 for admins to see every order
@@ -14,8 +13,6 @@ export async function GET(req: Request) {
   try {
     const user = await requireUser()
     const wantsAll = new URL(req.url).searchParams.get('all') === '1'
-
-    await expireStaleVideos()
 
     const orders = await prisma.chadhavaOrder.findMany({
       where: wantsAll && user.role === 'ADMIN' ? {} : { userId: user.id },

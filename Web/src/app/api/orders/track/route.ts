@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/libs/prisma'
 
+// The full name is never sent: the customer must type the main devotee's first name to get the video.
+const maskName = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .map(part => part[0] + '*'.repeat(Math.max(part.length - 1, 2)))
+    .join(' ')
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -38,9 +46,10 @@ export async function GET(req: Request) {
         shortId: `#MS-${offerLinkOrder.id.slice(0, 8).toUpperCase()}`,
         type: 'Offer Campaign Booking',
         title: offerLinkOrder.offerLink?.title || 'Campaign Offering',
-        name: primaryDevotee,
-        status: offerLinkOrder.paymentStatus === 'SUCCESS' ? 'CONFIRMED' : offerLinkOrder.paymentStatus,
-        videoUrl: (offerLinkOrder as any).videoUrl,
+        name: maskName(primaryDevotee),
+        status: (offerLinkOrder as any).videoUrl || (offerLinkOrder as any).videoExpired ? 'COMPLETED' : offerLinkOrder.paymentStatus === 'SUCCESS' ? 'CONFIRMED' : offerLinkOrder.paymentStatus,
+        hasVideo: !!(offerLinkOrder as any).videoUrl,
+        videoDeleted: !!(offerLinkOrder as any).videoExpired && !(offerLinkOrder as any).videoUrl,
         videoUploadedAt: (offerLinkOrder as any).videoUploadedAt,
         createdAt: offerLinkOrder.createdAt
       })
@@ -59,9 +68,10 @@ export async function GET(req: Request) {
         shortId: `#MS-${offerOrder.id.slice(0, 8).toUpperCase()}`,
         type: 'Campaign Booking',
         title: offerOrder.offer?.title || 'Offer Link Puja',
-        name: offerOrder.name,
+        name: maskName(offerOrder.name),
         status: offerOrder.status,
-        videoUrl: offerOrder.videoUrl,
+        hasVideo: !!offerOrder.videoUrl,
+        videoDeleted: !!(offerOrder as any).videoExpired && !offerOrder.videoUrl,
         videoUploadedAt: offerOrder.videoUploadedAt,
         createdAt: offerOrder.createdAt
       })
@@ -80,9 +90,10 @@ export async function GET(req: Request) {
         shortId: `#MS-${chadhavaOrder.id.slice(0, 8).toUpperCase()}`,
         type: 'Chadhava',
         title: chadhavaOrder.chadhavaListing?.title || 'Chadhava offering',
-        name: chadhavaOrder.name || 'Devotee',
+        name: maskName(chadhavaOrder.name || 'Devotee'),
         status: chadhavaOrder.status,
-        videoUrl: chadhavaOrder.videoUrl,
+        hasVideo: !!chadhavaOrder.videoUrl,
+        videoDeleted: !!chadhavaOrder.videoExpired && !chadhavaOrder.videoUrl,
         videoUploadedAt: chadhavaOrder.videoUploadedAt,
         createdAt: chadhavaOrder.createdAt
       })
@@ -101,9 +112,10 @@ export async function GET(req: Request) {
         shortId: `#MS-${pujaOrder.id.slice(0, 8).toUpperCase()}`,
         type: 'E-Puja',
         title: pujaOrder.pujaListing?.title || 'E-Puja booking',
-        name: pujaOrder.name || 'Devotee',
+        name: maskName(pujaOrder.name || 'Devotee'),
         status: pujaOrder.status,
-        videoUrl: pujaOrder.videoUrl,
+        hasVideo: !!pujaOrder.videoUrl,
+        videoDeleted: !!pujaOrder.videoExpired && !pujaOrder.videoUrl,
         videoUploadedAt: pujaOrder.videoUploadedAt,
         createdAt: pujaOrder.createdAt
       })
@@ -122,7 +134,7 @@ export async function GET(req: Request) {
         shortId: `#MS-${productOrder.id.slice(0, 8).toUpperCase()}`,
         type: 'E-Commerce',
         title: productOrder.product?.name || 'Store Item',
-        name: productOrder.user?.name || 'Customer',
+        name: maskName(productOrder.user?.name || 'Customer'),
         status: productOrder.status,
         createdAt: productOrder.createdAt
       })

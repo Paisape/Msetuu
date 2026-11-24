@@ -6,7 +6,6 @@ import { enforceRateLimit } from '@/libs/rateLimit'
 import { effectivePrice } from '@/libs/pricing'
 import { getRequestInfo } from '@/libs/request-info'
 import { logOrderTrail } from '@/libs/orderTrail'
-import { expireStaleVideos } from '@/libs/videoUpload'
 import { createRazorpayOrder, isRazorpayConfigured, getRazorpayKeyId } from '@/libs/razorpay'
 
 const MAX_DEVOTEES = 20
@@ -33,8 +32,6 @@ export async function GET(req: Request) {
   try {
     const user = await requireUser()
     const wantsAll = new URL(req.url).searchParams.get('all') === '1'
-
-    await expireStaleVideos()
 
     const orders = await prisma.pujaOrder.findMany({
       where: wantsAll && user.role === 'ADMIN' ? {} : { userId: user.id },

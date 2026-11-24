@@ -22,6 +22,9 @@ function TrackOrderContent() {
   const [loading, setLoading] = useState(false)
   const [order, setOrder] = useState<any | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [videoName, setVideoName] = useState('')
+  const [videoError, setVideoError] = useState<string | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   const sanitizeId = (id: string) => {
     return id
@@ -37,6 +40,8 @@ function TrackOrderContent() {
     setLoading(true)
     setErrorMsg(null)
     setOrder(null)
+    setVideoName('')
+    setVideoError(null)
     try {
       const res = await fetch(`/api/orders/track?id=${encodeURIComponent(cleaned)}`)
       const data = await res.json()
@@ -81,32 +86,27 @@ function TrackOrderContent() {
 
   const steps = ['Order Placed', 'Processing Offering', 'Completed / Proof Uploaded']
 
-  const getEmbedVideoUrl = (url?: string | null) => {
-    if (!url) return ''
-    const trimmed = url.trim()
-    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-    if (driveMatch && driveMatch[1]) {
-      return `https://drive.google.com/file/d/${driveMatch[1]}/preview`
-    }
-    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-    if (idMatch && idMatch[1] && trimmed.includes('drive.google.com')) {
-      return `https://drive.google.com/file/d/${idMatch[1]}/preview`
-    }
-    return trimmed
-  }
+  const handleDownload = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setDownloading(true)
+    setVideoError(null)
 
-  const getDownloadVideoUrl = (url?: string | null) => {
-    if (!url) return ''
-    const trimmed = url.trim()
-    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-    if (driveMatch && driveMatch[1]) {
-      return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`
+    try {
+      const res = await fetch('/api/orders/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: order.id, name: videoName })
+      })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data?.error || 'Could not start the download.')
+
+      window.location.href = data.downloadUrl
+    } catch (err: any) {
+      setVideoError(err.message || 'Could not start the download.')
+    } finally {
+      setDownloading(false)
     }
-    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-    if (idMatch && idMatch[1] && trimmed.includes('drive.google.com')) {
-      return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`
-    }
-    return trimmed
   }
 
   return (
@@ -118,7 +118,7 @@ function TrackOrderContent() {
             Track Your Puja/Offering
           </Typography>
           <Typography variant='body2' className='text-slate-600'>
-            Enter your short Order ID to view booking status and watch the video proof.
+            Enter your short Order ID to view booking status and download the video proof.
           </Typography>
         </div>
 
@@ -204,55 +204,47 @@ function TrackOrderContent() {
               </div>
 
               {/* Video Player Section */}
-              {order.videoUrl ? (
-                <div className='border-t border-slate-100 pt-6 flex flex-col gap-3'>
+              {order.hasVideo ? (
+                <form onSubmit={handleDownload} className='border-t border-slate-100 pt-6 flex flex-col gap-3'>
                   <Typography variant='subtitle2' className='font-bold text-slate-800 flex items-center gap-1.5'>
                     <i className='tabler-video text-orange-500' /> Video Proof of Offering
                   </Typography>
-                  <Paper className='overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center relative shadow-inner'>
-                    {order.videoUrl.includes('drive.google.com') ? (
-                      <iframe
-                        src={getEmbedVideoUrl(order.videoUrl)}
-                        className='w-full h-full border-0 absolute inset-0'
-                        allow='autoplay; encrypted-media'
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video
-                        src={order.videoUrl}
-                        controls
-                        playsInline
-                        className='w-full h-full absolute inset-0 object-contain'
-                      />
-                    )}
-                  </Paper>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1'>
-                    <Button
-                      variant='contained'
-                      href={getDownloadVideoUrl(order.videoUrl)}
-                      target='_blank'
-                      download
-                      startIcon={<i className='tabler-download' />}
-                      className='w-full py-2.5 bg-[#006241] hover:bg-[#004d33] text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm'
-                      style={{ backgroundColor: '#006241', color: '#ffffff' }}
-                    >
-                      Download Video
-                    </Button>
-                    <Button
-                      variant='outlined'
-                      href={order.videoUrl}
-                      target='_blank'
-                      startIcon={<i className='tabler-external-link' />}
-                      className='w-full py-2.5 border-[#FF671F] text-[#FF671F] font-bold hover:bg-orange-50 rounded-xl flex items-center justify-center gap-1.5'
-                      style={{ borderColor: '#FF671F', color: '#FF671F' }}
-                    >
-                      {order.videoUrl.includes('drive.google.com') ? 'Watch on Google Drive ↗' : 'Open Video Link ↗'}
-                    </Button>
-                  </div>
-                  <Typography variant='caption' className='text-slate-500 text-center'>
-                    You can watch the video proof above or tap <strong>Download Video</strong> to save a permanent copy to your device.
+                  <Alert severity='warning' icon={false} className='rounded-xl border border-orange-300'>
+                    <Typography variant='h6' className='font-black text-orange-800'>
+                      Download this video and save a copy.
+                    </Typography>
+                    <Typography variant='body1' className='font-semibold text-orange-900'>
+                      Videos may be deleted from our server later and cannot be recovered.
+                    </Typography>
+                  </Alert>
+                  <Typography variant='body2' className='text-slate-600'>
+                    To download it, enter the name or first name of the devotee on this order.
                   </Typography>
-                </div>
+                  <TextField
+                    label='Name of devotee'
+                    value={videoName}
+                    onChange={e => setVideoName(e.target.value)}
+                    size='small'
+                    fullWidth
+                  />
+                  {videoError && <Alert severity='error'>{videoError}</Alert>}
+                  <Button
+                    type='submit'
+                    variant='contained'
+                    disabled={downloading || videoName.trim().length < 2}
+                    startIcon={<i className='tabler-download' />}
+                    className='w-full py-2.5 bg-[#006241] hover:bg-[#004d33] text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm'
+                    style={{ backgroundColor: '#006241', color: '#ffffff' }}
+                  >
+                    {downloading ? 'Checking...' : 'Download Video'}
+                  </Button>
+                </form>
+              ) : order.videoDeleted ? (
+                <Alert severity='info' className='rounded-xl'>
+                  <Typography variant='h6' className='font-bold'>
+                    This video has been deleted.
+                  </Typography>
+                </Alert>
               ) : (
                 order.status === 'COMPLETED' && (
                   <div className='p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-sm text-slate-500 font-medium'>
