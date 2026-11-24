@@ -19,11 +19,12 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const orderType = normalizeOrderType(body.orderType)
-    const prefix = String(body.folder || '').trim().replace(/^\/+/, '').replace(/\/*$/, '/')
+    const rawFolder = String(body.folder || '').trim().replace(/^\/+/, '').replace(/\/*$/, '')
+    const prefix = rawFolder ? `${rawFolder}/` : ''
 
-    if (!prefix.startsWith('videos/') || prefix.includes('..')) {
+    if (prefix.includes('..')) {
       return NextResponse.json(
-        { success: false, error: 'Folder must be inside the videos/ folder, e.g. videos/campaign/inbox/' },
+        { success: false, error: 'Invalid folder path.' },
         { status: 400 }
       )
     }

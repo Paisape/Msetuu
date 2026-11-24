@@ -76,7 +76,7 @@ const VideoUploadClient = () => {
 
   // Contabo Bulk Upload States
   const [contaboOrderType, setContaboOrderType] = useState<'CHADHAVA' | 'EPUJA' | 'CAMPAIGN'>('CAMPAIGN')
-  const [scanFolder, setScanFolder] = useState('videos/campaign/inbox/')
+  const [scanFolder, setScanFolder] = useState('mandirsetuu')
   const [scanning, setScanning] = useState(false)
   const [scanResults, setScanResults] = useState<ScanItem[] | null>(null)
   const [stored, setStored] = useState<StoredGroup[]>([])
@@ -373,8 +373,8 @@ return
           ) : activeTab === 'contabo' ? (
             <div className='flex flex-col gap-4'>
               <Typography variant='body2' className='text-textSecondary'>
-                Upload the videos to a Contabo bucket folder with any S3 tool (e.g. Cyberduck), naming each file by its Order ID
-                (e.g. <code>70BA0027.mp4</code> or <code>MS-70BA0027.mov</code>). Then enter the folder here to attach every video to its order.
+                Upload videos to your Contabo bucket with any S3 tool (e.g. Cyberduck), naming each file by its Order ID
+                (e.g. <code>70BA0027.mp4</code> or <code>MS-70BA0027.mov</code>). Enter your folder or subfolder (e.g. <code>mandirsetuu</code>, <code>mandirsetuu/chadhava</code>, <code>mandirsetuu/campaign</code>) to scan and attach.
               </Typography>
 
               <div className='flex items-center gap-2'>
@@ -400,7 +400,7 @@ return
                   value={scanFolder}
                   onChange={e => setScanFolder(e.target.value)}
                   disabled={scanning}
-                  placeholder='videos/campaign/inbox/'
+                  placeholder='e.g. mandirsetuu or mandirsetuu/chadhava'
                   sx={{ minWidth: 320 }}
                 />
                 <Button variant='contained' disabled={scanning || !scanFolder.trim()} onClick={handleScanFolder}>

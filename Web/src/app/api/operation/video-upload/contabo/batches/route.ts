@@ -22,8 +22,8 @@ export async function GET() {
 
     const groups = new Map<string, { source: 'contabo' | 'drive'; folder: string; date: string; count: number; totalBytes: number }>()
 
-    for (const obj of await listObjects(config, 'videos/')) {
-      const folder = folderOf(obj.key)
+    for (const obj of await listObjects(config, '')) {
+      const folder = folderOf(obj.key) || 'root'
       const date = istDate(obj.lastModified)
       const id = `${folder}|${date}`
       const group = groups.get(id) || { source: 'contabo' as const, folder, date, count: 0, totalBytes: 0 }
@@ -101,12 +101,13 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: true, deleted: results.reduce((n: number, r: { count: number }) => n + r.count, 0) })
     }
 
-    if (!folder.startsWith('videos/') || folder.includes('..') || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (folder.includes('..') || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ success: false, error: 'Invalid folder or date.' }, { status: 400 })
     }
 
-    const batch: ListedObject[] = (await listObjects(config, `${folder}/`)).filter(
-      o => folderOf(o.key) === folder && istDate(o.lastModified) === date
+    const folderPrefix = folder === 'root' ? '' : `${folder}/`
+    const batch: ListedObject[] = (await listObjects(config, folderPrefix)).filter(
+      o => (folderOf(o.key) || 'root') === folder && istDate(o.lastModified) === date
     )
 
     if (batch.length === 0) {

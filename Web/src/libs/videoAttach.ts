@@ -40,8 +40,8 @@ export async function attachContaboVideo(input: AttachInput): Promise<AttachResu
 
   const fail = (status: number, error: string): AttachResult => ({ ok: false, status, error })
   const ext = (key.split('.').pop() || '').toLowerCase()
-  if (!key.startsWith('videos/') || key.includes('..') || !ALLOWED_VIDEO_EXTS[ext]) {
-    return fail(400, `"${key}" is not a valid video path.`)
+  if (key.includes('..') || !ALLOWED_VIDEO_EXTS[ext]) {
+    return fail(400, `"${key}" is not a valid video file.`)
   }
 
   const newUrl = objectUrl(config, key)
