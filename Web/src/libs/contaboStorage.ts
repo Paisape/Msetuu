@@ -131,7 +131,8 @@ async function signedRequest(
   query: Record<string, string> = {}
 ) {
   const host = new URL(config.endpoint).host
-  const canonicalUri = `/${config.bucket}/${encodeKey(key)}`
+  // S3 SigV4: For bucket-level operations (like ListObjects), canonical URI must be "/<bucket>" or "/<bucket>/"
+  const canonicalUri = key ? `/${config.bucket}/${encodeKey(key)}` : `/${config.bucket}`
   const { amzDate, dateStamp } = amzNow()
   const scope = `${dateStamp}/${config.region}/s3/aws4_request`
   const payloadHash = hash('')
@@ -145,14 +146,16 @@ async function signedRequest(
   const canonicalHeaders = names.map(n => `${n}:${signed[n]}\n`).join('')
   const signedHeaders = names.join(';')
 
-  const canonicalRequest = `${method}\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`
+  const canonicalRequest = `${method}\n${canonicalUri}\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`
   const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${hash(canonicalRequest)}`
   const signature = crypto
     .createHmac('sha256', getSignatureKey(config.secretKey, dateStamp, config.region, 's3'))
     .update(stringToSign)
     .digest('hex')
 
-  return fetch(`${config.endpoint}${canonicalUri}${canonicalQuery ? `?${canonicalQuery}` : ''}`, {
+  const url = `${config.endpoint}${canonicalUri}${canonicalQuery ? `?${canonicalQuery}` : ''}`
+
+  return fetch(url, {
     method,
     headers: {
       ...extraHeaders,
@@ -195,9 +198,22 @@ export async function listObjects(config: ContaboConfig, prefix: string): Promis
     const query: Record<string, string> = { 'list-type': '2', prefix, 'max-keys': '1000' }
     if (token) query['continuation-token'] = token
 
-    // Bucket-level request: empty key gives /bucket/ as the path
-    const res = await signedRequest(config, 'GET', '', {}, query)
-    if (!res.ok) throw new Error(`Contabo list failed with HTTP ${res.status}`)
+    // Bucket-level request: empty key gives /bucket as the path
+    let res = await signedRequest(config, 'GET', '', {}, query)
+
+    // Fallback: some S3 implementations require trailing slash "/bucket/"
+    if (!res.ok && res.status === 403) {
+      const retryRes = await signedRequest(config, 'GET', '/', {}, query)
+      if (retryRes.ok) {
+        res = retryRes
+      }
+    }
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      console.error(`[Contabo S3 listObjects error HTTP ${res.status}]:`, errText)
+      throw new Error(`Contabo list failed with HTTP ${res.status}: ${errText.slice(0, 300) || res.statusText}`)
+    }
 
     const xml = await res.text()
     for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
