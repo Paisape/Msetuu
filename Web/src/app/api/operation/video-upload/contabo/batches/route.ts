@@ -3,12 +3,18 @@ import prisma from '@/libs/prisma'
 import { requireAdmin, handleApiError } from '@/libs/api-auth'
 import { getContaboConfig, listObjects, deleteObject, objectUrl, ListedObject } from '@/libs/contaboStorage'
 import { ensureOfferLinkOrderVideoColumns } from '@/libs/videoUpload'
+import { ALLOWED_VIDEO_EXTS } from '@/libs/videoOrders'
 
 export const maxDuration = 300
 
 const istDate = (iso: string) => new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
 const DRIVE = { videoUrl: { contains: 'drive.google.com' } }
 const folderOf = (key: string) => key.slice(0, key.lastIndexOf('/'))
+const isVideoKey = (key: string) => {
+  if (key.endsWith('/')) return false // ignore directory marker objects created by S3 tools
+  const ext = (key.split('.').pop() || '').toLowerCase()
+  return !!ALLOWED_VIDEO_EXTS[ext]
+}
 
 // Stored videos grouped by folder and upload date, so a whole day's batch can be reviewed and removed.
 export async function GET() {
@@ -23,6 +29,7 @@ export async function GET() {
     const groups = new Map<string, { source: 'contabo' | 'drive'; folder: string; date: string; count: number; totalBytes: number }>()
 
     for (const obj of await listObjects(config, '')) {
+      if (!isVideoKey(obj.key)) continue
       const folder = folderOf(obj.key) || 'root'
       const date = istDate(obj.lastModified)
       const id = `${folder}|${date}`
